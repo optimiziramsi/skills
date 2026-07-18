@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+"""loop — the flow looper runner.
+
+Runs a queue of `.agent/loop/*.md` job files: each `pending` job becomes one fresh headless
+Claude session that does the work, commits, and updates its own `job-status`. The runner
+selects work, orders it (`blocked-on`), retries transient failures with backoff, and
+records logs. It never commits — the executing agent owns all git operations.
+
+Usage:
+  loop [options]
+
+Options:
+  --watch            after the queue drains, keep polling for new pending jobs
+  --status           print every job's status and exit
+  --dry-run          show what would run, execute nothing
+  -y, --yes          skip the arm-confirmation (for unattended/cron runs)
+  --model NAME       default model when a job omits `model:` (default: opus)
+  --retries N        max retries per job on failure (default: per-job max-retries, else 2)
+  --dir DIR          job directory (default: .agent/loop)
+  -h, --help         this help
+
+Job frontmatter (see the `looper` skill for the full spec):
+  job-status: draft|pending|blocked|done|failed|skipped|conflict
+  model: opus|sonnet     effort: xhigh|max     title: ...
+  max-turns: 50 (advisory)   max-retries: 2   blocked-on: fileA.md, fileB.md
+
+Env escape hatches: CLAUDE_BIN, FLOW_ALLOW_NESTED=1, FLOW_CLAUDE_PERMISSION_MODE.
+"""
+import glob
+import os
+import sys
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _flowlib as fl  # noqa: E402
+
+TERMINAL = {"done", "skipped", "conflict"}      # runner leaves these alone
+DEAD = {"done", "skipped", "conflict", "failed"}  # not runnable
+LOOP_GITIGNORE = (
+    "# raw stream-json transcripts — noisy, regenerated each run\n"
+    "# (job .md files, .log transcripts, and runner_*.log ARE worth keeping)\n"
+    "*.jsonl\n"
+)
+LOOP_STATUS_CONTRACT = (
+    "Set `job-status:` to one of: `done` (work complete and committed), "
+    "`failed` (you tried but could not finish — say why in ## Report), "
+    "`skipped` (not applicable or obsolete — say why), or "
+    "`conflict` (blocked on an undecided decision/pattern — say what's needed). "
+    "Write your findings into the job file's `## Report` section, then commit the "
+    "work and the status change together."
+)
+
+
+def parse_args(argv):
+    opts = {
+        "watch": False, "status": False, "dry_run": False, "yes": False,
+        "model": fl.DEFAULT_MODEL, "retries": None, "dir": ".agent/loop",
+    }
+    it = iter(argv)
+    for a in it:
+        if a in ("-h", "--help"):
+            print(__doc__)
+            sys.exit(0)
+        elif a == "--watch":
+            opts["watch"] = True
+        elif a == "--status":
+            opts["status"] = True
+        elif a == "--dry-run":
+            opts["dry_run"] = True
+        elif a in ("-y", "--yes"):
+            opts["yes"] = True
+        elif a == "--model":
+            opts["model"] = next(it)
+        elif a == "--retries":
+            opts["retries"] = int(next(it))
+        elif a == "--dir":
+            opts["dir"] = next(it)
+        else:
+            fl.die(f"unknown argument: {a} (try --help)")
+    return opts
+
+
+def load_jobs(job_dir):
+    """Return list of dicts {path, stem, meta, body, raw, status} sorted by filename."""
+    jobs = []
+    for path in sorted(glob.glob(os.path.join(job_dir, "*.md"))):
+        base = os.path.basename(path)
+        if base.startswith("runner_") or base.lower() == "readme.md":
+            continue
+        meta, body, raw = fl.read_job(path)
+        jobs.append({
+            "path": path,
+            "stem": os.path.splitext(base)[0],
+            "base": base,
+            "meta": meta,
+            "body": body,
+            "raw": raw,
+            "status": (meta.get("job-status") or "").strip().lower(),
+        })
+    return jobs
+
+
+def deps_satisfied(job, by_key):
+    """True if every blocked-on dependency is `done`."""
+    raw = job["meta"].get("blocked-on", "")
+    if not raw:
+        return True, []
+    unmet = []
+    for dep in raw.replace(",", " ").split():
+        dep_stem = os.path.splitext(os.path.basename(dep))[0]
+        target = by_key.get(dep_stem) or by_key.get(dep)
+        if target is None or target["status"] != "done":
+            unmet.append(dep_stem)
+    return (len(unmet) == 0), unmet
+
+
+def status_icon(status):
+    return {
+        "done": fl.green("✔ done"), "pending": fl.bold("• pending"),
+        "draft": fl.dim("◦ draft"), "blocked": fl.yellow("⧗ blocked"),
+        "failed": fl.red("✘ failed"), "skipped": fl.dim("– skipped"),
+        "conflict": fl.yellow("‼ conflict"),
+    }.get(status, status or fl.dim("(no status)"))
+
+
+def print_status(jobs):
+    if not jobs:
+        fl.info(fl.dim("no job files found."))
+        return
+    by_key = {j["stem"]: j for j in jobs}
+    fl.info(fl.bold(f"\n{len(jobs)} job(s):\n"))
+    for j in jobs:
+        title = j["meta"].get("title", "")
+        line = f"  {status_icon(j['status']):<22} {j['base']}"
+        if title:
+            line += fl.dim(f"  — {title}")
+        fl.info(line)
+        if j["status"] == "pending":
+            ok, unmet = deps_satisfied(j, by_key)
+            if not ok:
+                fl.info(fl.yellow(f"      blocked-on (not done): {', '.join(unmet)}"))
+    fl.info("")
+
+
+def runnable_queue(jobs):
+    """Ordered list of pending jobs whose dependencies are all done."""
+    by_key = {j["stem"]: j for j in jobs}
+    out = []
+    for j in jobs:
+        if j["status"] != "pending":
+            continue
+        ok, _ = deps_satisfied(j, by_key)
+        if ok:
+            out.append(j)
+    return out
+
+
+def compose_prompt(job):
+    protocol = fl.EXECUTING_PROTOCOL.format(status_contract=LOOP_STATUS_CONTRACT)
+    return (
+        f"{protocol}\n\n"
+        f"The work item is the file `{job['path']}` in this repository. Read it fully, "
+        f"do the work it describes, then update its frontmatter + ## Report and commit.\n\n"
+        f"--- BEGIN {job['base']} ---\n{job['raw']}\n--- END {job['base']} ---\n"
+    )
+
+
+def run_one(job, opts, runner_log):
+    """Run a single job with retries. Returns final status string."""
+    max_retries = opts["retries"]
+    if max_retries is None:
+        max_retries = fl.coerce_int(job["meta"], "max-retries", 2)
+    model = (job["meta"].get("model") or opts["model"]).strip()
+    stem = job["stem"]
+    log_path = os.path.join(opts["dir"], f"{stem}.log")
+    jsonl_path = os.path.join(opts["dir"], f"{stem}.jsonl")
+    prompt = compose_prompt(job)
+
+    attempt = 0
+    while True:
+        attempt += 1
+        fl.info(fl.bold(f"▶ {job['base']}") + fl.dim(f"  (attempt {attempt}, model {model})"))
+        with open(runner_log, "a", encoding="utf-8") as rl:
+            rl.write(f"[{fl.human_now()}] run {job['base']} attempt {attempt} model={model}\n")
+        code, elapsed, rate_limited = fl.run_claude_job(
+            prompt, model, fl.DEFAULT_PERMISSION_MODE, log_path, jsonl_path,
+        )
+        # Re-read status: the executing agent should have advanced it.
+        meta, _, _ = fl.read_job(job["path"])
+        new_status = (meta.get("job-status") or "").strip().lower()
+        succeeded = code == 0 and new_status in DEAD
+        if succeeded:
+            fl.info(fl.green(f"  → {new_status} ({int(elapsed)}s)"))
+            with open(runner_log, "a", encoding="utf-8") as rl:
+                rl.write(f"[{fl.human_now()}]   result {new_status} exit={code} {int(elapsed)}s\n")
+            return new_status
+        # failure
+        fl.info(fl.red(f"  → failed (exit {code}, status '{new_status or 'unchanged'}', {int(elapsed)}s)"))
+        with open(runner_log, "a", encoding="utf-8") as rl:
+            rl.write(f"[{fl.human_now()}]   FAIL exit={code} status={new_status or 'unchanged'} rl={rate_limited}\n")
+        if attempt > max_retries:
+            # Bookkeeping fallback so the queue doesn't loop forever. Not committed.
+            if new_status not in DEAD:
+                fl.set_frontmatter_field(job["path"], "job-status", "failed")
+                job["status"] = "failed"
+            fl.info(fl.red(f"  ✘ giving up after {attempt} attempt(s) — left as failed for triage"))
+            return "failed"
+        # backoff harder when the failure was fast or rate-limited
+        if rate_limited or elapsed < fl.RATE_LIMIT_FAST_FAIL_SECS:
+            fl.backoff_sleep(attempt)
+
+
+def arm_or_exit(opts, queue):
+    if opts["yes"]:
+        return
+    fl.info(fl.yellow(
+        "\n⚠ These jobs will run UNATTENDED with full tool permissions "
+        f"({fl.DEFAULT_PERMISSION_MODE}) — the agent can edit files and run git/shell "
+        "commands with no prompts."))
+    fl.info(f"  {len(queue)} job(s) queued in {opts['dir']}/. Ctrl+C to abort.")
+    if not sys.stdin.isatty():
+        fl.die("not a TTY and -y not given — refusing to run unattended without explicit --yes.")
+    try:
+        ans = input("  Type 'yes' to proceed: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        fl.die("aborted.")
+    if ans != "yes":
+        fl.die("aborted.")
+
+
+def main():
+    opts = parse_args(sys.argv[1:])
+    job_dir = opts["dir"]
+
+    if opts["status"]:
+        print_status(load_jobs(job_dir) if os.path.isdir(job_dir) else [])
+        return
+    if not os.path.isdir(job_dir):
+        fl.die(f"no {job_dir}/ directory here. Run from your project root, or --dir.")
+
+    jobs = load_jobs(job_dir)
+    queue = runnable_queue(jobs)
+
+    if opts["dry_run"]:
+        fl.info(fl.bold("dry run — would execute in this order:"))
+        if not queue:
+            fl.info(fl.dim("  (nothing pending/runnable)"))
+        for j in queue:
+            fl.info(f"  {j['base']}" + fl.dim(f"  — {j['meta'].get('title', '')}"))
+        return
+
+    fl.nested_guard()
+    fl.ensure_claude_available()
+    if not queue and not opts["watch"]:
+        fl.info(fl.dim("nothing pending. (use --status to inspect, --watch to poll)"))
+        return
+    if queue:
+        arm_or_exit(opts, queue)
+
+    os.makedirs(job_dir, exist_ok=True)
+    gi = os.path.join(job_dir, ".gitignore")
+    if not os.path.exists(gi):
+        with open(gi, "w") as fh:
+            fh.write(LOOP_GITIGNORE)
+    runner_log = os.path.join(job_dir, f"runner_{fl.stamp()}.log")
+    fl.info(fl.dim(f"runner log: {runner_log}"))
+
+    done_count = 0
+    while True:
+        jobs = load_jobs(job_dir)
+        queue = runnable_queue(jobs)
+        if not queue:
+            if opts["watch"]:
+                fl.info(fl.dim("queue empty — watching for new pending jobs (Ctrl+C to stop)…"))
+                try:
+                    time.sleep(10)
+                    continue
+                except KeyboardInterrupt:
+                    fl.info("\nstopped.")
+                    break
+            break
+        for job in queue:
+            try:
+                # re-check the job is still pending (a prior job may have changed things)
+                meta, _, _ = fl.read_job(job["path"])
+                if (meta.get("job-status") or "").strip().lower() != "pending":
+                    continue
+                run_one(job, opts, runner_log)
+                done_count += 1
+            except Exception as e:  # noqa: BLE001 — one job's error must not kill the batch
+                fl.info(fl.red(f"  runner error on {job['base']}: {e} — skipping"))
+
+    fl.info(fl.green(f"\ndone — {done_count} job(s) processed."))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        fl.info("\ninterrupted.")
+        sys.exit(130)

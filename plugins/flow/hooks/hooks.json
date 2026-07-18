@@ -1,0 +1,28 @@
+{
+  "description": "flow plugin — .todo is the user's parking lot: deny agent writes to it (PreToolUse), with per-session arming when the user says ALLOW TODO (UserPromptSubmit). Deferrals go to .todo-inbox.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/todo-readonly-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/todo-readonly-guard.sh\" --prompt-scan",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

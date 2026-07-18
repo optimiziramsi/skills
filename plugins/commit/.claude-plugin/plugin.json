@@ -1,0 +1,10 @@
+{
+  "name": "commit",
+  "version": "0.1.0",
+  "description": "The opsi house commit style for Claude — bare imperative single-line messages, commit-as-you-go cadence, safe staging, plus a format guard and an end-of-session commit nudge. Opt into this only if you want this specific commit convention; the git plugin's safety net is separate.",
+  "author": {
+    "name": "optimiziramsi"
+  },
+  "license": "MIT",
+  "keywords": ["commit", "git", "conventions", "workflow", "claude-code"]
+}

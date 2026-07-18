@@ -1,0 +1,76 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "opsi",
+  "description": "optimiziramsi's Claude Code toolkit — reusable skills, commands, agents, and hooks shared across projects.",
+  "owner": {
+    "name": "optimiziramsi"
+  },
+  "plugins": [
+    {
+      "name": "git",
+      "source": "./plugins/git",
+      "description": "Git safety net — a PreToolUse guard that blocks destructive/remote/history ops (push, pull, amend, rebase, reset --hard, --no-verify, discards) — plus a test-first hotfix skill (cherry-pick both ways, remotes user-owned). Commit style is the separate commit plugin.",
+      "category": "workflow"
+    },
+    {
+      "name": "commit",
+      "source": "./plugins/commit",
+      "description": "The opsi house commit style — bare imperative single-line messages, commit-as-you-go cadence, safe staging, a format guard, and an end-of-session nudge. Opt-in; pairs with the git safety net.",
+      "category": "workflow"
+    },
+    {
+      "name": "reporting",
+      "source": "./plugins/reporting",
+      "description": "The lean-reporting output contract, enforced — contract injected per prompt, re-pulsed mid-turn, and a Stop guard that blocks a narrating/over-long final message. Opt-in, like the commit style.",
+      "category": "workflow"
+    },
+    {
+      "name": "session",
+      "source": "./plugins/session",
+      "description": "Session continuity — write the handoff at session close, resume from it next time, and produce shareable session summaries.",
+      "category": "workflow"
+    },
+    {
+      "name": "review",
+      "source": "./plugins/review",
+      "description": "Structured code/architecture review — review + qa-gate skills (P0/HIGH/MED/LOW findings to .agent/reviews/) + read-only audit agents incl. doc-auditor (docs-vs-code drift) and isolation-reviewer (multi-tenant isolation).",
+      "category": "workflow"
+    },
+    {
+      "name": "repo",
+      "source": "./plugins/repo",
+      "description": "Repo-maintenance utilities — rename a file with its full reference cascade.",
+      "category": "workflow"
+    },
+    {
+      "name": "instructions",
+      "source": "./plugins/instructions",
+      "description": "Keep the agent instruction system alive — retro/lessons/audit skills + agents, a caps hook (instruction-surface size caps enforced mechanically), and a file-guard hook (edits to settings/hook guards ask the user).",
+      "category": "workflow"
+    },
+    {
+      "name": "flow",
+      "source": "./plugins/flow",
+      "description": "Work-management flow — plans, milestones, scope cuts, todo triage, a feedback ledger, and autonomous background execution (looper/grind runner); ships a todo-readonly-guard keeping .todo user-owned.",
+      "category": "workflow"
+    },
+    {
+      "name": "patterns",
+      "source": "./plugins/patterns",
+      "description": "A per-topic pattern registry — author + curate blessed code shapes (manage-patterns), verify code against them (2 agents), and mechanically gate edits governed only by non-blessed patterns (hooks).",
+      "category": "workflow"
+    },
+    {
+      "name": "worktree",
+      "source": "./plugins/worktree",
+      "description": "Git worktrees — the parallel-work protocol (review-gated slices landing to an integration branch) plus safety guards that keep edits inside the active worktree (mitigates claude-code #36182).",
+      "category": "workflow"
+    },
+    {
+      "name": "setup",
+      "source": "./plugins/setup",
+      "description": "One-time bootstrap — scaffold the .agent/ workspace index and point the entrypoint at it (scaffold), and write a house-style CLAUDE.md slim router of the hard rules that bind every session (scaffold-claude-md). No per-skill registration, no ongoing generation.",
+      "category": "workflow"
+    }
+  ]
+}

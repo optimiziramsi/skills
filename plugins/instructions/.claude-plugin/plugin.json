@@ -1,0 +1,10 @@
+{
+  "name": "instructions",
+  "version": "0.1.0",
+  "description": "Keep the agent instruction system alive — retro/lessons/instructions-audit/instructions-maintenance/rules-change skills + 2 audit agents, with apply-safe/propose-risky governance, a caps hook that mechanically enforces the instruction-surface size/count caps, and a file-guard hook that makes writes to enforcement surfaces (settings, hooks) ask the user.",
+  "author": {
+    "name": "optimiziramsi"
+  },
+  "license": "MIT",
+  "keywords": ["instructions", "retro", "lessons", "knowledge", "claude-code"]
+}

@@ -1,0 +1,94 @@
+---
+name: commit
+description: How and when to make git commits. Use proactively — commit completed work automatically as you go (after each logical unit / at topic close), without being asked, UNLESS the user has said to hold off. Also use whenever explicitly committing or saving changes, or when a git commit is about to happen. Triggers: "commit", "save changes", "commit this", finishing a coherent chunk of work.
+---
+
+# Commit
+
+How and when to commit. Two parts — **cadence** (when) and **format** (how). These rules are for
+model-authored commits.
+
+## Cadence — commit by default
+
+Commit automatically as you work. You do **not** need to ask permission:
+
+- After each completed logical unit of work (a feature, a fix, a config change).
+- At **topic close** — don't leave finished work uncommitted across topic boundaries.
+- After a plan step that produced file changes.
+
+**Opt-out.** If the user says "don't commit", "hold off on commits", or "I'll commit myself" —
+for the task or the whole session — respect it until they say otherwise. (A session may open with
+exactly that instruction.)
+
+**Do NOT commit:**
+
+- Mid-way through a multi-file change that would leave the tree broken.
+- Scratch / temp / experimental files, or anything that looks like secrets (`.env`, `secrets/…`).
+- Human-authored uncommitted work you didn't create — leave it, don't "tidy" it.
+
+Prefer **one commit per logical unit** over many partial commits — partial commits clutter history
+with intermediate states. If a topic genuinely spans independent stages, separate commits are fine.
+One logical change per commit; don't bundle unrelated changes.
+
+## Format — single line, imperative, describes the change
+
+- **Single line. No body. No trailers. No `Co-Authored-By`.**
+- Imperative mood: "add X", "fix Y", "remove Z", "refactor W".
+- Describe **what the commit contains**, not the workflow around it.
+
+```bash
+# correct
+git commit -m "add permission system with role-based access"
+git commit -m "fix race condition in score reporting"
+git commit -m "remove unused projection rebuild endpoint"
+
+# wrong — has a body or trailers
+git commit -m "add permissions" -m "implements role checks…"
+
+# wrong — vague, meta, or a workflow prefix
+git commit -m "wip"
+git commit -m "phase 3: permissions"
+git commit -m "updates"
+git commit -m "commit for review"
+```
+
+If a commit unavoidably touches several things, summarize the dominant change:
+`refactor server package into boot/services/utils structure`.
+
+## Staging — stage by name
+
+Stage specific files. Avoid `git add -A` / `git add .` unless you're certain the working tree holds
+nothing unexpected.
+
+```bash
+# correct
+git add src/permissions/index.ts src/permissions/types.ts
+
+# risky — may pick up .env, debug files, scratch work
+git add -A
+```
+
+## Never without explicit user permission
+
+- **Never push or pull** — the user owns remote sync. `git fetch` for read-only inspection is fine.
+- **Never amend** an existing commit — create a new one. Amending rewrites history.
+- **Never force-push**, rebase, or `filter-branch` — history is append-only.
+- **Never `git reset --hard`** (or `--merge`/`--keep`) — it clobbers the worktree. Plain
+  `git reset <file>` to unstage is fine.
+- **Never discard uncommitted work** — no `git clean -f`, `git stash drop/clear`,
+  `git checkout -- <path>` / `checkout .`, or `git restore` (only `restore --staged` to unstage).
+  The tree may hold the user's WIP.
+- **Never skip hooks** (`--no-verify`). If a hook fails, fix the underlying cause.
+
+If a workflow seems to require any of these, **stop and ask** the user.
+
+> **Enforcement is split across two plugins.** The *message format* above (single line, no
+> `Co-Authored-By`, no body) is enforced by this plugin's `commit-format` hook (escape hatch
+> `COMMIT_FORMAT_OFF=1`). The *destructive git ops* (push/pull/amend/force/`reset --hard`/discards/
+> `--no-verify`) are enforced by the separate `git` plugin's `git-guard` hook — enable the `git`
+> plugin for that safety net (escape hatch `GIT_GUARD_OFF=1`). Both fail open.
+
+## Human commits
+
+Human commits may use `wip`, `tmp`, or other shorthand. That's fine — don't "fix" them or ask about
+them. These rules apply to model-authored commits only.

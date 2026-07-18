@@ -1,0 +1,10 @@
+{
+  "name": "session",
+  "version": "0.1.0",
+  "description": "Session continuity for Claude — handoff (write next-session notes) and continue (resume from them). Planned: session-summary, collab, session-start hook.",
+  "author": {
+    "name": "optimiziramsi"
+  },
+  "license": "MIT",
+  "keywords": ["session", "handoff", "continuity", "claude-code"]
+}

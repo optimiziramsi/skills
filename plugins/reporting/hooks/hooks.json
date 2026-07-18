@@ -1,0 +1,38 @@
+{
+  "description": "reporting plugin — inject the lean-reporting output contract on every prompt, re-pulse it every Nth tool call, and block a contract-violating final message at Stop (forcing a compact rewrite)",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/brevity-reminder.txt\" 2>/dev/null || echo '⚠️ brevity-reminder DISARMED — contract file unreadable.'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/contract-pulse.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/report-guard.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

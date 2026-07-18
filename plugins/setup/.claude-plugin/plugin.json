@@ -1,0 +1,10 @@
+{
+  "name": "setup",
+  "version": "0.1.0",
+  "description": "One-time bootstrap for the opsi toolkit — scaffold the `.agent/` workspace with a static index and point the entrypoint at it (`scaffold`), and write a house-style CLAUDE.md slim router of the hard rules that bind every session (`scaffold-claude-md`). No per-skill registration, no ongoing generation.",
+  "author": {
+    "name": "optimiziramsi"
+  },
+  "license": "MIT",
+  "keywords": ["setup", "scaffold", "bootstrap", "init", "claude-md", "conventions", "claude-code"]
+}

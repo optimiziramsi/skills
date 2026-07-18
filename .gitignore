@@ -1,0 +1,19 @@
+# migration staging — per-project .claude copies + review notes; not part of the marketplace
+_review/
+
+# this repo's own working continuity (handoff, todo) — private, not part of the public marketplace
+.agent/
+.todo
+.todo-inbox
+
+# machine-local Claude settings (registers this checkout as a directory marketplace to dogfood it)
+.claude/settings.local.json
+
+# Python bytecode from running the flow runners
+__pycache__/
+*.pyc
+
+# OS cruft
+.DS_Store
+
+.idea/

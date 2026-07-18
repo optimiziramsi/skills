@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+"""grind — the flow grind runner.
+
+Runs ONE mission file (`.agent/grind/<topic>.md`) as the SAME prompt N times. Each iteration
+is a fresh headless Claude session that reads the mission's cross-iteration log (its only
+memory), picks 1–few new items per the mission's picking rules, commits them, and appends
+a block to the log. Loops until the mission flips to `status: done`, a `done-check` passes,
+or a cap is hit. The runner never commits — the executing agent owns all git operations.
+
+Usage:
+  grind <mission.md> [options]
+
+Options:
+  --once             run exactly one iteration and stop
+  --status           show mission status + iteration count and exit
+  --dry-run          show what one iteration would run, execute nothing
+  --reset            clear the iteration counter (start from zero) and exit
+  -y, --yes          skip the arm-confirmation (for unattended/cron runs)
+  --dir DIR          mission directory (default: .agent/grind)
+  -h, --help         this help
+
+Mission frontmatter (see the `grind` skill for the full spec):
+  status: active|done|paused    title: ...    model: opus|sonnet
+  max-turns: 40 (advisory)   effort: xhigh|max   scope-hint: 1-3 items
+  max-iterations: 40   done-check: "<shell cmd; exit 0 = mission complete>"
+
+Env escape hatches: CLAUDE_BIN, FLOW_ALLOW_NESTED=1, FLOW_CLAUDE_PERMISSION_MODE.
+"""
+import os
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _flowlib as fl  # noqa: E402
+
+HARD_CAP = 500  # absolute runtime cap regardless of max-iterations
+GITIGNORE_BODY = (
+    "# transient per-mission state — not worth committing\n"
+    "# (the mission .md, its .log memory, and runner_*.log overview ARE worth keeping)\n"
+    "*.iter\n*.attempt\n.lint-baseline.txt\n*.jsonl\n*.run.log\n"
+)
+
+
+def parse_args(argv):
+    opts = {"mission": None, "once": False, "status": False, "dry_run": False,
+            "reset": False, "yes": False, "dir": ".agent/grind"}
+    it = iter(argv)
+    for a in it:
+        if a in ("-h", "--help"):
+            print(__doc__)
+            sys.exit(0)
+        elif a == "--once":
+            opts["once"] = True
+        elif a == "--status":
+            opts["status"] = True
+        elif a == "--dry-run":
+            opts["dry_run"] = True
+        elif a == "--reset":
+            opts["reset"] = True
+        elif a in ("-y", "--yes"):
+            opts["yes"] = True
+        elif a == "--dir":
+            opts["dir"] = next(it)
+        elif a.startswith("-"):
+            fl.die(f"unknown argument: {a} (try --help)")
+        elif opts["mission"] is None:
+            opts["mission"] = a
+        else:
+            fl.die(f"unexpected extra argument: {a}")
+    return opts
+
+
+def resolve_mission(opts):
+    m = opts["mission"]
+    if not m:
+        fl.die("no mission file given. Usage: grind <mission.md>  (try --help)")
+    candidates = [m, os.path.join(opts["dir"], m),
+                  os.path.join(opts["dir"], os.path.basename(m))]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    fl.die(f"mission file not found: {m} (looked in ./ and {opts['dir']}/)")
+
+
+def iter_path(mission_path, job_dir):
+    stem = os.path.splitext(os.path.basename(mission_path))[0]
+    return os.path.join(job_dir, f"{stem}.iter")
+
+
+def read_iter(mission_path, job_dir):
+    p = iter_path(mission_path, job_dir)
+    try:
+        with open(p) as fh:
+            return int(fh.read().strip() or "0")
+    except (OSError, ValueError):
+        return 0
+
+
+def write_iter(mission_path, job_dir, n):
+    with open(iter_path(mission_path, job_dir), "w") as fh:
+        fh.write(str(n) + "\n")
+
+
+def ensure_gitignore(job_dir):
+    gi = os.path.join(job_dir, ".gitignore")
+    if not os.path.exists(gi):
+        with open(gi, "w") as fh:
+            fh.write(GITIGNORE_BODY)
+
+
+def run_done_check(cmd):
+    """Return True if the mission's done-check passes (exit 0). No cmd → never done.
+
+    shell=True is intentional and by-design: `done-check` is a shell one-liner the user
+    authored in their OWN mission frontmatter (the documented examples use pipes, e.g.
+    `grep -r TODO src/ | wc -l | awk '{exit ($1==0?0:1)}'`), so it needs shell semantics.
+    It is not a trust boundary — the runner already executes the whole mission as an
+    autonomous agent with full permissions, gated behind the explicit arm-confirmation.
+    """
+    if not cmd:
+        return False
+    try:
+        return subprocess.run(cmd, shell=True).returncode == 0  # noqa: S602 — see docstring
+    except Exception as e:  # noqa: BLE001
+        fl.info(fl.yellow(f"  done-check errored ({e}); treating as not-done"))
+        return False
+
+
+def compose_prompt(mission_path, body, meta, iteration, topic, log_path):
+    scope_hint = meta.get("scope-hint", "1-3 items")
+    status_contract = (
+        f"Read the mission log `{log_path}` FIRST — it is your ONLY memory of what prior "
+        f"iterations did; skip anything already listed as done or fully scanned. Pick "
+        f"{scope_hint} per the mission's picking rules, do the work, and commit each item "
+        f"with a single-line message ending `(grind: {topic} #{iteration})`. Append one "
+        f"iteration block to `{log_path}` summarizing what you did/scanned/deferred. If no "
+        f"candidates remain, set the mission's frontmatter `status: done`. Do NOT "
+        f"pre-enumerate or redo logged work; stay within the mission's out-of-scope list."
+    )
+    protocol = fl.EXECUTING_PROTOCOL.format(status_contract=status_contract)
+    return (
+        f"{protocol}\n\n"
+        f"This is iteration #{iteration} of grind mission `{os.path.basename(mission_path)}` "
+        f"(topic: {topic}). The mission definition follows.\n\n"
+        f"--- BEGIN MISSION ---\n{body}\n--- END MISSION ---\n"
+    )
+
+
+def print_status(mission_path, job_dir, meta, iteration):
+    fl.info(fl.bold(f"\nmission: {os.path.basename(mission_path)}"))
+    fl.info(f"  title:          {meta.get('title', '(none)')}")
+    fl.info(f"  status:         {meta.get('status', '(none)')}")
+    fl.info(f"  iterations run: {iteration}")
+    fl.info(f"  max-iterations: {meta.get('max-iterations', '(default)')}  (hard cap {HARD_CAP})")
+    dc = meta.get("done-check", "")
+    if dc:
+        passed = run_done_check(dc)
+        fl.info(f"  done-check:     {'PASS (complete)' if passed else 'not yet'}  [{dc}]")
+    fl.info("")
+
+
+def arm_or_exit(opts, mission_path, meta):
+    if opts["yes"]:
+        return
+    fl.info(fl.yellow(
+        f"\n⚠ Mission '{meta.get('title', os.path.basename(mission_path))}' will run "
+        f"UNATTENDED with full tool permissions ({fl.DEFAULT_PERMISSION_MODE}) — the agent "
+        "edits files and runs git/shell commands with no prompts, looping until done."))
+    if not sys.stdin.isatty():
+        fl.die("not a TTY and -y not given — refusing to run unattended without explicit --yes.")
+    try:
+        ans = input("  Type 'yes' to proceed: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        fl.die("aborted.")
+    if ans != "yes":
+        fl.die("aborted.")
+
+
+def main():
+    opts = parse_args(sys.argv[1:])
+    job_dir = opts["dir"]
+    mission_path = resolve_mission(opts)
+    stem = os.path.splitext(os.path.basename(mission_path))[0]
+    topic = stem.split("_", 2)[-1] if "_" in stem else stem  # drop YYMMDD_HHMMSS prefix
+    mem_log = os.path.join(job_dir, f"{stem}.log")           # the agent's cross-iteration MEMORY
+    transcript_log = os.path.join(job_dir, f"{stem}.run.log")  # runner transcript (kept OUT of memory)
+    jsonl_path = os.path.join(job_dir, f"{stem}.jsonl")
+
+    if opts["reset"]:
+        p = iter_path(mission_path, job_dir)
+        if os.path.exists(p):
+            os.remove(p)
+        fl.info(fl.green(f"reset iteration counter for {stem}."))
+        return
+
+    meta, body, _ = fl.read_job(mission_path)
+    iteration = read_iter(mission_path, job_dir)
+
+    if opts["status"]:
+        print_status(mission_path, job_dir, meta, iteration)
+        return
+
+    if opts["dry_run"]:
+        fl.info(fl.bold(f"dry run — mission {stem}, next is iteration #{iteration + 1}"))
+        fl.info(f"  status={meta.get('status')}  model={meta.get('model', fl.DEFAULT_MODEL)}  "
+                f"scope-hint={meta.get('scope-hint', '1-3 items')}")
+        fl.info(fl.dim("  would run the mission prompt as a fresh claude session; nothing executed."))
+        return
+
+    fl.nested_guard()
+    fl.ensure_claude_available()
+
+    status = (meta.get("status") or "active").strip().lower()
+    if status != "active":
+        fl.die(f"mission status is '{status}', not 'active'. Set status: active (or --reset) to run.")
+
+    max_iterations = min(fl.coerce_int(meta, "max-iterations", 40), HARD_CAP)
+    model = (meta.get("model") or fl.DEFAULT_MODEL).strip()
+    done_check = meta.get("done-check", "")
+
+    os.makedirs(job_dir, exist_ok=True)
+    ensure_gitignore(job_dir)
+    open(mem_log, "a").close()  # ensure the memory log exists for iteration 1
+
+    arm_or_exit(opts, mission_path, meta)
+    runner_log = os.path.join(job_dir, f"runner_{fl.stamp()}.log")
+    fl.info(fl.dim(f"runner log: {runner_log}"))
+
+    while True:
+        if iteration >= max_iterations:
+            fl.info(fl.yellow(f"reached max-iterations ({max_iterations}). Stopping."))
+            fl.set_frontmatter_field(mission_path, "status", "done")
+            break
+
+        meta, body, _ = fl.read_job(mission_path)  # re-read: status editable mid-run
+        status = (meta.get("status") or "active").strip().lower()
+        if status != "active":
+            fl.info(fl.green(f"mission status is '{status}'. Stopping."))
+            break
+
+        iteration += 1
+        fl.info(fl.bold(f"▶ iteration #{iteration}") + fl.dim(f"  (model {model}, topic {topic})"))
+        with open(runner_log, "a", encoding="utf-8") as rl:
+            rl.write(f"[{fl.human_now()}] iter {iteration} model={model}\n")
+
+        prompt = compose_prompt(mission_path, body, meta, iteration, topic, mem_log)
+        code, elapsed, rate_limited = fl.run_claude_job(
+            prompt, model, fl.DEFAULT_PERMISSION_MODE, transcript_log, jsonl_path,
+            env_extra={"GRIND_ITERATION": str(iteration), "GRIND_TOPIC": topic},
+        )
+        write_iter(mission_path, job_dir, iteration)
+        fl.info((fl.green if code == 0 else fl.red)(f"  → exit {code} ({int(elapsed)}s)"))
+
+        if code != 0 and (rate_limited or elapsed < fl.RATE_LIMIT_FAST_FAIL_SECS):
+            fl.backoff_sleep(1)
+
+        if run_done_check(done_check):
+            fl.info(fl.green("done-check passed — mission complete."))
+            fl.set_frontmatter_field(mission_path, "status", "done")
+            break
+
+        meta_after, _, _ = fl.read_job(mission_path)
+        if (meta_after.get("status") or "").strip().lower() == "done":
+            fl.info(fl.green("mission flipped itself to done."))
+            break
+
+        if opts["once"]:
+            fl.info(fl.dim("--once: stopping after one iteration."))
+            break
+
+    fl.info(fl.green(f"\ngrind finished — {iteration} iteration(s) run."))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        fl.info("\ninterrupted (iteration counter saved; re-run to resume, --reset to restart).")
+        sys.exit(130)
