@@ -19,6 +19,7 @@ system consistent over time — so you fix something once and every future sessi
 | hook | `caps` | SessionStart — surface any instruction-surface **cap breaches** (file sizes + skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct breach-set on ANY breach present (pre-existing included, not only what this session bloated). Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails open; escape hatch `CAPS_GUARD_OFF=1`; self-test `--test`. |
 | hook | `file-guard` | PreToolUse — writes to **T3 enforcement surfaces** (`.claude/settings*.json`, `.claude/hooks/`) downgrade to an **ask**: a session must not silently rewrite its own guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch `FILE_GUARD_OFF=1`; self-test `--test`. |
 | engine | `bin/meta-lint` | Config-driven **instruction-system linter** — 17 mechanical checks (cross-refs, lessons index/priority, agents/skills/commands symmetry, pattern routes, filenames, dup tripwires, sizes in lines OR chars, counts, staleness, boards, audit stamp). Activates only where a project ships `.agent/meta-lint.json`; pulsed at SessionStart via `--fast` with a loud-DISARM `\|\| echo` fallback. Escape hatch `META_LINT_OFF=1`; self-test `--test`. |
+| hook (engine) | `tripwire-guard` | PreToolUse `Bash` — runs **project-owned command tripwires** from `.agent/guards.d/*.sh` against every Bash command: a guard exits 2 to block (first block wins, reason fed to the agent), 0 to allow, anything else becomes a loud non-blocking warning. No dir/guards → silent no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch `TRIPWIRE_GUARD_OFF=1`; jq-missing loud-DISARM; self-test `--test` (runs each guard's `tripwire_test` too). |
 
 The full knowledge system: **define** (`instructions-maintenance`) · **capture** (`lessons`) ·
 **harvest** (`retro`) · **maintain** (`instructions-audit`) · **change** (`rules-change`).
@@ -51,6 +52,29 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
 - **Example policy:** [`examples/meta-lint.rabbit-run.json`](examples/meta-lint.rabbit-run.json) —
   a full-strength real-project config (line caps per file class, 4 dup tripwires, RR counts,
   board + audit + routes checks all armed). Copy and trim for your project.
+
+## tripwire-guard — project-owned command tripwires
+
+The ENGINE is a PreToolUse `Bash` hook (`hooks/tripwire-guard.sh`); the PROJECT supplies the
+guards as **`.agent/guards.d/*.sh`** scripts (no dir → silent no-op). Each guard is executed in
+sorted order with the Bash command in `$TRIPWIRE_COMMAND` and the full tool-input JSON in
+`$TRIPWIRE_INPUT` + on stdin: **exit 2 + printed reason = block** (first block wins), exit 0 =
+allow, anything else = loud non-blocking warning. A guard that also defines `tripwire_test` (and
+gates its dispatch with `[ "${BASH_SOURCE[0]}" = "$0" ]`) gets its self-test run by the engine's
+`--test`.
+
+Shipped, ready-to-copy examples in [`examples/guards.d/`](examples/guards.d/) (integration branch
+via `TRIPWIRE_INTEGRATION_BRANCH`, default `develop`):
+
+- **`land-check.sh`** — blocks a landing push (`git push . HEAD:<integration>`) when HEAD isn't
+  rebased onto the branch's *current* tip, and when the land would resurrect a board-file line
+  (`TRIPWIRE_BOARD_FILE`, default `.agent/worktrees.md`) that the integration branch deleted.
+- **`docs-drift-warn.sh`** — warn-only: a landing push that changes source
+  (`TRIPWIRE_SRC_RX`) without touching docs (`TRIPWIRE_DOCS_RX`).
+
+Escape hatches: prefix the ONE false-positiving command with `TRIPWIRE_SKIP=1` (one-shot, visible
+in the transcript); `TRIPWIRE_GUARD_OFF=1` kill switch; `TRIPWIRE_GUARDS_DIR` overrides the
+discovery dir. Missing jq disarms LOUDLY (systemMessage), never silently.
 
 ## Enable
 
