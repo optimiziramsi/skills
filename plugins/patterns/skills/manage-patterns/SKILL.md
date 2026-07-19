@@ -95,11 +95,7 @@ The five `####` sub-sections appear in that exact order. The checklist heading i
 
 ## The routes table + enforcement
 
-`generate-pattern-routes.py` reads every pattern's `paths:`/`route:`/`status:` frontmatter and writes `.agent/patterns/pattern-routes.tsv` (one row per glob). The `pattern-guards` hook reads that table on every Write/Edit. You rarely run the generator by hand: the hook **auto-regenerates the TSV** whenever you write a registry `*.md`, and reminds you to **commit the regenerated TSV in the same commit as the pattern change**. If you edit patterns outside the Write/Edit tools (bash, sed), run it manually:
-
-```bash
-python3 "$CLAUDE_PLUGIN_ROOT/hooks/generate-pattern-routes.py"
-```
+`generate-pattern-routes.py` reads every pattern's `paths:`/`route:`/`status:` frontmatter and writes `.agent/patterns/pattern-routes.tsv` (one row per glob). The `pattern-guards` hook reads that table on every Write/Edit. You rarely run the generator by hand: the hook **auto-regenerates the TSV** whenever you write a registry `*.md`, and reminds you to **commit the regenerated TSV in the same commit as the pattern change**. If you edit patterns outside the Write/Edit tools (bash, sed), the simplest manual regen is to touch any registry file **via the Write/Edit tools** (append/remove a trailing newline) so the hook's auto-regen fires. Alternatively run the generator directly — `$CLAUDE_PLUGIN_ROOT` is not reliably an exported shell variable in Bash tool sessions, so locate the plugin's `hooks/` dir first (e.g. from the hook's own output/config, or the plugin cache under `~/.claude/plugins/`) and run its `generate-pattern-routes.py` with `python3`.
 
 ## Self-questions before blessing a topic
 

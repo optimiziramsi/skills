@@ -38,7 +38,8 @@ TSV_NAME = "pattern-routes.tsv"
 
 
 def registry_rel() -> str:
-    return os.environ.get("PATTERN_REGISTRY_DIR", os.path.join(".agent", "patterns"))
+    reg = os.environ.get("PATTERN_REGISTRY_DIR", os.path.join(".agent", "patterns"))
+    return reg.rstrip("/" + os.sep)  # normalized — a trailing slash must not break path regexes
 
 
 def glob_to_regex(glob: str) -> "re.Pattern[str]":
@@ -63,19 +64,44 @@ def glob_to_regex(glob: str) -> "re.Pattern[str]":
     return re.compile("^" + "".join(out) + "$")
 
 
+def regen_tsv(root: str) -> None:
+    import subprocess
+
+    gen = os.path.join(os.path.dirname(os.path.abspath(__file__)), "generate-pattern-routes.py")
+    try:
+        subprocess.run(
+            [sys.executable, gen],
+            env={**os.environ, "CLAUDE_PROJECT_DIR": root},
+            capture_output=True,
+            timeout=30,
+        )
+    except Exception:
+        pass  # fail-open
+
+
 def load_routes(root: str):
     path = os.path.join(root, registry_rel(), TSV_NAME)
     routes = []
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.rstrip("\n")
-            if not line or line.startswith("#"):
-                continue
-            parts = line.split("\t")
-            if len(parts) != 4:
-                continue
-            glob, pattern, status, route = parts
-            routes.append((glob_to_regex(glob), glob, pattern, status, route))
+    try:
+        lines = open(path, encoding="utf-8").read().splitlines()
+    except OSError:
+        # No routes TSV. A registry-less project is a SILENT no-op — never a DISARMED message.
+        # If the registry dir exists the TSV just hasn't been generated yet: try one regen.
+        if not os.path.isdir(os.path.join(root, registry_rel())):
+            return []
+        regen_tsv(root)
+        try:
+            lines = open(path, encoding="utf-8").read().splitlines()
+        except OSError:
+            return []
+    for line in lines:
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) != 4:
+            continue
+        glob, pattern, status, route = parts
+        routes.append((glob_to_regex(glob), glob, pattern, status, route))
     return routes
 
 
@@ -128,22 +154,14 @@ def maybe_regen_routes(root: str, rel: str):
     reg = registry_rel().replace(os.sep, "/")
     if not re.match(rf"^{re.escape(reg)}/[^/]+\.md$", rel) or rel.endswith("README.md"):
         return None
-    import subprocess
-
     tsv = os.path.join(root, registry_rel(), TSV_NAME)
-    gen = os.path.join(os.path.dirname(os.path.abspath(__file__)), "generate-pattern-routes.py")
     try:
         with open(tsv, encoding="utf-8") as f:
             before = f.read()
     except OSError:
         before = ""
     try:
-        subprocess.run(
-            [sys.executable, gen],
-            env={**os.environ, "CLAUDE_PROJECT_DIR": root},
-            capture_output=True,
-            timeout=30,
-        )
+        regen_tsv(root)
         with open(tsv, encoding="utf-8") as f:
             after = f.read()
     except Exception:
@@ -246,12 +264,12 @@ def run_tests() -> int:
     env = {**os.environ, "CLAUDE_PROJECT_DIR": root}
     me = os.path.abspath(__file__)
 
-    def invoke(event, file_path, session=""):
+    def invoke(event, file_path, session="", extra_env=None):
         session = session or s1
         payload = {"hook_event_name": event, "session_id": session, "cwd": root,
                    "tool_input": {"file_path": os.path.join(root, file_path)}}
         return subprocess.run([sys.executable, me], input=json.dumps(payload),
-                              capture_output=True, text=True, env=env)
+                              capture_output=True, text=True, env={**env, **(extra_env or {})})
 
     failures = []
 
@@ -293,6 +311,35 @@ def run_tests() -> int:
     check("regen: unchanged rewrite stays silent", r.stdout.strip() == "", r.stdout)
     r = invoke("PreToolUse", ".agent/patterns/x-new.md", s3)
     check("regen: PreToolUse never regenerates", r.returncode == 0 and r.stdout.strip() == "", r.stdout)
+
+    # trailing-slash PATTERN_REGISTRY_DIR must not break the regen-trigger regex
+    with open(os.path.join(reg, "y-new.md"), "w") as f:
+        f.write('---\nstatus: blessed\npaths:\n  - "packages/y/**"\n---\nbody\n')
+    r = invoke("PostToolUse", ".agent/patterns/y-new.md", s3,
+               extra_env={"PATTERN_REGISTRY_DIR": ".agent/patterns/"})
+    check("regen: trailing-slash registry dir still triggers", "auto-regenerated" in r.stdout, r.stdout)
+
+    # registry-less project: no registry dir at all → SILENT no-op (no DISARMED spam)
+    bare = tempfile.mkdtemp(prefix="pattern-guards-bare-")
+    payload = {"hook_event_name": "PreToolUse", "session_id": s3, "cwd": bare,
+               "tool_input": {"file_path": os.path.join(bare, "src/app.ts")}}
+    r = subprocess.run([sys.executable, me], input=json.dumps(payload), capture_output=True,
+                       text=True, env={**os.environ, "CLAUDE_PROJECT_DIR": bare})
+    check("no registry: silent no-op (no DISARMED)",
+          r.returncode == 0 and r.stdout.strip() == "", r.stdout)
+
+    # registry dir present but TSV missing → one regen attempt restores gating
+    root2 = tempfile.mkdtemp(prefix="pattern-guards-regen-")
+    reg2 = os.path.join(root2, ".agent", "patterns")
+    os.makedirs(reg2)
+    with open(os.path.join(reg2, "z.md"), "w") as f:
+        f.write('---\nstatus: TODO\npaths:\n  - "apps/z/**"\n---\nbody\n')
+    payload = {"hook_event_name": "PreToolUse", "session_id": s3, "cwd": root2,
+               "tool_input": {"file_path": os.path.join(root2, "apps/z/main.ts")}}
+    r = subprocess.run([sys.executable, me], input=json.dumps(payload), capture_output=True,
+                       text=True, env={**os.environ, "CLAUDE_PROJECT_DIR": root2})
+    check("missing TSV: regen attempt restores gating", r.returncode == 2 and "z.md" in r.stderr, r.stderr)
+    check("missing TSV: TSV generated", os.path.isfile(os.path.join(reg2, TSV_NAME)), "")
 
     r = subprocess.run([sys.executable, me], input="not json", capture_output=True, text=True, env=env)
     check("fail-open: garbage stdin allows", r.returncode == 0, r.stderr)
