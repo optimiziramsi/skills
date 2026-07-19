@@ -7,6 +7,7 @@
           {
             "type": "command",
             "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/brevity-reminder.txt\" 2>/dev/null || echo '⚠️ brevity-reminder DISARMED — contract file unreadable.'",
+            "statusMessage": "brevity check",
             "timeout": 10
           }
         ]
@@ -17,7 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/contract-pulse.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/contract-pulse.sh\" 2>/dev/null || echo '{\"systemMessage\":\"⚠️ contract-pulse DISARMED — hook failed to execute.\"}'",
+            "statusMessage": "contract pulse",
             "timeout": 10
           }
         ]
@@ -29,6 +31,7 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/report-guard.py\"",
+            "statusMessage": "report guard",
             "timeout": 15
           }
         ]
