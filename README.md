@@ -15,13 +15,22 @@ In your `settings.json` (user-level or a project's `.claude/settings.json`):
   },
   "enabledPlugins": {
     "git@opsi": true,
+    "commit@opsi": true,
+    "setup@opsi": true,
+    "reporting@opsi": true,
     "session@opsi": true,
-    "flow@opsi": true
+    "instructions@opsi": true,
+    "review@opsi": true,
+    "repo@opsi": true,
+    "flow@opsi": true,
+    "patterns@opsi": true,
+    "worktree@opsi": true
   }
 }
 ```
 
-Enable only the plugins a given project needs — a plugin's hooks activate wherever it's enabled.
+The snippet lists every plugin the marketplace ships — enable only the ones a given project needs
+(delete the rest); a plugin's hooks activate wherever it's enabled.
 
 ## Plugins
 
