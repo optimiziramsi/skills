@@ -23,12 +23,20 @@ if [ "${1:-}" = "--test" ]; then
   if printf '%s' "$out" | grep -q 'CLAUDE.md 7000c > 6000c'; then echo "PASS  oversized CLAUDE.md surfaced"; else echo "FAIL  oversized CLAUDE.md: $out"; fails=$((fails+1)); fi
   out=$(CAPS_GUARD_OFF=0 CAP_CLAUDE=8000 CLAUDE_PROJECT_DIR="$tmp/fat" bash "$0" <<<'{"hook_event_name":"SessionStart"}')
   if [ -z "$out" ]; then echo "PASS  CAP_CLAUDE override respected"; else echo "FAIL  override: $out"; fails=$((fails+1)); fi
+  mkdir -p "$tmp/fat/.agent" && echo '{}' > "$tmp/fat/.agent/meta-lint.json"
+  out=$(CAPS_GUARD_OFF=0 CLAUDE_PROJECT_DIR="$tmp/fat" bash "$0" <<<'{"hook_event_name":"SessionStart"}')
+  if [ -z "$out" ]; then echo "PASS  meta-lint.json present → caps skips (engine supersedes)"; else echo "FAIL  supersede: $out"; fails=$((fails+1)); fi
   rm -rf "$tmp"
   [ "$fails" -eq 0 ] && { echo "all tests passed"; exit 0; }
   echo "$fails FAILED"; exit 1
 fi
 
 [ "${CAPS_GUARD_OFF:-0}" = "1" ] && exit 0
+
+# meta-lint supersedes caps: a project that ships .agent/meta-lint.json opted into the
+# config-driven engine (bin/meta-lint, SessionStart --fast pulse) — its size/count caps are a
+# superset of these house defaults, so skip to avoid double-reporting.
+[ -f "${CLAUDE_PROJECT_DIR:-$(pwd)}/.agent/meta-lint.json" ] && exit 0
 
 input=$(cat 2>/dev/null || true)
 event=$(printf '%s' "$input" | jq -r '.hook_event_name // empty' 2>/dev/null || true)

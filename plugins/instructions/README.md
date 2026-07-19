@@ -18,6 +18,7 @@ system consistent over time — so you fix something once and every future sessi
 | agent | `instructions-auditor` | Read-only sweep of the instruction surface → severity-ranked findings with `file:line` evidence. Used by `instructions-audit`. |
 | hook | `caps` | SessionStart — surface any instruction-surface **cap breaches** (file sizes + skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct breach-set on ANY breach present (pre-existing included, not only what this session bloated). Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails open; escape hatch `CAPS_GUARD_OFF=1`; self-test `--test`. |
 | hook | `file-guard` | PreToolUse — writes to **T3 enforcement surfaces** (`.claude/settings*.json`, `.claude/hooks/`) downgrade to an **ask**: a session must not silently rewrite its own guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch `FILE_GUARD_OFF=1`; self-test `--test`. |
+| engine | `bin/meta-lint` | Config-driven **instruction-system linter** — 17 mechanical checks (cross-refs, lessons index/priority, agents/skills/commands symmetry, pattern routes, filenames, dup tripwires, sizes in lines OR chars, counts, staleness, boards, audit stamp). Activates only where a project ships `.agent/meta-lint.json`; pulsed at SessionStart via `--fast` with a loud-DISARM `\|\| echo` fallback. Escape hatch `META_LINT_OFF=1`; self-test `--test`. |
 
 The full knowledge system: **define** (`instructions-maintenance`) · **capture** (`lessons`) ·
 **harvest** (`retro`) · **maintain** (`instructions-audit`) · **change** (`rules-change`).
@@ -30,7 +31,26 @@ The full knowledge system: **define** (`instructions-maintenance`) · **capture*
 - **Governance:** *safe* changes (wording, broken pointers, dedup, compaction) apply directly;
   *risky* changes (add/remove rule, cap change, behavior change) are proposed for approval.
 - **Mechanical checks:** the shipped `caps` hook enforces the size/count caps at session start + stop;
-  run the project's linter for anything else, else spot-check inline.
+  projects that want the full structural sweep opt into the `meta-lint` engine below.
+
+## meta-lint — the config-driven instruction-system linter
+
+The ENGINE ships in this plugin (`bin/meta-lint`, python3 stdlib only); each project supplies the
+POLICY via **`.agent/meta-lint.json`**. No config file → silent no-op (projects opt IN). A minimal
+`{}` config lints the opsi house layout with the default caps; everything is overridable: enabled
+`checks`, cap numbers **and units** (`lines` vs `chars`, most-specific entry wins per unit),
+directory `layout`, `filenames` conventions, `dup` tripwire pairs, `boards`, the `audit` stamp
+file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide allows capped).
+
+- **Modes:** full run (findings listed, exit 1 — advisory), `--fast` (one-line summary, exit 0 —
+  the SessionStart pulse), `--test` (self-test), `--config P` / `--root D` overrides.
+- **Wiring:** SessionStart runs `meta-lint --fast || echo "⚠️ meta-lint DISARMED …"` — fail-open
+  but **loud**: the fallback fires only when the engine itself can't run, never on findings.
+- **Coexistence:** where `.agent/meta-lint.json` exists, **meta-lint supersedes `caps.sh`** —
+  caps.sh detects the config and skips itself, so nothing double-reports.
+- **Example policy:** [`examples/meta-lint.rabbit-run.json`](examples/meta-lint.rabbit-run.json) —
+  a full-strength real-project config (line caps per file class, 4 dup tripwires, RR counts,
+  board + audit + routes checks all armed). Copy and trim for your project.
 
 ## Enable
 

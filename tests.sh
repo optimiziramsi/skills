@@ -31,11 +31,15 @@ else
 fi
 
 note ""
-note "=== 3. hook self-tests (every hook that advertises --test) ==="
-for h in plugins/*/hooks/*.py plugins/*/hooks/*.sh; do
+note "=== 3. self-tests (every hook / bin tool that advertises --test) ==="
+for h in plugins/*/hooks/*.py plugins/*/hooks/*.sh plugins/*/bin/*; do
   [ -f "$h" ] || continue
   grep -q -e '--test' "$h" || continue
-  case "$h" in *.py) runner=python3 ;; *) runner=bash ;; esac
+  case "$h" in
+    *.py) runner=python3 ;;
+    *.sh) runner=bash ;;
+    *) if head -1 "$h" | grep -q python; then runner=python3; else runner=bash; fi ;;
+  esac
   if out=$("$runner" "$h" --test 2>&1); then
     note "ok    $h ($(grep -c -E '^(PASS|ok )' <<<"$out" | tr -d ' ') tests)"
   else

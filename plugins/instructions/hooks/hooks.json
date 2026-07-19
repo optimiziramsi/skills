@@ -1,5 +1,5 @@
 {
-  "description": "instructions plugin — surface instruction-surface cap breaches (file sizes + counts) at session start and Stop, and downgrade writes to T3 enforcement surfaces (Claude settings, hook scripts) to an ask",
+  "description": "instructions plugin — surface instruction-surface cap breaches (file sizes + counts) at session start and Stop, pulse the config-driven meta-lint engine at session start where a project ships .agent/meta-lint.json, and downgrade writes to T3 enforcement surfaces (Claude settings, hook scripts) to an ask",
   "hooks": {
     "PreToolUse": [
       {
@@ -20,6 +20,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/caps.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/meta-lint\" --fast || echo \"⚠️ meta-lint DISARMED — engine failed to run; instruction-system checks did NOT run this session.\"",
+            "timeout": 30
           }
         ]
       }
