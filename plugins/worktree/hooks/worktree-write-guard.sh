@@ -4,9 +4,32 @@
 # checkout (or a sibling worktree). Mitigates anthropics/claude-code#36182 (Class-1: main-rooted file_path).
 # Toggle off:  export WORKTREE_GUARD_DISABLE=1
 # Block mode:  export WORKTREE_GUARD_MODE=json|exit2   (default json — reliable for Edit/Write per #13744)
+# Self-test:   bash worktree-write-guard.sh --test
 set -uo pipefail
 [ "${WORKTREE_GUARD_DISABLE:-0}" = "1" ] && exit 0
 MODE="${WORKTREE_GUARD_MODE:-json}"
+
+if [ "${1:-}" = "--test" ]; then
+  T=$(mktemp -d); T=$(cd "$T" && pwd -P); trap 'rm -rf "$T"' EXIT   # realpath: macOS /var → /private/var
+  git -C "$T" init -q -b main repo && git -C "$T/repo" commit -q --allow-empty -m init
+  git -C "$T/repo" worktree add -q "$T/wt" -b wtbranch
+  invoke() { printf '{"cwd":"%s","tool_input":{"file_path":"%s"}}' "$T/wt" "$1" | bash "$0"; }
+  fails=0
+  out=$(invoke "$T/repo/x.ts"); grep -q '"deny"' <<<"$out" && echo "PASS  deny main-rooted path" || { echo "FAIL  deny main-rooted path: $out"; fails=$((fails+1)); }
+  out=$(invoke "$T/wt/x.ts"); [ -z "$out" ] && echo "PASS  allow in-worktree path" || { echo "FAIL  allow in-worktree path: $out"; fails=$((fails+1)); }
+  # Regression: a worktree's OWN nested .claude/** must NOT trip the guard (the
+  # worktree root is itself under the main checkout, but the WT_ROOT allow-case
+  # is matched before the MAIN_ROOT deny-case).
+  out=$(invoke "$T/wt/.claude/hooks/x.sh"); [ -z "$out" ] && echo "PASS  allow in-worktree nested .claude path" || { echo "FAIL  allow in-worktree nested .claude path: $out"; fails=$((fails+1)); }
+  out=$(invoke "/tmp/elsewhere.ts"); [ -z "$out" ] && echo "PASS  allow outside-repo path" || { echo "FAIL  allow outside-repo path: $out"; fails=$((fails+1)); }
+  if [ "$fails" -eq 0 ]; then echo "all tests passed"; else echo "$fails FAILED"; fi; exit "$fails"
+fi
+
+# Fail-open but LOUD — a missing dependency must not silently disable leak protection
+if ! command -v jq >/dev/null 2>&1; then
+  printf '{"systemMessage":"⚠️ worktree-write-guard DISARMED — jq not found; worktree leak protection is OFF."}\n'
+  exit 0
+fi
 
 INPUT=$(cat)
 CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')

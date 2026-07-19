@@ -14,6 +14,7 @@ No-ops entirely when you're not in a linked worktree.
 | hook | `worktree-write-guard` | PreToolUse `Edit\|Write\|MultiEdit\|NotebookEdit` | Deny a file write whose absolute path escapes the worktree into the main checkout. |
 | hook | `worktree-bash-guard` | PreToolUse `Bash` | Deny a shell write (`>`, `sed -i`, `tee`…) into the main checkout from a worktree. **Opt-in** (false-positive-prone): `WORKTREE_BASH_GUARD_ENABLE=1`. |
 | hook | `worktree-leak-detector` | PostToolUse `Edit\|Write\|…` | After an in-worktree edit, warn loudly if the same path went dirty in the main checkout (a leak already happened). |
+| hook | `worktree-detect` | SessionStart | Flag a session rooted in a linked worktree and nudge toward the `/worktree` protocol. Silent in the main checkout. |
 
 The skill and the guards are complementary: the guards make leaks *mechanically impossible*; the skill
 is the *workflow* on top (who takes what, how slices get reviewed and landed). The skill relies on the
@@ -35,6 +36,6 @@ are cut off it; nothing reaches it except through the human-gated review→land 
 { "enabledPlugins": { "worktree@opsi": true } }
 ```
 
-> **Migration note:** these three guards may already be wired directly in your
-> `~/.claude/settings.json`. If you enable this plugin, **remove them from `~/.claude/settings.json`**
-> to avoid running each guard twice.
+> **Migration note:** these guards may already be wired directly in your
+> `~/.claude/settings.json` **and/or the project's `.claude/settings.json`**. If you enable this
+> plugin, **remove the duplicate hook entries from BOTH files** to avoid running each guard twice.
