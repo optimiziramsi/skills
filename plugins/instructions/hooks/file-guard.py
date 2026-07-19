@@ -37,8 +37,10 @@ def decide(data):
         return None
     ti = data.get("tool_input") or {}
     fp = ti.get("file_path", "") or ti.get("notebook_path", "") or ""
-    cwd = data.get("cwd", "") or ""
-    rel = os.path.relpath(fp, cwd) if os.path.isabs(fp) and cwd else fp
+    # anchor on the project root, NOT the session cwd — an absolute-path write issued from a
+    # subdir cwd must still resolve to the guarded repo-relative prefix
+    root = os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd", "") or ""
+    rel = os.path.relpath(fp, root) if os.path.isabs(fp) and root else fp
     rel = rel.replace(os.sep, "/")
     if any(rel == p or rel.startswith(p) for p in guarded_prefixes()):
         return {
@@ -57,6 +59,7 @@ def decide(data):
 
 def self_test():
     fails = 0
+    os.environ.pop("CLAUDE_PROJECT_DIR", None)  # cases below control the anchor explicitly
 
     def chk(name, want_ask, data):
         nonlocal fails
@@ -81,6 +84,12 @@ def self_test():
     del os.environ["FILE_GUARD_EXTRA"]
     chk("notebook_path also guarded", True,
         {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": ".claude/hooks/x.ipynb"}})
+    os.environ["CLAUDE_PROJECT_DIR"] = "/repo"
+    chk("ask on absolute guarded path from subdir cwd", True,
+        {"tool_name": "Edit", "tool_input": {"file_path": "/repo/.claude/hooks/g.py"}, "cwd": "/repo/sub"})
+    chk("allow ordinary absolute path from subdir cwd", False,
+        {"tool_name": "Edit", "tool_input": {"file_path": "/repo/src/x.ts"}, "cwd": "/repo/sub"})
+    del os.environ["CLAUDE_PROJECT_DIR"]
     print("all tests passed" if fails == 0 else f"{fails} FAILED")
     return fails
 

@@ -28,7 +28,7 @@ the narrative.
 | Learning | Store | Via |
 |---|---|---|
 | Durable fact, gotcha, working agreement, engineering lesson | `.agent/lessons/` | the `lessons` skill |
-| Binding rule (must / never) | `.claude/rules/*.md` | add the enforcement tag; if you write `[ENFORCED]`, the guard must exist — extend a hook in the same change, else tag it `[HONOR]` |
+| Binding rule (must / never) | the project's binding-rule home — `.claude/rules/*.md` only if the project uses that layer, else its canonical rule book / CLAUDE.md (never create a new instruction layer) | add the enforcement tag; if you write `[ENFORCED]`, the guard must exist — extend a hook in the same change, else tag it `[HONOR]` |
 | Repeatable procedure that was wrong or missing | the matching skill's steps | edit the skill |
 | Architecture / code-shape / recipe | `.docs/` | edit the doc |
 | Volatile "where we left off" state | `.agent/handoff.md` | the `handoff` skill — NOT here |

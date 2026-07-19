@@ -85,4 +85,5 @@ doubtful-but-possibly-alive, flag it in the report — don't delete on suspicion
 - Update the `Last audit: YYYY-MM-DD` stamp at the bottom of the changelog.
 - Commit single-line per the `commit` skill. Update the handoff only if the audit changed the repo's
   actual status.
-- Report a compact table: check | status | fixed / needs-user, then list any decisions awaited.
+- Report a compact list (respect the project's output contract if it has one): check, status,
+  fixed / needs-user — then list any decisions awaited.

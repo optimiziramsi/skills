@@ -78,7 +78,10 @@ mechanical linter it enforces the caps; otherwise enforce them by hand at each c
 
 **Usage-driven reordering:** end every 🔴 High line with `↑YYMMDD` — the date the lesson last proved
 itself (fired, prevented a mistake, or was re-confirmed). Bump it when that happens; promote a Mid
-lesson that keeps biting session-wide; demote a High unconfirmed for >90 days.
+lesson that keeps biting session-wide; demote a High unconfirmed for >90 days. The cascade runs all
+the way down: Mid lessons that stop biting sink to Low at curation passes; Low lessons whose
+mechanic is gone get pruned. A tier-3 (enforced) lesson is at most ⚪ Low in the index — the hook
+does the surfacing, the file keeps the why.
 
 ## Groups
 

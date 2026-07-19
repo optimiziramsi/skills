@@ -9,7 +9,25 @@
 # Only files/dirs that EXIST are checked, so this is a safe no-op in any repo. Every cap is
 # env-overridable (see below); nothing is raised to make content fit — compact instead
 # (merge → route → tighten → retire). Fails open. Escape hatch (user-set): CAPS_GUARD_OFF=1.
+# Self-test: bash caps.sh --test
 set -uo pipefail
+
+if [ "${1:-}" = "--test" ]; then
+  fails=0
+  tmp=$(mktemp -d)
+  mkdir -p "$tmp/clean" "$tmp/fat"
+  head -c 7000 /dev/zero | tr '\0' x > "$tmp/fat/CLAUDE.md"
+  out=$(CAPS_GUARD_OFF=0 CLAUDE_PROJECT_DIR="$tmp/clean" bash "$0" <<<'{"hook_event_name":"SessionStart"}')
+  if [ -z "$out" ]; then echo "PASS  clean repo → silent"; else echo "FAIL  clean repo: $out"; fails=$((fails+1)); fi
+  out=$(CAPS_GUARD_OFF=0 CLAUDE_PROJECT_DIR="$tmp/fat" bash "$0" <<<'{"hook_event_name":"SessionStart"}')
+  if printf '%s' "$out" | grep -q 'CLAUDE.md 7000c > 6000c'; then echo "PASS  oversized CLAUDE.md surfaced"; else echo "FAIL  oversized CLAUDE.md: $out"; fails=$((fails+1)); fi
+  out=$(CAPS_GUARD_OFF=0 CAP_CLAUDE=8000 CLAUDE_PROJECT_DIR="$tmp/fat" bash "$0" <<<'{"hook_event_name":"SessionStart"}')
+  if [ -z "$out" ]; then echo "PASS  CAP_CLAUDE override respected"; else echo "FAIL  override: $out"; fails=$((fails+1)); fi
+  rm -rf "$tmp"
+  [ "$fails" -eq 0 ] && { echo "all tests passed"; exit 0; }
+  echo "$fails FAILED"; exit 1
+fi
+
 [ "${CAPS_GUARD_OFF:-0}" = "1" ] && exit 0
 
 input=$(cat 2>/dev/null || true)
@@ -59,8 +77,12 @@ check_glob ".claude/rules/*.md" "$RULE_CAP"
 check_glob ".claude/commands/*.md" "$COMMAND_CAP"
 check_glob ".agent/lessons/*.md" "$LESSON_CAP" "README.md"
 
-# count budgets
-count() { local n; n=$(ls -d $1 2>/dev/null | wc -l | tr -d ' '); echo "${n:-0}"; }
+# count budgets (glob loop, not `ls` — matched paths stay intact even with odd characters)
+count() { # $1=glob (unmatched glob stays literal → the -e test skips it)
+  local n=0 p
+  for p in $1; do [ -e "$p" ] && n=$((n+1)); done
+  echo "$n"
+}
 n=$(count ".claude/skills/*/");   [ "$n" -gt "$MAX_SKILLS" ] && breaches+=("$n skills > $MAX_SKILLS")
 n=$(count ".claude/agents/*.md"); [ "$n" -gt "$MAX_AGENTS" ] && breaches+=("$n agents > $MAX_AGENTS")
 n=$(count ".claude/rules/*.md");  [ "$n" -gt "$MAX_RULES" ] && breaches+=("$n rules > $MAX_RULES")

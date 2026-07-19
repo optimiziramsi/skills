@@ -16,7 +16,7 @@ system consistent over time — so you fix something once and every future sessi
 | skill + command | `rules-change` | The sanctioned **T3-change door** — explicit approval, coherence + cap check, re-test enforcement, reality check, changelog. What retro/audit route approved changes through. |
 | agent | `lesson-scout` | Prior-art lookup — searches `.agent/lessons/` before you re-debug something. Read-only. |
 | agent | `instructions-auditor` | Read-only sweep of the instruction surface → severity-ranked findings with `file:line` evidence. Used by `instructions-audit`. |
-| hook | `caps` | SessionStart — surface any instruction-surface **cap breaches** (file sizes + skill/agent/rule counts). Stop — nudge once if the session bloated something past cap. Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails open; escape hatch `CAPS_GUARD_OFF=1`. |
+| hook | `caps` | SessionStart — surface any instruction-surface **cap breaches** (file sizes + skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct breach-set on ANY breach present (pre-existing included, not only what this session bloated). Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails open; escape hatch `CAPS_GUARD_OFF=1`; self-test `--test`. |
 | hook | `file-guard` | PreToolUse — writes to **T3 enforcement surfaces** (`.claude/settings*.json`, `.claude/hooks/`) downgrade to an **ask**: a session must not silently rewrite its own guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch `FILE_GUARD_OFF=1`; self-test `--test`. |
 
 The full knowledge system: **define** (`instructions-maintenance`) · **capture** (`lessons`) ·
