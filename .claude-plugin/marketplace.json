@@ -9,7 +9,7 @@
     {
       "name": "git",
       "source": "./plugins/git",
-      "description": "Git safety net — a PreToolUse guard that blocks destructive/remote/history ops (push, pull, amend, rebase, reset --hard, --no-verify, discards) — plus a test-first hotfix skill (cherry-pick both ways, remotes user-owned). Commit style is the separate commit plugin.",
+      "description": "Git safety net — a PreToolUse guard that blocks destructive/remote/history ops (push, pull, fetch, bulk adds, non-FF merges, protected-branch moves, reset --hard, --no-verify, discards; rebase/amend pass by default) — plus a test-first hotfix skill (cherry-pick both ways, remotes user-owned). Commit style is the separate commit plugin.",
       "category": "workflow"
     },
     {

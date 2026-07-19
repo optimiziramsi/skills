@@ -1,5 +1,5 @@
 {
-  "description": "git plugin — enforce git safety on Bash git commands (PreToolUse): block push/pull, amend, rebase, reset --hard, --no-verify, and discards of uncommitted work",
+  "description": "git plugin — enforce git safety on Bash git commands (PreToolUse): block push/pull/fetch, bulk adds, non-FF merges, protected-branch ops, soft-reset to moving refs, reset --hard, --no-verify, and discards of uncommitted work (rebase/amend/checkout-file pass by default)",
   "hooks": {
     "PreToolUse": [
       {

@@ -27,7 +27,7 @@ Enable only the plugins a given project needs — a plugin's hooks activate wher
 
 | Plugin | Provides |
 |---|---|
-| [`git`](plugins/git) | Git **safety net** — a `git-guard` hook that blocks push/pull/amend/force/`reset --hard`/`--no-verify`/discards, regardless of commit style — plus the **hotfix** skill (test-first, cherry-pick both ways, remotes handed to you). |
+| [`git`](plugins/git) | Git **safety net** — a `git-guard` hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, `reset --hard`, `--no-verify`, and discards (rebase/amend pass by default for FF landing flows), regardless of commit style — plus the **hotfix** skill (test-first, cherry-pick both ways, remotes handed to you). |
 | [`commit`](plugins/commit) | The opinionated house **commit** style — bare single-line messages, topic-close + pause-for-review cadence, safe staging, a `commit-format` guard, and a `commit-nudge`. Opt-in; pairs with `git`. |
 | [`setup`](plugins/setup) | One-time bootstrap — **scaffold** the `.agent/` workspace index (`.agent/README.md`) and point CLAUDE.md/AGENTS.md at it, and **scaffold-claude-md** to write a house-style CLAUDE.md (a slim router of the hard rules that bind every session). No per-skill registration, no ongoing generation. |
 | [`reporting`](plugins/reporting) | The **lean-reporting output contract**, enforced — contract injected per prompt (`brevity-reminder`), re-pulsed every Nth tool call (`contract-pulse`), and a Stop `report-guard` that blocks a narrating/over-long final message and forces a compact rewrite. Opt-in, like `commit`. |

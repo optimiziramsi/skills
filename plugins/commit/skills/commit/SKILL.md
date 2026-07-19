@@ -81,9 +81,11 @@ git add -A
 
 ## Never without explicit user permission
 
-- **Never push or pull** — the user owns remote sync. `git fetch` for read-only inspection is fine.
+- **Never push, pull, or fetch** — the user owns remote sync. (Pushing to the local `.` remote,
+  `git push . HEAD:<branch>`, is a local ref update, not a remote op.)
 - **Never amend** an existing commit — create a new one. Amending rewrites history.
-- **Never force-push**, rebase, or `filter-branch` — history is append-only.
+- **Never force-push** or `filter-branch` — published history is append-only. (Local `git rebase`
+  as part of a rebase + `merge --ff-only` landing flow is fine.)
 - **Never `git reset --hard`** (or `--merge`/`--keep`) — it clobbers the worktree. Plain
   `git reset <file>` to unstage is fine.
 - **Never discard uncommitted work** — no `git clean -f`, `git stash drop/clear`,
@@ -95,9 +97,11 @@ If a workflow seems to require any of these, **stop and ask** the user.
 
 > **Enforcement is split across two plugins.** The *message format* above (single line, no
 > `Co-Authored-By`, no body) is enforced by this plugin's `commit-format` hook (escape hatch
-> `COMMIT_FORMAT_OFF=1`). The *destructive git ops* (push/pull/amend/force/`reset --hard`/discards/
-> `--no-verify`) are enforced by the separate `git` plugin's `git-guard` hook — enable the `git`
-> plugin for that safety net (escape hatch `GIT_GUARD_OFF=1`). Both fail open.
+> `COMMIT_FORMAT_OFF=1`). The *destructive git ops* (push/pull/fetch/bulk `git add`/non-FF merges/
+> protected-branch moves/`reset --hard`/discards/`--no-verify`) are enforced by the separate `git`
+> plugin's `git-guard` hook — enable the `git` plugin for that safety net (escape hatch
+> `GIT_GUARD_OFF=1`; the amend guidance above is not hook-enforced by default — see that plugin's
+> `GIT_GUARD_STRICT`). Both fail open.
 
 ## Human commits
 

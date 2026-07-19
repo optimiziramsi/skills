@@ -4,8 +4,9 @@ Part of the [`opsi`](../../README.md) marketplace.
 
 An **opinionated** commit convention: bare imperative single-line messages, topic-close +
 pause-for-review cadence, and stage-by-name discipline. Split out from the `git` plugin on purpose — commit style is personal,
-so this is a separate opt-in. Want the git *safety net* (block push/pull/amend/force/discard) but keep
-your own commit format? Enable [`git`](../git) and skip this.
+so this is a separate opt-in. Want the git *safety net* (block push/pull/fetch, bulk adds, non-FF
+merges, protected-branch moves, discards) but keep your own commit format? Enable [`git`](../git)
+and skip this.
 
 ## Contents
 
@@ -19,7 +20,8 @@ your own commit format? Enable [`git`](../git) and skip this.
 
 - **This plugin** owns the *commit message format + cadence* — the opinionated house style.
 - **The [`git`](../git) plugin** owns *git safety* — blocking destructive/remote/history operations
-  (push, pull, rebase, `reset --hard`, `clean -f`, `--no-verify`, …), regardless of commit style.
+  (push, pull, fetch, bulk adds, non-FF merges, `reset --hard`, `clean -f`, `--no-verify`, …),
+  regardless of commit style.
 
 They're complementary but independent. The `commit` skill describes the safety rules too (as guidance),
 but enabling `git` is what enforces them.
