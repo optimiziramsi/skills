@@ -28,7 +28,7 @@ The user is removing/deferring a feature. Don't start deleting until the sweep i
 3. **Categorize each reference**:
    - **Delete** — code, tests, cron entries, migrations that only exist for this feature.
    - **Update** — doc mentions where the rest of the topic stays valid.
-   - **Mark as cut** — append to `.agent/milestone/{current}/scope-cut.md` if a milestone is active, else to a `## Cut` section in `.todo` / `.todo-inbox`.
+   - **Mark as cut** — append to `.agent/milestone/{current}/scope-cut.md` if a milestone is active, else to a `## Cut` section in the todo INBOX file (`.todo-inbox`); `.todo` itself may be guard-protected (§ If `.todo` is guarded) — route there only via the armed flow.
    - **Leave** — archive folders (`*/archive/`) — historical record, never touch.
 
 4. **Show the user the categorized list** before applying. They may flag items subtler than they look (cross-feature dependencies, billing implications).

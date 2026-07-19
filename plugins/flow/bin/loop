@@ -22,7 +22,8 @@ Options:
 Job frontmatter (see the `looper` skill for the full spec):
   job-status: draft|pending|blocked|done|failed|skipped|conflict
   model: opus|sonnet     effort: xhigh|max     title: ...
-  max-turns: 50 (advisory)   max-retries: 2   blocked-on: fileA.md, fileB.md
+  max-turns: 50 (passed as --max-turns when the CLI supports it)   max-retries: 2
+  blocked-on: fileA.md, fileB.md
 
 Env escape hatches: CLAUDE_BIN, FLOW_ALLOW_NESTED=1, FLOW_CLAUDE_PERMISSION_MODE.
 """
@@ -36,6 +37,7 @@ import _flowlib as fl  # noqa: E402
 
 TERMINAL = {"done", "skipped", "conflict"}      # runner leaves these alone
 DEAD = {"done", "skipped", "conflict", "failed"}  # not runnable
+FREE_BACKOFFS_MAX = 6  # rate-limit/transient failures get this many budget-free backoffs
 LOOP_GITIGNORE = (
     "# raw stream-json transcripts — noisy, regenerated each run\n"
     "# (job .md files, .log transcripts, and runner_*.log ARE worth keeping)\n"
@@ -174,16 +176,30 @@ def run_one(job, opts, runner_log):
     stem = job["stem"]
     log_path = os.path.join(opts["dir"], f"{stem}.log")
     jsonl_path = os.path.join(opts["dir"], f"{stem}.jsonl")
-    prompt = compose_prompt(job)
 
-    attempt = 0
+    attempt = 0        # total launches (display)
+    failures = 0       # failures counted against the retry budget
+    free_backoffs = 0  # rate-limit/transient failures don't consume the budget (bounded)
     while True:
         attempt += 1
+        # rebuild the prompt from the CURRENT job file each attempt — a prior attempt may
+        # have advanced ## Report / partial work; a stale pre-loop snapshot would redo it
+        job["meta"], job["body"], job["raw"] = fl.read_job(job["path"])
+        prompt = compose_prompt(job)
+        if attempt > 1:
+            prompt += (
+                f"\nNOTE: this is attempt #{attempt} on this job — a previous attempt may have "
+                "done partial work. Read the job file's ## Report section and the repo state, "
+                "then CONTINUE from where it stopped; do not restart from scratch or redo "
+                "committed work.\n"
+            )
         fl.info(fl.bold(f"▶ {job['base']}") + fl.dim(f"  (attempt {attempt}, model {model})"))
         with open(runner_log, "a", encoding="utf-8") as rl:
             rl.write(f"[{fl.human_now()}] run {job['base']} attempt {attempt} model={model}\n")
         code, elapsed, rate_limited = fl.run_claude_job(
             prompt, model, fl.DEFAULT_PERMISSION_MODE, log_path, jsonl_path,
+            effort=(job["meta"].get("effort") or "").strip() or None,
+            max_turns=fl.coerce_int(job["meta"], "max-turns", 0) or None,
         )
         # Re-read status: the executing agent should have advanced it.
         meta, _, _ = fl.read_job(job["path"])
@@ -198,7 +214,18 @@ def run_one(job, opts, runner_log):
         fl.info(fl.red(f"  → failed (exit {code}, status '{new_status or 'unchanged'}', {int(elapsed)}s)"))
         with open(runner_log, "a", encoding="utf-8") as rl:
             rl.write(f"[{fl.human_now()}]   FAIL exit={code} status={new_status or 'unchanged'} rl={rate_limited}\n")
-        if attempt > max_retries:
+        transient = rate_limited or elapsed < fl.RATE_LIMIT_FAST_FAIL_SECS
+        if transient and free_backoffs < FREE_BACKOFFS_MAX:
+            # a rate-limited/transient-API failure is not the job's fault — back off
+            # without consuming the retry budget (bounded so an always-failing job stops)
+            free_backoffs += 1
+            fl.info(fl.yellow(
+                f"  transient/rate-limited — free backoff {free_backoffs}/{FREE_BACKOFFS_MAX} "
+                "(retry budget untouched)"))
+            fl.backoff_sleep(free_backoffs)
+            continue
+        failures += 1
+        if failures > max_retries:
             # Bookkeeping fallback so the queue doesn't loop forever. Not committed.
             if new_status not in DEAD:
                 fl.set_frontmatter_field(job["path"], "job-status", "failed")
@@ -206,7 +233,7 @@ def run_one(job, opts, runner_log):
             fl.info(fl.red(f"  ✘ giving up after {attempt} attempt(s) — left as failed for triage"))
             return "failed"
         # backoff harder when the failure was fast or rate-limited
-        if rate_limited or elapsed < fl.RATE_LIMIT_FAST_FAIL_SECS:
+        if transient:
             fl.backoff_sleep(attempt)
 
 

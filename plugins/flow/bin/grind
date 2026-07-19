@@ -14,14 +14,15 @@ Options:
   --once             run exactly one iteration and stop
   --status           show mission status + iteration count and exit
   --dry-run          show what one iteration would run, execute nothing
-  --reset            clear the iteration counter (start from zero) and exit
+  --reset            clear the iteration counter and flip status back to active, then exit
   -y, --yes          skip the arm-confirmation (for unattended/cron runs)
   --dir DIR          mission directory (default: .agent/grind)
   -h, --help         this help
 
 Mission frontmatter (see the `grind` skill for the full spec):
   status: active|done|paused    title: ...    model: opus|sonnet
-  max-turns: 40 (advisory)   effort: xhigh|max   scope-hint: 1-3 items
+  max-turns: 40   effort: xhigh|max   (both passed to the CLI when it supports the flags)
+  scope-hint: 1-3 items
   max-iterations: 40   done-check: "<shell cmd; exit 0 = mission complete>"
 
 Env escape hatches: CLAUDE_BIN, FLOW_ALLOW_NESTED=1, FLOW_CLAUDE_PERMISSION_MODE.
@@ -190,7 +191,10 @@ def main():
         p = iter_path(mission_path, job_dir)
         if os.path.exists(p):
             os.remove(p)
-        fl.info(fl.green(f"reset iteration counter for {stem}."))
+        meta, _, _ = fl.read_job(mission_path)
+        if (meta.get("status") or "").strip().lower() != "active":
+            fl.set_frontmatter_field(mission_path, "status", "active")
+        fl.info(fl.green(f"reset {stem}: iteration counter cleared, status: active."))
         return
 
     meta, body, _ = fl.read_job(mission_path)
@@ -243,12 +247,16 @@ def main():
         with open(runner_log, "a", encoding="utf-8") as rl:
             rl.write(f"[{fl.human_now()}] iter {iteration} model={model}\n")
 
+        # persist the counter BEFORE launching — a crash/Ctrl+C mid-iteration must not
+        # produce duplicate iteration numbers/tags on the next run
+        write_iter(mission_path, job_dir, iteration)
         prompt = compose_prompt(mission_path, body, meta, iteration, topic, mem_log)
         code, elapsed, rate_limited = fl.run_claude_job(
             prompt, model, fl.DEFAULT_PERMISSION_MODE, transcript_log, jsonl_path,
             env_extra={"GRIND_ITERATION": str(iteration), "GRIND_TOPIC": topic},
+            effort=(meta.get("effort") or "").strip() or None,
+            max_turns=fl.coerce_int(meta, "max-turns", 0) or None,
         )
-        write_iter(mission_path, job_dir, iteration)
         fl.info((fl.green if code == 0 else fl.red)(f"  → exit {code} ({int(elapsed)}s)"))
 
         if code != 0 and (rate_limited or elapsed < fl.RATE_LIMIT_FAST_FAIL_SECS):

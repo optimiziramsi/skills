@@ -222,7 +222,7 @@ def coerce_int(meta: dict, key: str, default: int) -> int:
 
 
 # ── Claude invocation ───────────────────────────────────────────────────────
-def build_claude_argv(prompt: str, model: str, permission_mode: str):
+def build_claude_argv(prompt: str, model: str, permission_mode: str, effort=None, max_turns=None):
     """Construct the claude argv using only flags the installed CLI supports."""
     flags = supported_flags()
     # When --help couldn't be probed (empty set, e.g. a stubbed CLAUDE_BIN), don't
@@ -233,6 +233,10 @@ def build_claude_argv(prompt: str, model: str, permission_mode: str):
     argv = [claude_bin(), "--print"]
     if model and ok("--model"):
         argv += ["--model", model]
+    if effort and ok("--effort"):
+        argv += ["--effort", effort]
+    if max_turns and ok("--max-turns"):
+        argv += ["--max-turns", str(max_turns)]
     pm = os.environ.get("FLOW_CLAUDE_PERMISSION_MODE", permission_mode)
     if pm:
         if pm == "bypassPermissions" and "--dangerously-skip-permissions" in flags:
@@ -289,11 +293,12 @@ def _summarize_event(obj: dict):
     return None
 
 
-def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_extra=None):
+def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_extra=None,
+                   effort=None, max_turns=None):
     """Run one headless claude session. Streams events to a readable .log and a raw
     .jsonl. Returns (exit_code, elapsed_secs, saw_rate_limit).
     """
-    argv = build_claude_argv(prompt, model, permission_mode)
+    argv = build_claude_argv(prompt, model, permission_mode, effort=effort, max_turns=max_turns)
     env = dict(os.environ)
     if env_extra:
         env.update(env_extra)
