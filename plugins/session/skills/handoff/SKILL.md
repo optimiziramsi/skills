@@ -18,7 +18,9 @@ Assumes the `.agent/` house layout: `.agent/handoff.md`, `.agent/lessons/`, `.do
 - **Durable knowledge → `.agent/lessons/`** (working style, operational gotchas, engineering
   lessons), via the `lessons` skill. It is NEVER in handoff.
 - **Architecture / code-shape → `.docs/`** (and a patterns registry if the project keeps one).
-- **Pending work → `.todo` / `.todo-inbox`** (the user triages), or the relevant plan/milestone steps.
+- **Pending work → the project's todo INBOX file (e.g. `.todo-inbox`)** (the user triages), or the
+  relevant plan/milestone steps. `.todo` itself may be guard-protected (user-owned) — never write
+  it directly.
 
 If you're about to write something a *future* session (beyond the next one) would want, it's not
 handoff content — route it to the list above.
@@ -42,7 +44,8 @@ wrong place — move it out, don't shrink by deleting what the next session need
 
 - Durable preference/gotcha → a lesson (`.agent/lessons/`).
 - Architecture/code-shape → `.docs/`.
-- Pending work that isn't a plan/milestone step → `.todo` / `.todo-inbox`.
+- Pending work that isn't a plan/milestone step → the project's todo inbox file (e.g.
+  `.todo-inbox`; `.todo` may be guard-protected — never write it directly).
 
 Only after routing content elsewhere, tighten wording. The cap is the forcing function that keeps
 handoff ephemeral.

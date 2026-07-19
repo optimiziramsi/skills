@@ -13,7 +13,7 @@ Write the handoff at session close; boot the next session from it.
 | skill + command | `session-summary` | Shareable changelog of what a session shipped — themes, decisions, pending. |
 | hook | `session-start` | SessionStart — injects a state snapshot (branch · uncommitted · last commit), handoff freshness, todo count, an enforcement-health warning (loud if `python3` is missing → guards disarmed), and an audit-staleness nudge. Fully conditional; safe in any repo. |
 
-Assumes the **`.agent/` house layout** (`.agent/handoff.md`, `.agent/lessons/`, `.docs/`).
+Assumes the **`.agent/` house layout** (`.agent/handoff.md`, `.agent/lessons/`, `.agent/reviews/`, `.docs/`).
 
 _Planned:_ `collab`, a stop-nudge hook.
 

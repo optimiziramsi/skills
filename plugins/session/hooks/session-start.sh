@@ -19,7 +19,7 @@ fi
 
 # pending todos
 if [ -f .todo ]; then
-  n=$(grep -cve '^[[:space:]]*#' -e '^[[:space:]]*$' .todo 2>/dev/null || echo 0)
+  n=$(grep -cve '^[[:space:]]*#' -e '^[[:space:]]*$' .todo 2>/dev/null || true)
   [ "${n:-0}" -gt 0 ] && echo "[session] .todo has ${n} item line(s)."
 fi
 
@@ -34,6 +34,6 @@ if [ -n "${stamp:-}" ]; then
   now=$(date +%s)
   then_=$(date -j -f '%Y-%m-%d' "$stamp" +%s 2>/dev/null || date -d "$stamp" +%s 2>/dev/null || echo "$now")
   days=$(( (now - then_) / 86400 ))
-  [ "$days" -gt 30 ] && echo "[session] last instructions-audit ${days}d ago (>30) — consider /instructions-audit."
+  [ "$days" -gt 30 ] && echo "[session] last instructions-audit ${days}d ago (>30) — consider an instructions audit (/instructions-audit if available)."
 fi
 exit 0

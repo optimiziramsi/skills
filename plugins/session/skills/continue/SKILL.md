@@ -5,7 +5,9 @@ description: Resume work in this repo. Use when the user says "lets continue", "
 
 # Resume a session
 
-The session boots from the handoff alone. Pairs with the `handoff` skill.
+If the project defines a session boot order (e.g. a start-here doc), follow that first — the
+handoff supplements it, it does not replace it. Otherwise the session boots from the handoff.
+Pairs with the `handoff` skill.
 
 1. Read `.agent/handoff.md` — the **Outstanding** and **Suggested next topic** sections are your
    work queue. Load project memory (`.agent/MEMORY.md` or the project's memory store) if not

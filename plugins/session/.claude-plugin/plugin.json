@@ -1,7 +1,7 @@
 {
   "name": "session",
   "version": "0.1.0",
-  "description": "Session continuity for Claude — handoff (write next-session notes) and continue (resume from them). Planned: session-summary, collab, session-start hook.",
+  "description": "Session continuity for Claude — handoff (write next-session notes), continue (resume from them), session-summary (shareable changelog), and a SessionStart state-snapshot hook. Planned: collab.",
   "author": {
     "name": "optimiziramsi"
   },
