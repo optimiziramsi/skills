@@ -1,6 +1,6 @@
 ---
 name: commit
-description: How and when to make git commits. Use proactively — commit completed work automatically as you go (after each logical unit / at topic close), without being asked, UNLESS the user has said to hold off. Also use whenever explicitly committing or saving changes, or when a git commit is about to happen. Triggers: "commit", "save changes", "commit this", finishing a coherent chunk of work.
+description: How and when to make git commits. Use proactively — commit at topic close (one logical topic = one commit), then pause for the user's review before starting the next topic, UNLESS the user has opted into commit-as-you-go. Also use whenever explicitly committing or saving changes, or when a git commit is about to happen. Triggers: "commit", "save changes", "commit this", finishing a coherent chunk of work.
 ---
 
 # Commit
@@ -8,16 +8,28 @@ description: How and when to make git commits. Use proactively — commit comple
 How and when to commit. Two parts — **cadence** (when) and **format** (how). These rules are for
 model-authored commits.
 
-## Cadence — commit by default
+## Cadence — topic close, then pause for review
 
-If the project defines its own commit cadence (e.g. pause-for-review at topic close), the
-project's rule wins over this skill's commit-as-you-go default.
+If the project defines its own commit cadence, the project's rule wins over this skill's
+topic-close default.
 
-Commit automatically as you work. You do **not** need to ask permission:
+The default: **one logical topic = one commit, made at topic close, followed by a pause for the
+user's review** before the next topic starts.
 
-- After each completed logical unit of work (a feature, a fix, a config change).
-- At **topic close** — don't leave finished work uncommitted across topic boundaries.
-- After a plan step that produced file changes.
+- When a logical unit of work is done (a feature, a fix, a config change), commit it as **one
+  commit**. Don't leave finished work uncommitted across topic boundaries.
+- After the topic-close commit, **pause** — verify your own work first (build/lint/tests as
+  appropriate), then present it and let the user review before starting the next topic. Batching
+  several topic closes before pausing removes the user's control point.
+- Within a topic, prefer one commit at the end over many partial commits — partial commits clutter
+  history with intermediate states. If a topic genuinely spans independent stages, separate
+  commits are fine.
+- One logical change per commit; don't bundle unrelated changes.
+
+**Opt-in alternative — commit-as-you-go.** If the user asks for it ("commit as you go", "don't
+wait for my review", an autonomous/batch run where nobody is watching), commit each completed
+logical unit automatically without pausing, and keep going. This is an explicit opt-in, not the
+default — don't slide into it on your own.
 
 **Opt-out.** If the user says "don't commit", "hold off on commits", or "I'll commit myself" —
 for the task or the whole session — respect it until they say otherwise. (A session may open with
@@ -28,10 +40,6 @@ exactly that instruction.)
 - Mid-way through a multi-file change that would leave the tree broken.
 - Scratch / temp / experimental files, or anything that looks like secrets (`.env`, `secrets/…`).
 - Human-authored uncommitted work you didn't create — leave it, don't "tidy" it.
-
-Prefer **one commit per logical unit** over many partial commits — partial commits clutter history
-with intermediate states. If a topic genuinely spans independent stages, separate commits are fine.
-One logical change per commit; don't bundle unrelated changes.
 
 ## Format — single line, imperative, describes the change
 

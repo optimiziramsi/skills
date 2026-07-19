@@ -15,7 +15,7 @@
     {
       "name": "commit",
       "source": "./plugins/commit",
-      "description": "The opsi house commit style — bare imperative single-line messages, commit-as-you-go cadence, safe staging, a format guard, and an end-of-session nudge. Opt-in; pairs with the git safety net.",
+      "description": "The opsi house commit style — bare imperative single-line messages, topic-close + pause-for-review cadence, safe staging, a format guard, and an end-of-session nudge. Opt-in; pairs with the git safety net.",
       "category": "workflow"
     },
     {
