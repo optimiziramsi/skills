@@ -21,8 +21,8 @@ directory convention any project can adopt.
 | skill + command | `looper` | Prepare `.agent/loop/` job files — a queue of independent tasks the runner executes as separate background sessions. |
 | skill + command | `grind` | Prepare a `.agent/grind/` mission — the same prompt re-run N times, the model picking 1–3 items per iteration until done. |
 | skill + command | `collab` | The playbook for long "chat drives decisions, looper executes" sessions that keep the main context lean. |
-| runner | `bin/loop` | Executes the `.agent/loop/` queue: one fresh headless `claude` session per pending job, with `blocked-on` ordering, retries + backoff, `--watch`, `--status`, `--dry-run`. |
-| runner | `bin/grind` | Executes one `.agent/grind/` mission repeatedly: cross-iteration log memory, `done-check`, `max-iterations` cap, `--once`/`--reset`/`--status`. |
+| runner | `bin/loop` | Executes the `.agent/loop/` queue: one fresh headless `claude` session per pending job, with `blocked-on` ordering, retries + backoff, crash-resume (`running` marker + resume prompt), `--watch`, `--status`, `--dry-run`. |
+| runner | `bin/grind` | Executes one `.agent/grind/` mission repeatedly: cross-iteration log memory, `done-check`, `max-iterations` cap, per-iteration watchdog + dirty-tree guard + 4-attempt retry state + productivity gate + transient long backoff, enforced `YYMMDD_HHMMSS_{topic}.md` naming, `--once`/`--count`/`--reset`/`--status`. |
 
 ## The directory convention
 
@@ -62,8 +62,17 @@ status — the runner never commits.
   frontmatter parsing, a status state machine, retries + backoff, watch polling, blocked-on
   ordering, grind's iteration memory — is fragile in bash; `python3` is already assumed by the
   `git` plugin's hook.) Escape hatches via env: `CLAUDE_BIN`, `FLOW_ALLOW_NESTED`,
-  `FLOW_CLAUDE_PERMISSION_MODE`, `FLOW_BACKOFF_BASE`. Run `bin/loop --help` / `bin/grind --help` for
-  the full flag list.
+  `FLOW_CLAUDE_PERMISSION_MODE`, `FLOW_EXTRA_CLAUDE_ARGS`, `FLOW_BACKOFF_BASE`,
+  `FLOW_LONG_BACKOFF_BASE`, `FLOW_ITER_TIMEOUT_SECS`, `FLOW_ITER_PAUSE_SECS`. Run
+  `bin/loop --help` / `bin/grind --help` for the full flag list.
+- **Resilient by default.** `bin/grind` guards every iteration: a wall-clock watchdog
+  (900s default) kills hung sessions; a dirty-tree guard refuses to start on uncommitted changes
+  (auto-resuming a previously interrupted iteration); a productivity gate only advances on a clean
+  tree with a tagged commit or status flip; unproductive iterations retry up to 4 attempts with a
+  continuation prompt (finish / revert / skip the in-flight item); transient API errors get long
+  10–60 min backoffs that don't burn the attempt budget. `bin/loop` marks each job `running` at
+  launch — a crashed runner leaves that marker, and the next run resumes the job with a prompt
+  pointing at its Report.
 
 ## Enable
 

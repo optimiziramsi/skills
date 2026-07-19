@@ -6,6 +6,11 @@ Claude session that does the work, commits, and updates its own `job-status`. Th
 selects work, orders it (`blocked-on`), retries transient failures with backoff, and
 records logs. It never commits — the executing agent owns all git operations.
 
+Crash resume: the runner writes `job-status: running` before launching a job's session.
+A job still `running` at the next launch means a previous runner session crashed or was
+interrupted mid-job — it is picked up again with a distinct resume prompt that points the
+agent at the job's ## Report section and the repo state before continuing.
+
 Usage:
   loop [options]
 
@@ -20,7 +25,7 @@ Options:
   -h, --help         this help
 
 Job frontmatter (see the `looper` skill for the full spec):
-  job-status: draft|pending|blocked|done|failed|skipped|conflict
+  job-status: draft|pending|running|blocked|done|failed|skipped|conflict
   model: opus|sonnet     effort: xhigh|max     title: ...
   max-turns: 50 (passed as --max-turns when the CLI supports it)   max-retries: 2
   blocked-on: fileA.md, fileB.md
@@ -121,7 +126,7 @@ def status_icon(status):
         "done": fl.green("✔ done"), "pending": fl.bold("• pending"),
         "draft": fl.dim("◦ draft"), "blocked": fl.yellow("⧗ blocked"),
         "failed": fl.red("✘ failed"), "skipped": fl.dim("– skipped"),
-        "conflict": fl.yellow("‼ conflict"),
+        "conflict": fl.yellow("‼ conflict"), "running": fl.yellow("⟳ running"),
     }.get(status, status or fl.dim("(no status)"))
 
 
@@ -141,18 +146,27 @@ def print_status(jobs):
             ok, unmet = deps_satisfied(j, by_key)
             if not ok:
                 fl.info(fl.yellow(f"      blocked-on (not done): {', '.join(unmet)}"))
+        elif j["status"] == "running":
+            fl.info(fl.yellow(
+                "      left running by a previous session — next run resumes it"))
     fl.info("")
 
 
 def runnable_queue(jobs):
-    """Ordered list of pending jobs whose dependencies are all done."""
+    """Ordered list of runnable jobs whose dependencies are all done.
+
+    `pending` jobs run normally. `running` jobs are crash leftovers — a previous
+    runner session set `running` and then died/was interrupted before the agent
+    reached a terminal status. They re-run with a resume prompt (job["resume"]).
+    """
     by_key = {j["stem"]: j for j in jobs}
     out = []
     for j in jobs:
-        if j["status"] != "pending":
+        if j["status"] not in ("pending", "running"):
             continue
         ok, _ = deps_satisfied(j, by_key)
         if ok:
+            j["resume"] = j["status"] == "running"
             out.append(j)
     return out
 
@@ -168,7 +182,14 @@ def compose_prompt(job):
 
 
 def run_one(job, opts, runner_log):
-    """Run a single job with retries. Returns final status string."""
+    """Run a single job with retries. Returns final status string.
+
+    Writes `job-status: running` before every launch (uncommitted bookkeeping) so a
+    runner crash leaves a resumable marker. Jobs entering with job["resume"] set were
+    left `running` by a previous session — their first attempt gets a distinct resume
+    prompt pointing at ## Report; later retries reuse the normal continuation note
+    (the prompt is rebuilt from the CURRENT job file every attempt either way).
+    """
     max_retries = opts["retries"]
     if max_retries is None:
         max_retries = fl.coerce_int(job["meta"], "max-retries", 2)
@@ -176,6 +197,9 @@ def run_one(job, opts, runner_log):
     stem = job["stem"]
     log_path = os.path.join(opts["dir"], f"{stem}.log")
     jsonl_path = os.path.join(opts["dir"], f"{stem}.jsonl")
+    resume = bool(job.get("resume"))
+    if resume:
+        fl.info(fl.yellow(f"⟳ {job['base']} — was left running; resuming"))
 
     attempt = 0        # total launches (display)
     failures = 0       # failures counted against the retry budget
@@ -186,7 +210,17 @@ def run_one(job, opts, runner_log):
         # have advanced ## Report / partial work; a stale pre-loop snapshot would redo it
         job["meta"], job["body"], job["raw"] = fl.read_job(job["path"])
         prompt = compose_prompt(job)
-        if attempt > 1:
+        if resume and attempt == 1:
+            prompt += (
+                "\nNOTE: this job was left in `job-status: running` — a previous runner "
+                "session crashed or was interrupted mid-job. Read the job file's ## Report "
+                "section and inspect the repo state (`git status`, `git log`) FIRST: partial "
+                "or even complete work may already be committed. Continue from where it "
+                "stopped — do not restart from scratch or redo committed work. If the work "
+                "is already complete, just finish the bookkeeping (Report + terminal "
+                "status) and commit.\n"
+            )
+        elif attempt > 1:
             prompt += (
                 f"\nNOTE: this is attempt #{attempt} on this job — a previous attempt may have "
                 "done partial work. Read the job file's ## Report section and the repo state, "
@@ -195,8 +229,12 @@ def run_one(job, opts, runner_log):
             )
         fl.info(fl.bold(f"▶ {job['base']}") + fl.dim(f"  (attempt {attempt}, model {model})"))
         with open(runner_log, "a", encoding="utf-8") as rl:
-            rl.write(f"[{fl.human_now()}] run {job['base']} attempt {attempt} model={model}\n")
-        code, elapsed, rate_limited = fl.run_claude_job(
+            rl.write(f"[{fl.human_now()}] run {job['base']} attempt {attempt} model={model}"
+                     f"{' resume' if resume and attempt == 1 else ''}\n")
+        # running-marker: written by the RUNNER (not committed) so a crash between here
+        # and the agent's terminal status leaves a resumable `running` state behind
+        fl.set_frontmatter_field(job["path"], "job-status", "running")
+        code, elapsed, rate_limited, _timed_out = fl.run_claude_job(
             prompt, model, fl.DEFAULT_PERMISSION_MODE, log_path, jsonl_path,
             effort=(job["meta"].get("effort") or "").strip() or None,
             max_turns=fl.coerce_int(job["meta"], "max-turns", 0) or None,
@@ -273,7 +311,9 @@ def main():
         if not queue:
             fl.info(fl.dim("  (nothing pending/runnable)"))
         for j in queue:
-            fl.info(f"  {j['base']}" + fl.dim(f"  — {j['meta'].get('title', '')}"))
+            note = "  (resume — was left running)" if j.get("resume") else ""
+            fl.info(f"  {j['base']}" + fl.yellow(note)
+                    + fl.dim(f"  — {j['meta'].get('title', '')}"))
         return
 
     fl.nested_guard()
@@ -308,9 +348,9 @@ def main():
             break
         for job in queue:
             try:
-                # re-check the job is still pending (a prior job may have changed things)
+                # re-check the job is still runnable (a prior job may have changed things)
                 meta, _, _ = fl.read_job(job["path"])
-                if (meta.get("job-status") or "").strip().lower() != "pending":
+                if (meta.get("job-status") or "").strip().lower() not in ("pending", "running"):
                     continue
                 run_one(job, opts, runner_log)
                 done_count += 1

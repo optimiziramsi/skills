@@ -55,7 +55,7 @@ blocked-on: 260713_100000_schema.md   # optional; runner waits until deps are `d
 <empty — the executing model fills this in>
 ```
 
-> **`max-turns` is advisory.** The current Claude CLI has no `--max-turns` flag, so the runner can't hard-cap turns; keep the field as a scope forcing-function and as forward-compatible intent. Keep jobs small enough that turns aren't the limiter.
+> **`max-turns`** is passed to the CLI as `--max-turns` when the installed CLI supports the flag (the runner probes `--help`); on CLIs without it, it's advisory. Either way, keep jobs small enough that turns aren't the limiter.
 
 ### Status enum
 
@@ -63,6 +63,7 @@ blocked-on: 260713_100000_schema.md   # optional; runner waits until deps are `d
 | --- | --- | --- |
 | `draft` | Being written — runner ignores it | you |
 | `pending` | Ready to run | you (flip from draft) |
+| `running` | A session is executing it right now. Found at launch = a previous runner session crashed mid-job → **auto-resumed** with a prompt pointing at its Report + repo state | runner (at launch) |
 | `blocked` | A `blocked-on` dependency isn't `done` yet — self-heals | runner (computed) |
 | `done` | Work complete and committed | executing model |
 | `failed` | Tried but couldn't finish — read the Report | executing model (runner as fallback) |
@@ -166,6 +167,8 @@ Then, from a **separate terminal** (not inside a Claude session — the runner r
 - If it refuses with "inside a Claude Code session", you launched it from within Claude — open a plain terminal (or, only for testing with a stub, `FLOW_ALLOW_NESTED=1`).
 
 ## Triaging failed jobs
+
+A job stuck in `running` needs no triage — the runner marks jobs `running` when it launches them, so a leftover `running` means the runner session died mid-job; the next `bin/loop` run resumes it automatically (distinct resume prompt referencing its Report).
 
 When a job is `failed`, read its Report — the executing model records what went wrong before failing. Common modes:
 

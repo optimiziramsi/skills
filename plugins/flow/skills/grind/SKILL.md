@@ -24,14 +24,14 @@ Grind's unique traits: one mission file, many iterations (no enumeration); the m
 
 ## Mission file format
 
-Filename: `.agent/grind/YYMMDD_HHMMSS_{topic}.md` — 6+6 datetime prefix from `date '+%y%m%d_%H%M%S'`. The topic slug is short kebab-case (`web-tests`, `docstrings`, `style-sweep`).
+Filename: `.agent/grind/YYMMDD_HHMMSS_{topic}.md` — 6+6 datetime prefix from `date '+%y%m%d_%H%M%S'`. The topic slug is short kebab-case (`web-tests`, `docstrings`, `style-sweep`). **The runner enforces this** — a mission whose filename doesn't match is rejected at launch (the prefix keeps the topic, log stem, and commit tags stable).
 
 ```markdown
 ---
 status: active             # active | done | paused — runner only runs `active`
 title: Human-readable mission title
 model: opus                # default opus; sonnet ONLY for fully mechanical missions
-max-turns: 40              # advisory (see note) — a forcing function on per-iteration scope
+max-turns: 40              # passed as --max-turns when the CLI supports it (see note)
 effort: xhigh              # xhigh or max
 scope-hint: 1-3 items      # how much to pick per iteration; runner passes it into each prompt
 max-iterations: 40         # mission-level cap; the runner clamps anything over 500
@@ -63,7 +63,7 @@ Paths to docs, example files, patterns to follow.
 Explicit negative list — what this mission must NOT touch. Keeps every iteration honest.
 ```
 
-> **`max-turns` is advisory** — the current Claude CLI has no `--max-turns` flag, so the runner can't hard-cap turns. Keep it as a scope forcing-function: if iterations balloon, tighten `scope-hint` and the picking rules.
+> **`max-turns`** is passed to the CLI as `--max-turns` when the installed CLI supports the flag (the runner probes `--help`); on CLIs without it, it's advisory. Either way, keep it as a scope forcing-function: if iterations balloon, tighten `scope-hint` and the picking rules. Wall-clock is capped separately by the runner's watchdog (below).
 
 The Mission and "How to pick" sections are where your effort goes. Bad picking rules make every iteration a coin flip; good ones make grind feel like the model has intent.
 
@@ -108,7 +108,17 @@ The runner exports `GRIND_ITERATION` and `GRIND_TOPIC` to each session. Every co
 - `done` — runner stops; won't launch again until `--reset` or you re-activate.
 - `paused` — same as done for the runner; a semantic "will resume" signal.
 
-Three paths to `done`: the model flips it (no candidates left — trusted path), the runner flips it (`done-check` passed, or `max-iterations`/hard-cap 500 reached — fallback), or the user flips it. Ctrl+C aborts without touching status; the next launch resumes from the saved iteration counter (`--reset` restarts from zero).
+Three paths to `done`: the model flips it (no candidates left — trusted path), the runner flips it (`done-check` passed, or `max-iterations`/hard-cap 500 reached — fallback), or the user flips it. Ctrl+C aborts without touching status; the next launch resumes from the saved iteration counter (`--reset` restarts from zero and also clears retry state).
+
+### Runner resilience — what happens when an iteration goes wrong
+
+The runner treats every iteration as untrusted and gates progress mechanically:
+
+- **Watchdog** — each iteration has a wall-clock cap (default 900s, `FLOW_ITER_TIMEOUT_SECS`; `0` disables). A hung session gets SIGTERM, then SIGKILL after 10s; the kill routes into the transient-backoff path, not the attempt budget.
+- **Productivity gate** — an iteration only advances when the working tree is **clean** AND it produced a commit tagged `(grind: {topic} #{N})` or flipped the mission status. Anything else is unproductive.
+- **Retry state (`.attempt` file)** — an unproductive iteration retries up to **4 attempts total**, same iteration number. Retries get a *continuation prompt*: inspect `git status`/`git diff`, then **finish** the in-flight item, **revert + restart** it, or **revert + skip** it (logging the deferral). `GRIND_ATTEMPT` is exported so the session knows which attempt it is. The file persists, so retry state survives runner restarts. Exhausting all 4 stops the runner for triage.
+- **Dirty-tree guard** — a fresh iteration refuses to start on uncommitted changes. If the dirt is a previous session's interrupted iteration (first launch, counter already advanced), the runner **auto-resumes** it via the retry path instead of halting.
+- **Transient backoff** — known API-error signatures in the output (429/5xx/overloaded/quota/network), watchdog kills, and instant crashes with no work landed sleep 10–60 min (max 6 backoffs, `FLOW_LONG_BACKOFF_BASE` scales it) and relaunch the SAME iteration + attempt — the attempt budget is untouched.
 
 ## Handing off to the user
 
@@ -120,10 +130,11 @@ echo "$CLAUDE_PLUGIN_ROOT/bin/grind"   # resolve <abs>
 
 ```
 <abs>/bin/grind .agent/grind/{mission}.md            # run until done or max-iterations
-<abs>/bin/grind .agent/grind/{mission}.md --once      # exactly one iteration
+<abs>/bin/grind .agent/grind/{mission}.md --once      # exactly one fresh iteration
+<abs>/bin/grind .agent/grind/{mission}.md --count 5    # at most 5 fresh iterations this session
 <abs>/bin/grind .agent/grind/{mission}.md --dry-run    # preview, run nothing
-<abs>/bin/grind .agent/grind/{mission}.md --status     # progress + iteration count
-<abs>/bin/grind .agent/grind/{mission}.md --reset      # restart from iteration zero
+<abs>/bin/grind .agent/grind/{mission}.md --status     # progress, attempt state, log tail
+<abs>/bin/grind .agent/grind/{mission}.md --reset      # restart from iteration zero (clears retry state)
 <abs>/bin/grind .agent/grind/{mission}.md -y           # skip the arm-confirmation
 ```
 
@@ -164,6 +175,8 @@ From a **separate terminal**: `"$CLAUDE_PLUGIN_ROOT/bin/grind" .agent/grind/0000
 - **Iterations touch the same thing** — the log isn't being read/written; tighten the log-block format in Rules.
 - **Iterations balloon past scope** — `scope-hint` too big; drop to "1-2 items", prefer simpler candidates.
 - **Mission never flips to done** — add a `done-check`, or tighten "how to pick" so the model can confidently say "nothing left".
+- **Runner stopped: "exhausted all 4 attempts"** — the iteration failed repeatedly; inspect `git status`, then either commit the partial work with the iteration's `(grind: {topic} #{N})` tag or revert it and write `0` to the mission's `.attempt` file, and re-launch.
+- **Runner refuses: "working tree dirty"** — commit or stash your own changes; if the dirt is an interrupted grind iteration you want resumed, write `1` to the `.attempt` file and re-launch (the continuation prompt decides commit/revert).
 
 ## What NOT to do
 

@@ -13,14 +13,21 @@ Escape hatches / overrides (env vars):
   FLOW_ALLOW_NESTED=1        allow running from inside a Claude Code session (testing)
   FLOW_CLAUDE_PERMISSION_MODE  override the permission mode passed to claude
   FLOW_EXTRA_CLAUDE_ARGS     extra args appended to every claude invocation (shlex-split)
+  FLOW_BACKOFF_BASE          base seconds for the short exponential backoff (default 30)
+  FLOW_LONG_BACKOFF_BASE     seconds per step of the long transient-API backoff
+                             (default 600 → 10/20/…/60 min; lower it for testing)
+  FLOW_ITER_TIMEOUT_SECS     grind wall-clock watchdog per iteration (default 900; 0 = off)
 """
 
 import json
 import os
+import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 
@@ -33,6 +40,20 @@ DEFAULT_MODEL = "opus"          # opus 4.8 by default; sonnet only for mechanica
 # an interactive "yes") before executing.
 DEFAULT_PERMISSION_MODE = "bypassPermissions"
 RATE_LIMIT_FAST_FAIL_SECS = 120  # a run that fails faster than this looks like a rate limit
+
+# Transient API error signatures in the CLI's output — server-side capacity /
+# rate-limit / quota / network failures that deserve a long backoff instead of
+# burning a retry. Content-based, so it also catches errors that surface only
+# after the CLI's internal retries have pushed the wall clock past any
+# duration heuristic.
+TRANSIENT_OUTPUT_RE = re.compile(
+    r"API Error.*(429|500|502|503|504|529)|\b(429|529) [A-Z]|overloaded"
+    r"|rate[ _-]?limit|usage limit|daily limit|monthly limit|quota exceeded"
+    r"|plan limit|too many requests|temporarily unavailable|service unavailable"
+    r"|gateway timeout|conversation.{0,40}too long|context.{0,40}exceeded"
+    r"|stream timeout|anthropic api error|ETIMEDOUT|ECONNRESET|ENETUNREACH|fetch failed",
+    re.IGNORECASE,
+)
 
 
 # ── Terminal styling (no deps) ──────────────────────────────────────────────
@@ -294,16 +315,23 @@ def _summarize_event(obj: dict):
 
 
 def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_extra=None,
-                   effort=None, max_turns=None):
+                   effort=None, max_turns=None, timeout_secs=None):
     """Run one headless claude session. Streams events to a readable .log and a raw
-    .jsonl. Returns (exit_code, elapsed_secs, saw_rate_limit).
+    .jsonl. Returns (exit_code, elapsed_secs, saw_transient, timed_out).
+
+    `saw_transient` is True when the output contained a transient-API-error signature
+    (rate limit / 5xx / overloaded / quota / network) — callers should back off instead
+    of burning a retry. `timeout_secs` arms a wall-clock watchdog: past the deadline the
+    child gets SIGTERM, then SIGKILL after a 10s grace (`timed_out` reports it fired).
     """
     argv = build_claude_argv(prompt, model, permission_mode, effort=effort, max_turns=max_turns)
     env = dict(os.environ)
     if env_extra:
         env.update(env_extra)
     start = time.time()
-    saw_rate_limit = False
+    saw_transient = False
+    watchdog_fired = {"timed_out": False}
+    done_evt = threading.Event()
 
     with open(log_path, "a", encoding="utf-8") as logf, \
             open(jsonl_path, "a", encoding="utf-8") as jf:
@@ -311,13 +339,49 @@ def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_ext
         logf.write(dim(f"$ {' '.join(shlex.quote(a) for a in argv[:-1])} <prompt>\n"))
         logf.flush()
         try:
+            # POSIX: own process group (start_new_session) so kills reach the whole
+            # tree — the CLI's children inherit the stdout pipe, and an orphaned
+            # grandchild would otherwise keep the read loop alive after a kill.
             proc = subprocess.Popen(
                 argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True, bufsize=1, env=env,
+                start_new_session=(os.name == "posix"),
             )
         except OSError as e:
             logf.write(red(f"could not launch claude: {e}\n"))
-            return 127, time.time() - start, False
+            return 127, time.time() - start, False, False
+
+        def _kill_proc(sig):
+            try:
+                if os.name == "posix":
+                    os.killpg(os.getpgid(proc.pid), sig)
+                    return
+            except Exception:  # noqa: BLE001 — group may be gone; fall through
+                pass
+            try:
+                if sig == signal.SIGKILL:
+                    proc.kill()
+                else:
+                    proc.terminate()
+            except Exception:  # noqa: BLE001
+                pass
+
+        watchdog = None
+        if timeout_secs and timeout_secs > 0:
+            def _watchdog():
+                # wall-clock cap: a hung network read has no native timeout in the
+                # CLI (--max-turns caps turns, not time). SIGTERM past the deadline;
+                # SIGKILL if it's ignored for 10s. Keep this thread side-effect-free
+                # beyond the kill — the main thread does all logging.
+                if done_evt.wait(timeout_secs):
+                    return
+                if proc.poll() is None:
+                    watchdog_fired["timed_out"] = True
+                    _kill_proc(signal.SIGTERM)
+                    if not done_evt.wait(10) and proc.poll() is None:
+                        _kill_proc(signal.SIGKILL)
+            watchdog = threading.Thread(target=_watchdog, daemon=True)
+            watchdog.start()
 
         assert proc.stdout is not None
         try:
@@ -327,6 +391,8 @@ def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_ext
                 line = line.strip()
                 if not line:
                     continue
+                if TRANSIENT_OUTPUT_RE.search(line):
+                    saw_transient = True
                 try:
                     obj = json.loads(line)
                 except json.JSONDecodeError:
@@ -335,28 +401,40 @@ def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_ext
                     continue
                 if isinstance(obj, dict):
                     if obj.get("type") == "system" and obj.get("subtype") == "api_retry":
-                        saw_rate_limit = True
+                        saw_transient = True
                     if obj.get("type") == "result" and obj.get("is_error"):
                         sub = str(obj.get("subtype", "")) + str(obj.get("result", ""))
                         if "rate" in sub.lower() or "limit" in sub.lower():
-                            saw_rate_limit = True
+                            saw_transient = True
                     summary = _summarize_event(obj)
                     if summary:
                         logf.write(summary + "\n")
                         logf.flush()
             code = proc.wait()
+        except KeyboardInterrupt:
+            # the child runs in its own process group (see Popen above), so the
+            # terminal's SIGINT does not reach it — kill the group before bubbling up
+            _kill_proc(signal.SIGTERM)
+            time.sleep(0.5)
+            if proc.poll() is None:
+                _kill_proc(signal.SIGKILL)
+            raise
         except Exception as e:  # noqa: BLE001 — one job's crash must never kill the batch
             logf.write(red(f"runner error while streaming: {e}\n"))
-            try:
-                proc.kill()
-            except Exception:  # noqa: BLE001
-                pass
+            _kill_proc(signal.SIGKILL)
             code = proc.poll()
             if code is None:
                 code = 1
+        finally:
+            done_evt.set()
+            if watchdog is not None:
+                watchdog.join(timeout=1)
         elapsed = time.time() - start
+        timed_out = watchdog_fired["timed_out"]
+        if timed_out:
+            logf.write(red(f"⏱ watchdog: exceeded {int(timeout_secs)}s wall clock — killed\n"))
         logf.write(dim(f"----- exit {code} after {int(elapsed)}s -----\n"))
-    return code, elapsed, saw_rate_limit
+    return code, elapsed, saw_transient, timed_out
 
 
 def backoff_sleep(attempt: int, base: float = 30.0, cap: float = 600.0) -> None:
@@ -370,6 +448,23 @@ def backoff_sleep(attempt: int, base: float = 30.0, cap: float = 600.0) -> None:
         pass
     delay = min(cap, base * (2 ** max(0, attempt - 1)))
     info(yellow(f"  backing off {int(delay)}s before retry…"))
+    time.sleep(delay)
+
+
+def long_backoff_sleep(step: int) -> None:
+    """Long linear backoff for sustained transient-API failures (grind).
+
+    Step N sleeps N × base, capped at 6 × base. Default base is 600s, so the ladder
+    is 10/20/30/40/50/60 minutes (~3.5h total across 6 steps). Override the base with
+    FLOW_LONG_BACKOFF_BASE (seconds) for tuning/testing.
+    """
+    base = 600.0
+    try:
+        base = float(os.environ.get("FLOW_LONG_BACKOFF_BASE", base))
+    except ValueError:
+        pass
+    delay = min(6 * base, base * max(1, step))
+    info(yellow(f"  transient-API backoff: sleeping {int(delay)}s (step {step}/6)…"))
     time.sleep(delay)
 
 
