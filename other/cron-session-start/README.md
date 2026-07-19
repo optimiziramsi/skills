@@ -65,6 +65,51 @@ work block and let the wall fall in a lull.
 *in* that gap re-anchors a few minutes off-grid — harmless, and the next day's fixed schedule
 resets it. Firing early (no margin) is worse: it can miss the re-anchor entirely.
 
+## See your own usage (to place the grid)
+
+Point the grid at your data. This stdlib-only scan prints your token burn by hour and where
+your 5h blocks currently start (local time) — put a fresh cap just before your heavy hours,
+and the seam in your deadest ones:
+
+```python
+#!/usr/bin/env python3
+import os, glob, json, time, datetime as dt
+from collections import Counter
+cut = time.time() - 45*86400                       # last 45 days
+burn, ep = Counter(), []
+for f in glob.glob(os.path.expanduser('~/.claude/projects/**/*.jsonl'), recursive=True):
+    if os.path.getmtime(f) < cut:
+        continue
+    for line in open(f, errors='ignore'):
+        if '"timestamp"' not in line:
+            continue
+        try:
+            o = json.loads(line)
+            d = dt.datetime.fromisoformat(o['timestamp'].replace('Z', '+00:00'))
+        except Exception:
+            continue
+        h = d.astimezone().hour
+        u = (o.get('message') or {}).get('usage') or {}
+        burn[h] += sum(u.get(k, 0) or 0 for k in
+                       ('input_tokens', 'output_tokens',
+                        'cache_read_input_tokens', 'cache_creation_input_tokens'))
+        ep.append(d.timestamp())
+mx = max(burn.values() or [1])
+print("token burn by hour:")
+for h in range(24):
+    if burn[h]:
+        print(f"  {h:02d}  {'#' * int(40 * burn[h] / mx)}")
+ep.sort(); anchors, cur = [], None
+for e in ep:                                        # a new 5h block starts after a >5h gap
+    if cur is None or e >= cur + 5 * 3600:
+        cur = e; anchors.append(e)
+ah = Counter(dt.datetime.fromtimestamp(a).astimezone().hour for a in anchors)
+print("your 5h blocks currently start at:")
+for h in range(24):
+    if ah[h]:
+        print(f"  {h:02d}  {'#' * ah[h]}")
+```
+
 ## Recipe A — macOS (launchd)   ← recommended on a Mac
 
 launchd beats cron on a Mac: cron runs with a bare `PATH` and **silently skips** jobs missed
