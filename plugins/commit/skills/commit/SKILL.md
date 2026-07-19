@@ -10,6 +10,9 @@ model-authored commits.
 
 ## Cadence — commit by default
 
+If the project defines its own commit cadence (e.g. pause-for-review at topic close), the
+project's rule wins over this skill's commit-as-you-go default.
+
 Commit automatically as you work. You do **not** need to ask permission:
 
 - After each completed logical unit of work (a feature, a fix, a config change).
