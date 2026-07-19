@@ -113,13 +113,17 @@ improvement" is not a finding.
 
 ## Delegating to review subagents
 
-If your project provides review subagents, delegate the heavy reading to them and aggregate their
-findings into the `.agent/reviews/` doc — run them in parallel for a deep review. Common roles:
+Delegate the heavy reading to review subagents and aggregate their findings into the
+`.agent/reviews/` doc — run them in parallel for a deep review. This plugin bundles:
 
-- a **spec cross-checker** — one-feature drift between docs and code (lighter than a full review);
-- a **semantic reviewer** — a lifecycle/error-handling/cleanup/cast checklist for refactors;
-- a **pattern/style verifier** — coding-style compliance on a changeset;
-- a **project-wide drift auditor** — broad consistency snapshot.
+- **spec-cross-checker** — one-feature drift between docs and code (lighter than a full review);
+- **semantic-reviewer** — a lifecycle/error-handling/cleanup/cast checklist for refactors;
+- **wireframe-vs-code** — functional gaps between a wireframe and its implementation;
+- **doc-auditor** — project-wide drift audit of binding docs against code reality;
+- **isolation-reviewer** — adversarial multi-tenant isolation review of a diff or module.
+
+If your project provides its own agents for these roles (e.g. a pattern/style verifier), prefer
+the project's wiring.
 
 ## Preparing follow-up work
 

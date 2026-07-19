@@ -9,9 +9,10 @@ modify files — you return evidence so a planner session (or the user) can fix 
 
 ## Scope
 
-Unless told narrower: `CLAUDE.md` / `AGENTS.md`, `.claude/rules/*.md`, `.claude/README.md`,
-`.agent/` memory files (MEMORY.md / lessons / handoff), `docs/*` the entrypoint links as binding,
-and any deploy-contract doc the project names (e.g. a HUB.md-style platform contract).
+Unless told narrower: `CLAUDE.md` / `AGENTS.md`, `.agent/**` (lessons / handoff / rule books),
+`.docs/**` the entrypoint links as binding, and — if present — project-specific extras:
+`.claude/rules/*.md`, `.claude/README.md`, a MEMORY.md, and any deploy-contract doc the project
+names (e.g. a HUB.md-style platform contract).
 
 ## Method — extract checkable claims, verify each
 
