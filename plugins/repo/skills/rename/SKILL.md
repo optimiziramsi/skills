@@ -21,7 +21,8 @@ The user wants to rename or move a file. The flow:
    - `git mv <source> <target>` — preserves history.
    - For each non-archive reference, update the path. Use `sed -i '' 's|<old>|<new>|g'` for bulk
      replacement; verify with grep after.
-   - Don't touch archive/frozen folders (e.g. `*/archive/`) — they're historical record.
+   - Don't touch archive/frozen folders (e.g. `*/archive/`) or archive FILES (names matching
+     `*archive*.md`, e.g. `worktrees-archive.md`) — they're historical record.
 5. **Verify** — re-grep for the old path; only archive matches should remain.
 6. **Single commit**: `rename {old} → {new}; update N references across M files`.
 
@@ -37,7 +38,8 @@ Scan all non-archive text files for the old path — Markdown, JSON, shell, YAML
 - `bin/*.sh`, scripts, and config (`package.json`, `tsconfig.json`, …) when relevant
 - Source code (`packages/`, `apps/`, `src/`) — only if the rename involves a code path
 
-Skip archive/frozen folders (`*/archive/`) — they're a frozen historical record, not live references.
+Skip archive/frozen folders (`*/archive/`) AND archive files (names matching `*archive*.md`, e.g.
+`worktrees-archive.md`) — they're a frozen historical record, not live references.
 
 ## Reference update strategies
 
@@ -65,7 +67,7 @@ Skip archive/frozen folders (`*/archive/`) — they're a frozen historical recor
 
 ## What NOT to do
 
-- Don't touch archive folders. Ever.
+- Don't touch archive folders or archive-named files (`*archive*.md`). Ever.
 - Don't rewrite commit messages from history.
 - Don't auto-update if grep returns >50 matches — that's an unusual rename, surface to the user first.
 - Don't rename without `git mv` (loses history).
