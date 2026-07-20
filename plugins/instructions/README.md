@@ -73,8 +73,9 @@ system consistent over time — so you fix something once and every future sessi
     Config-driven **instruction-system linter** — 19 mechanical checks (cross-refs, lessons
     index/priority, agents/skills/commands symmetry, pattern routes, filenames, dup tripwires,
     sizes in lines OR chars, counts, staleness, boards, audit stamp, 100-col `[wrap]`,
-    `[no-tables]`). Activates only where a project ships `.agent/meta-lint.json`; pulsed at
-    SessionStart via `--fast` with a loud-DISARM `|| echo` fallback. Escape hatch
+    `[no-tables]`). Activates only where a project ships `.agent/meta-lint.json`; pulsed advisory
+    at SessionStart via `--fast` (loud-DISARM `|| echo` fallback), and **blocks at Stop** via
+    `--stop` (exit 2) when a file-writing session leaves a size/count cap breached. Escape hatch
     `META_LINT_OFF=1`; self-test `--test`.
 
 - name: `tripwire-guard`
@@ -109,7 +110,9 @@ directory `layout`, `filenames` conventions, `dup` tripwire pairs, `boards`, the
 file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide allows capped).
 
 - **Modes:** full run (findings listed, exit 1 — advisory), `--fast` (one-line summary, exit 0 —
-  the SessionStart pulse), `--test` (self-test), `--config P` / `--root D` overrides.
+  the SessionStart pulse), `--stop` (Stop-hook **BLOCK** — exit 2 when the session wrote files and a
+  size/count cap is breached, one-shot per breach-set), `--test` (self-test), `--config P` /
+  `--root D` overrides.
 - **Format checks:** `[wrap]` flags prose lines over `wrap.width` (default 100) — code fences,
   single-unsplittable-token lines (long URLs/paths), and GENERATED files exempt; frontmatter is
   not (use folded scalars). `[no-tables]` flags markdown tables in governed files — convert to
@@ -118,9 +121,12 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
   `extra_governed_files` pulls extensionless agent-written files (e.g. `.todo-inbox`) under both
   format checks — governed markdown is otherwise `*.md` under the crossref roots.
 - **Wiring:** SessionStart runs `meta-lint --fast || echo "⚠️ meta-lint DISARMED …"` — fail-open
-  but **loud**: the fallback fires only when the engine itself can't run, never on findings.
+  but **loud**: the fallback fires only when the engine itself can't run, never on findings. Stop
+  runs `meta-lint --stop` bare (no `|| echo`, so its exit 2 actually blocks); only the size/count
+  caps run there, and only a file-writing session over a cap is stopped.
 - **Coexistence:** where `.agent/meta-lint.json` exists, **meta-lint supersedes `caps.sh`** —
-  caps.sh detects the config and skips itself, so nothing double-reports.
+  caps.sh detects the config and skips itself at BOTH SessionStart and Stop, so exactly one engine
+  surfaces caps and nothing double-reports or double-blocks.
 - **Example policy:** [`examples/meta-lint.rabbit-run.json`](examples/meta-lint.rabbit-run.json) —
   a full-strength real-project config (line caps per file class, 4 dup tripwires, RR counts,
   board + audit + routes checks all armed). Copy and trim for your project.

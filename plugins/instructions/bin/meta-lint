@@ -12,6 +12,9 @@ overridable in the config. Where a config exists, this engine supersedes the cap
     meta-lint             # full run, grouped findings, exit 1 on findings (advisory)
     meta-lint --fast      # one-line summary, exit 0 (SessionStart pulse; the hook wiring's
                           #   `|| echo` loud-DISARM fallback fires only on real failure)
+    meta-lint --stop      # Stop-hook BLOCK: exit 2 if the session wrote files AND a size/count cap
+                          #   is breached (one-shot per breach-set); mirrors the caps.sh Stop hook,
+                          #   driven by .agent/meta-lint.json — the ONLY mode that can block
     meta-lint --test      # self-test against a synthetic tree
     meta-lint --config P  # explicit config path (bypasses the .agent/meta-lint.json gate)
     meta-lint --root D    # lint D (default: $CLAUDE_PROJECT_DIR, else cwd)
@@ -39,14 +42,17 @@ Checks (pick per-project via "checks"; all default-on, each no-ops when its dir 
   [no-tables]     markdown tables banned in governed files (record lists instead); root README.md
                   excluded by default
 
-Escape hatch: META_LINT_OFF=1. Python3 stdlib only. ADVISORY by design: exit 1 on findings so
-scripts can branch, but nothing should consume it as a blocker.
+Escape hatch: META_LINT_OFF=1. Python3 stdlib only. ADVISORY by default: exit 1 on findings so
+scripts can branch, and nothing consumes it as a blocker — EXCEPT `--stop`, the Stop-hook mode,
+which exits 2 to BLOCK session-end on a size/count cap breach, so the caps the system describes get
+mechanically enforced (mirroring the caps.sh Stop hook this engine supersedes).
 """
 
 from __future__ import annotations
 
 import fnmatch
 import glob as globmod
+import hashlib
 import json
 import os
 import re
@@ -990,6 +996,78 @@ def fast_summary(findings: list[str]) -> str:
     return f"meta: {len(findings)} finding(s) — {parts}. Run the meta-lint engine (instructions@opsi) for detail."
 
 
+# Stop-hook BLOCK mode — the caps.sh Stop contract, driven by .agent/meta-lint.json instead of the
+# hardcoded house caps. caps.sh self-disables where meta-lint.json exists, so exactly one of the two
+# enforces Stop; this one carries it for opted-in projects.
+WRITE_TOOL_RX = re.compile(r'"name": ?"(Edit|Write|MultiEdit|NotebookEdit)"')
+
+
+def transcript_has_write(path: str) -> bool:
+    """True if the session transcript records an Edit/Write/MultiEdit/NotebookEdit tool_use — the
+    same predicate caps.sh greps for, so read-only/chat sessions never block. An unreadable
+    transcript reads as no-writes (fail open, matching caps.sh's `grep … || exit 0`)."""
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            return any(WRITE_TOOL_RX.search(line) for line in f)
+    except OSError:
+        return False
+
+
+def stop_mode(payload: dict | None = None, root: str | None = None) -> int:
+    """Block session-end (exit 2) when the session wrote files AND a size/count cap is breached;
+    exit 0 otherwise. Only [size]+[count] run (the caps) — blocking a Stop on a broken cross-ref or
+    a stale audit stamp is too aggressive. One-shot per distinct breach-set per session. Fails open
+    (exit 0) on any internal error — never wedge a session shut on our own bug. `payload`/`root` are
+    test seams; in production the Stop-hook JSON is read from stdin and the root from the env."""
+    if os.environ.get("META_LINT_OFF") == "1":
+        return 0
+    if payload is None:
+        try:
+            payload = json.loads(sys.stdin.read() or "{}")
+        except (ValueError, OSError):
+            payload = {}
+    if payload.get("stop_hook_active") is True:
+        return 0  # already inside a Stop-hook continuation — don't loop
+    if root is None:
+        root = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    if not os.path.isfile(os.path.join(root, CONFIG_REL)):
+        return 0  # project hasn't opted into meta-lint — nothing to enforce
+    try:
+        cfg = load_config(os.path.join(root, CONFIG_REL))
+        checks = [c for c in ("size", "count") if c in cfg["checks"]]  # honor a project opt-out
+        breaches = run_all(root, merge(cfg, {"checks": checks})) if checks else []
+    except Exception:
+        return 0
+    if not breaches:
+        return 0
+    transcript = payload.get("transcript_path") or ""
+    if transcript and os.path.isfile(transcript) and not transcript_has_write(transcript):
+        return 0  # read-only / chat session — don't nag
+    # one-shot per distinct breach-set per session — don't block twice for the same state
+    session_id = payload.get("session_id") or "unknown"
+    state_hash = hashlib.sha1("\n".join(breaches).encode("utf-8")).hexdigest()
+    marker = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"meta-lint-stop-{session_id}")
+    try:
+        prior = ""
+        if os.path.isfile(marker):
+            with open(marker, encoding="utf-8") as f:
+                prior = f.read()
+        if prior == state_hash:
+            return 0
+        with open(marker, "w", encoding="utf-8") as f:
+            f.write(state_hash)
+    except OSError:
+        pass
+    print(
+        "[meta-lint] instruction-surface over cap — compact "
+        "(delete → fold → route → tighten → retire), don't raise the cap:",
+        file=sys.stderr,
+    )
+    for b in breaches:
+        print(f"  • {b}", file=sys.stderr)
+    return 2
+
+
 def run_tests() -> int:
     import shutil
     import tempfile
@@ -1129,6 +1207,47 @@ def run_tests() -> int:
         finally:
             shutil.rmtree(empty, ignore_errors=True)
 
+        # ── --stop BLOCK-mode contract (mirrors the caps.sh Stop hook) ─────────────
+        marker_dir = tempfile.mkdtemp(prefix="meta-lint-marker-")
+        stop_root = tempfile.mkdtemp(prefix="meta-lint-stop-")
+        clean_root = tempfile.mkdtemp(prefix="meta-lint-stopclean-")
+        noconfig_root = tempfile.mkdtemp(prefix="meta-lint-stopnocfg-")
+        old_tmpdir = os.environ.get("TMPDIR")
+        os.environ["TMPDIR"] = marker_dir  # keep one-shot markers off the real TMPDIR
+        try:
+            os.makedirs(os.path.join(stop_root, ".agent"))
+            with open(os.path.join(stop_root, ".agent", "meta-lint.json"), "w") as f:
+                json.dump({"checks": ["size", "count"],
+                           "size": {"caps": [{"path": "CLAUDE.md", "cap": 100, "unit": "chars"}]}}, f)
+            with open(os.path.join(stop_root, "CLAUDE.md"), "w") as f:
+                f.write("x" * 200)  # 200c > 100c cap → one breach
+            wrote_t = os.path.join(stop_root, "wrote.jsonl")
+            with open(wrote_t, "w") as f:
+                f.write('{"message":{"content":[{"type":"tool_use","name":"Edit"}]}}\n')
+            readonly_t = os.path.join(stop_root, "readonly.jsonl")
+            with open(readonly_t, "w") as f:
+                f.write('{"message":{"content":[{"type":"text","text":"just chatting"}]}}\n')
+
+            stop_block = stop_mode({"session_id": "sA", "transcript_path": wrote_t}, root=stop_root)
+            stop_oneshot = stop_mode({"session_id": "sA", "transcript_path": wrote_t}, root=stop_root)
+            stop_readonly = stop_mode({"session_id": "sB", "transcript_path": readonly_t}, root=stop_root)
+            stop_active = stop_mode({"session_id": "sC", "transcript_path": wrote_t,
+                                     "stop_hook_active": True}, root=stop_root)
+
+            os.makedirs(os.path.join(clean_root, ".agent"))
+            with open(os.path.join(clean_root, ".agent", "meta-lint.json"), "w") as f:
+                json.dump({"checks": ["size", "count"]}, f)  # opted in, nothing over cap
+            stop_clean = stop_mode({"session_id": "sD", "transcript_path": wrote_t}, root=clean_root)
+
+            stop_noconfig = stop_mode({"session_id": "sE", "transcript_path": wrote_t}, root=noconfig_root)
+        finally:
+            if old_tmpdir is None:
+                os.environ.pop("TMPDIR", None)
+            else:
+                os.environ["TMPDIR"] = old_tmpdir
+            for d in (marker_dir, stop_root, clean_root, noconfig_root):
+                shutil.rmtree(d, ignore_errors=True)
+
         want = [
             ("broken cross-ref", any("nope.md" in f for f in findings)),
             ("orphan lesson", any("orphan.md" in f for f in findings)),
@@ -1176,6 +1295,12 @@ def run_tests() -> int:
             ("fenced table exempt", not any("tablefix.md:8" in f for f in findings)),
             ("root README table allowed", not any(f.startswith("[no-tables]") and "README" in f for f in findings)),
             ("no-tables off via checks list", not any(f.startswith("[no-tables]") for f in subset)),
+            ("stop: over-cap + wrote-files → block (exit 2)", stop_block == 2),
+            ("stop: one-shot suppresses repeat block", stop_oneshot == 0),
+            ("stop: read-only session → no block", stop_readonly == 0),
+            ("stop: stop_hook_active → no block", stop_active == 0),
+            ("stop: opted-in but clean → no block", stop_clean == 0),
+            ("stop: no meta-lint.json → no block", stop_noconfig == 0),
         ]
         fails = 0
         for name, ok in want:
@@ -1193,6 +1318,8 @@ def main() -> int:
     argv = sys.argv[1:]
     if "--test" in argv:
         return run_tests()
+    if "--stop" in argv:
+        return stop_mode()
     if os.environ.get("META_LINT_OFF") == "1":
         return 0
 
