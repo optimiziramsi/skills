@@ -139,6 +139,8 @@ DEFAULTS: dict = {
         "require": False,  # true → a missing stamp/file is itself a finding
     },
     "generated": {"files": [".agent/patterns/pattern-routes.tsv"], "marker": "GENERATED"},
+    # extensionless agent-written files pulled under [wrap]/[no-tables] (e.g. ".todo-inbox")
+    "extra_governed_files": [],
     "filenames": {
         "rules": [
             {"dirs": [".agent/plan", ".agent/loop", ".agent/grind"], "target": "files",
@@ -874,7 +876,11 @@ def fence_mask(lines: list[str]) -> list[bool]:
 def governed_lines(root: str, cfg: dict, exclude: list[str]):
     """Yield (rel, lines, fenced) for governed markdown minus excluded globs and GENERATED files."""
     marker = cfg["generated"]["marker"]
-    for rel in meta_md_files(root, cfg):
+    rels = list(meta_md_files(root, cfg))
+    for extra in cfg.get("extra_governed_files", []):
+        if extra not in rels and os.path.isfile(os.path.join(root, extra)):
+            rels.append(extra)
+    for rel in rels:
         if any(fnmatch.fnmatch(rel, pat) for pat in exclude):
             continue
         try:
@@ -1105,12 +1111,17 @@ def run_tests() -> int:
         with open(os.path.join(root, "README.md"), "w") as f:  # root README: sole table exception
             f.write("# R\n| a | b |\n| --- | --- |\n| 1 | 2 |\n")
             f.write("readme prose " * 12 + "\n")  # long prose — README excluded from wrap too
+        with open(os.path.join(root, ".todo-inbox"), "w") as f:  # extensionless, opt-in governed
+            f.write("# inbox\n")
+            f.write("deferral " * 15 + "end\n")  # 136 chars → flagged only via extra_governed_files
 
         cfg = load_config(os.path.join(root, ".agent", "meta-lint.json"))
         findings = run_all(root, cfg)
         subset_cfg = merge(cfg, {"checks": ["size"]})
         subset = run_all(root, subset_cfg)
         wrap50 = run_all(root, merge(cfg, {"checks": ["wrap"], "wrap": {"width": 50}}))
+        inbox = run_all(root, merge(cfg, {"checks": ["wrap"],
+                                          "extra_governed_files": [".todo-inbox"]}))
 
         empty = tempfile.mkdtemp(prefix="meta-lint-empty-")
         try:
@@ -1158,6 +1169,8 @@ def run_tests() -> int:
             ("root README exempt from wrap", not any(f.startswith("[wrap]") and "README" in f for f in findings)),
             ("width override flags 60-char line", any("wrapfix.md:8" in f for f in wrap50)),
             ("wrap off via checks list", not any(f.startswith("[wrap]") for f in subset)),
+            ("extensionless file ungoverned by default", not any(".todo-inbox" in f for f in findings)),
+            ("extra_governed_files pulls it under wrap", any(f.startswith("[wrap] .todo-inbox:2 ") for f in inbox)),
             ("table flagged at header row", any(f.startswith("[no-tables] .agent/tablefix.md:3 ") for f in findings)),
             ("prose pipe not flagged", not any("tablefix.md:2" in f for f in findings)),
             ("fenced table exempt", not any("tablefix.md:8" in f for f in findings)),

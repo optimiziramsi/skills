@@ -115,6 +115,8 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
   not (use folded scalars). `[no-tables]` flags markdown tables in governed files — convert to
   record lists (one dash per record, fields as 2-space-indented `field: value` lines); the
   repo-root `README.md` is excluded by default, both checks take extra `exclude` globs.
+  `extra_governed_files` pulls extensionless agent-written files (e.g. `.todo-inbox`) under both
+  format checks — governed markdown is otherwise `*.md` under the crossref roots.
 - **Wiring:** SessionStart runs `meta-lint --fast || echo "⚠️ meta-lint DISARMED …"` — fail-open
   but **loud**: the fallback fires only when the engine itself can't run, never on findings.
 - **Coexistence:** where `.agent/meta-lint.json` exists, **meta-lint supersedes `caps.sh`** —

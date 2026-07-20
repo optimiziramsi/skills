@@ -76,7 +76,9 @@ All governed instruction markdown follows one mechanical format, enforced by met
 - **Hard-wrap prose at 100 columns.** Mechanical exemptions ONLY: lines inside code fences; lines
   whose content is a single unsplittable token (a long URL or path — use reference-style link
   definitions); files with a GENERATED header. YAML frontmatter is NOT exempt — a long
-  `description:` uses a folded scalar (`>-`) and wraps like prose.
+  `description:` uses a folded scalar (`>-`) and wraps like prose. Agent-written extensionless
+  files (e.g. a `.todo-inbox` deferral queue) belong under the same rule — projects running the
+  meta-lint engine list them in `extra_governed_files`.
 - **Tables are banned — use record lists**: YAML array-of-objects shape. The rules: (1) **one
   dash per RECORD** — never one dash per field; (2) the record's remaining fields sit under the
   dash as 2-space-indented `field: value` lines; (3) a long or multi-line value gets the bare
