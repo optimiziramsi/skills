@@ -32,7 +32,9 @@ Fail-open by design: any unexpected error exits 0 so a broken hook can never bri
 session. Escape hatches (user-set only — the hook reads its own process env):
   GIT_GUARD_OFF=1               disable everything.
   GIT_GUARD_STRICT              comma-separated tokens RE-ENABLING blocks the default leaves off:
-                                `rebase`, `amend`, `checkout-file`.
+                                `rebase`, `amend`, `checkout-file`, `reset` (block ALL `git reset`,
+                                even unstage / soft-to-HEAD~N — for repos that forbid ANY
+                                index/history manipulation by the agent).
   GIT_GUARD_ALLOW               comma-separated tokens RELAXING workflow blocks for projects that
                                 need them: `fetch`, `bulk-add`, `merge`, `protected-branch`,
                                 `soft-reset`. (The destructive core — push/pull, reset --hard,
@@ -151,6 +153,9 @@ def check(command):
         if sub == "filter-branch":
             return "`git filter-branch` rewrites history — not without the user"
         if sub == "reset":
+            if "reset" in strict:
+                return ("`git reset` is blocked by GIT_GUARD_STRICT in this project — no index/"
+                        "history manipulation by the agent; the user runs any reset themselves")
             if any(a in ("--hard", "--merge", "--keep") for a in args):
                 return ("`git reset --hard` clobbers the worktree — check what's there first; "
                         "plain `git reset <file>` to unstage is fine")
@@ -309,6 +314,11 @@ def self_test():
     chk("reset soft upstream blocked", True, "git reset --soft @{u}")
     chk("soft-reset allow token relaxes", False, "git reset --soft develop", allow="soft-reset")
     chk("reset file allowed", False, "git reset src/app.ts")
+    # GIT_GUARD_STRICT=reset — paranoid mode blocks ALL reset forms
+    chk("reset soft HEAD~N blocked via strict=reset", True, "git reset --soft HEAD~3", strict="reset")
+    chk("reset file blocked via strict=reset", True, "git reset src/app.ts", strict="reset")
+    chk("reset --hard blocked via strict=reset", True, "git reset --hard HEAD~1", strict="reset")
+    chk("bare reset blocked via strict=reset", True, "git reset", strict="reset")
 
     # discards
     chk("clean -f blocked", True, "git clean -fd")

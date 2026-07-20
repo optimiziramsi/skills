@@ -62,10 +62,11 @@ Enable `git` alone to get the guardrails while keeping your own commit format.
 > `claude`):
 >
 > - `GIT_GUARD_OFF=1` — disable the guard entirely.
-> - `GIT_GUARD_STRICT=rebase,amend,checkout-file` — comma-separated tokens that **re-enable**
+> - `GIT_GUARD_STRICT=rebase,amend,checkout-file,reset` — comma-separated tokens that **re-enable**
 >   blocks the default leaves off, for repos that want append-only history: `rebase`
 >   (block `git rebase`), `amend` (block `git commit --amend`), `checkout-file`
->   (block `git checkout <ref> -- <path>`).
+>   (block `git checkout <ref> -- <path>`), `reset` (block ALL `git reset` — even unstage /
+>   soft-to-HEAD~N — for repos that forbid any index/history manipulation by the agent).
 > - `GIT_GUARD_ALLOW=fetch,bulk-add,merge,protected-branch,soft-reset` — comma-separated tokens
 >   that **relax** individual workflow blocks: `fetch` (read-only `git fetch`), `bulk-add`
 >   (`git add -A`/`--all`/`.`), `merge` (non-FF `git merge`), `protected-branch` (checkout/switch/
