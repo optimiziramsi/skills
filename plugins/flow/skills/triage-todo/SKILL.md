@@ -13,6 +13,12 @@ description: >-
 one) accumulates agent deferrals awaiting user triage. This skill walks each item, decides where it
 belongs, and clears it from the list.
 
+Recommended inbox entry shape (record list, newest on top): `- topic:` (short imperative title),
+`type:` (decision | bug | feature | refactor | meta | chore — the triage routing hint), `origin:`
+(date + which session parked it), `why:` (out-of-scope-of-X / blocked-on-Y / needs-user-decision),
+`context:` (act-cold content — long values as a bare key + 4-space-indented lines). Scan `type:` +
+`why:` to route without reading bodies.
+
 ## When invoked
 
 The user wants to clear the parking lot. The flow is collaborative — you propose, they confirm.

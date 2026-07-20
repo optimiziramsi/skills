@@ -55,5 +55,7 @@ Agent-owned mirror of `.todo` processing — the user writes `.todo`, this file 
 
 - **Never edit `.todo`** — not even to mark items done; the user prunes their own inbox using the
   ledger. (If the project armed `.todo` writes, still prefer the ledger — arming is for triage.)
+- **Deferrals you park in a `.todo-inbox`** follow the record entry shape the `triage-todo` skill
+  documents (`topic` / `type` / `origin` / `why` / `context`) — parked ≠ unstructured.
 - **Don't re-copy items** already tracked — the diff in step 1 is the dedup gate.
 - **Don't batch everything into one commit** at the end.
