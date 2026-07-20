@@ -1,6 +1,12 @@
 ---
 name: instructions-audit
-description: De-rot the agent instruction system — after many sessions of accretion, keep it SMALL, TRUE, and NON-DUPLICATED. Sweeps for broken pointers, dead/duplicate rules, truth-vs-reality drift, cap breaches, and enforcement drift; applies safe fixes (T2) directly and batches risky ones (T3) into one proposal. Use when a size cap trips, when instructions contradict reality, after heavy rule churn, roughly monthly, or when the user says "instructions audit" / "audit the setup" / "what's stale".
+description: >-
+  De-rot the agent instruction system — after many sessions of accretion, keep it SMALL, TRUE, and
+  NON-DUPLICATED. Sweeps for broken pointers, dead/duplicate rules, truth-vs-reality drift, cap
+  breaches, and enforcement drift; applies safe fixes (T2) directly and batches risky ones (T3) into
+  one proposal. Use when a size cap trips, when instructions contradict reality, after heavy rule
+  churn, roughly monthly, or when the user says "instructions audit" / "audit the setup" / "what's
+  stale".
 ---
 
 # Instructions audit — keep the system small, true, and non-duplicated

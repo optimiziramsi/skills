@@ -1,24 +1,31 @@
 ---
 name: instructions-maintenance
-description: The constitution of the agent instruction system — the rules for how CLAUDE.md, .claude/ (skills, rules, hooks, settings, agents), and .agent/ evolve. Load this BEFORE creating or modifying any instruction file, when adding a skill/rule/hook/agent, changing a convention, or capturing a lesson. Owns the design principles, extension criteria, governance tiers, retention policy, and caps that the other instructions skills apply.
+description: >-
+  The constitution of the agent instruction system — the rules for how CLAUDE.md, .claude/ (skills,
+  rules, hooks, settings, agents), and .agent/ evolve. Load this BEFORE creating or modifying any
+  instruction file, when adding a skill/rule/hook/agent, changing a convention, or capturing a
+  lesson. Owns the design principles, extension criteria, governance tiers, retention policy, and
+  caps that the other instructions skills apply.
 ---
 
 # Instruction system — constitution & maintenance
 
-This skill owns the rules for how the instruction system itself evolves. If it conflicts with another
-instruction file, this file wins — then fix the other. Assumes the `.agent/` house layout.
+This skill owns the rules for how the instruction system itself evolves. If it conflicts with
+another instruction file, this file wins — then fix the other. Assumes the `.agent/` house layout.
 
-The other `instructions` skills apply what this defines: `retro` harvests into it, `lessons` captures
-into it, `instructions-audit` repairs it, `rules-change` changes it. This is the shared model.
+The other `instructions` skills apply what this defines: `retro` harvests into it, `lessons`
+captures into it, `instructions-audit` repairs it, `rules-change` changes it. This is the shared
+model.
 
 ## Design principles
 
 1. **One fact, one owner.** Every convention/invariant/table lives in exactly one file; everything
    else links to it. Duplication is how instructions rot.
-2. **Enforce mechanically what must never happen.** Hard rules become hooks or permission denies, not
-   prose. Prose is for judgment.
+2. **Enforce mechanically what must never happen.** Hard rules become hooks or permission denies,
+   not prose. Prose is for judgment.
 3. **By convention, not enumeration.** Never document what `ls`, `git log`, or the filesystem can
-   answer — document the naming convention and point at the source. Enumerated lists are drift bombs.
+   answer — document the naming convention and point at the source. Enumerated lists are drift
+   bombs.
 4. **Rules guard, skills teach.** `.claude/rules/*.md` = path-scoped MUST/NEVER invariants (≤ ~20
    lines, auto-loaded). Skills = full procedures, loaded per task.
 5. **Lessons remember.** `.agent/lessons/` is the single sink for recurring mistakes and intentional
@@ -26,19 +33,17 @@ into it, `instructions-audit` repairs it, `rules-change` changes it. This is the
 
 ## One fact, one owner — the ownership matrix
 
-Keep an authoritative table (in this file, or a CLAUDE.md section) of which file owns which class of
-fact, so nothing is documented twice. A typical house layout:
+Keep an authoritative record list (in this file, or a CLAUDE.md section) of which file owns which
+class of fact, so nothing is documented twice. A typical house layout:
 
-| Fact class | Owner |
-|---|---|
-| Session workflow / routing summary | `CLAUDE.md` |
-| Path-scoped invariants | `.claude/rules/<domain>.md` |
-| Full procedures | `.claude/skills/<name>/SKILL.md` |
-| Recurring mistakes, intentional designs | `.agent/lessons/` |
-| Architecture / code-shape / recipes | `.docs/` |
-| Mechanical enforcement | `.claude/settings.json` + `.claude/hooks/` |
-| Applied T2/T3 changes + `Last audit:` stamp | `.agent/instructions-changelog.md` |
-| This constitution (tiers, caps, doc-sync gate) | this file |
+- Session workflow / routing summary: `CLAUDE.md`
+- Path-scoped invariants: `.claude/rules/<domain>.md`
+- Full procedures: `.claude/skills/<name>/SKILL.md`
+- Recurring mistakes, intentional designs: `.agent/lessons/`
+- Architecture / code-shape / recipes: `.docs/`
+- Mechanical enforcement: `.claude/settings.json` + `.claude/hooks/`
+- Applied T2/T3 changes + `Last audit:` stamp: `.agent/instructions-changelog.md`
+- This constitution (tiers, caps, doc-sync gate): this file
 
 ## The doc-sync gate
 
@@ -90,9 +95,10 @@ All governed instruction markdown follows one mechanical format, enforced by met
   PostToolUse: `additionalContext` nudges.
 - **Agent** (`.claude/agents/<name>.md`): a delegated task needed a restricted tool set or isolated
   context ≥2×. Don't pre-create.
-- **Command wrapper** (`.claude/commands/<name>.md`): exists only so the slash picker lists it. Every
-  skill gets one; a wrapper is a `description:` + a pointer to its skill + `$ARGUMENTS` — never any
-  logic. Creating/renaming/retiring a skill updates its wrapper in the SAME commit (1:1 parity).
+- **Command wrapper** (`.claude/commands/<name>.md`): exists only so the slash picker lists it.
+  Every skill gets one; a wrapper is a `description:` + a pointer to its skill + `$ARGUMENTS` —
+  never any logic. Creating/renaming/retiring a skill updates its wrapper in the SAME commit (1:1
+  parity).
 - **Settings** (`.claude/settings.json`): shared/tracked; machine overrides go in
   `settings.local.json` (gitignored). Deny rules beat allows — never remove a deny without a user
   decision.
@@ -106,8 +112,8 @@ rule, the lessons index, the changelog…). If the project has a mechanical `cap
 it owns the numbers and enforces them; any table here only mirrors it. **Never raise a cap to fit
 content** — that's a T3 change.
 
-**Retention test** — every statement in a live instruction file must pass all four; the first failure
-decides the action:
+**Retention test** — every statement in a live instruction file must pass all four; the first
+failure decides the action:
 
 1. **Still true?** No → delete or amend; reality wins.
 2. **Still actionable?** Would a future session act differently without it (judged against the last
@@ -123,7 +129,8 @@ deleted, and live files never keep "(kept for history)" content.
 
 ## Governance tiers
 
-- **T1 — status/journal**: plan/status updates, new lessons entries, changelog lines → update freely.
+- **T1 — status/journal**: plan/status updates, new lessons entries, changelog lines → update
+  freely.
 - **T2 — safe**: wording clarifications of an existing rule, reality-syncs, broken-pointer fixes,
   mechanical compaction that passes the retention test → apply directly + ONE changelog line.
 - **T3 — risky**: new/removed rules, cap changes, ANY change to enforcement/automation (hooks,

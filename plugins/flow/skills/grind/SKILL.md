@@ -1,30 +1,42 @@
 ---
 name: grind
-description: |
-  Prepare a grind mission file and hand off to the flow grind runner (bin/grind). Grind runs the SAME mission N times — each iteration a fresh Claude session that picks 1–3 new items per the mission's picking rules, commits them, and appends to a log. Use grind for large incremental backlogs the user can't enumerate upfront: "add tests across the app", "implement missing features", "sweep style violations", "backfill docstrings". Triggers: "/grind", "prepare a grind", "grind through X", "incrementally implement X". Do NOT use for one-off tasks (do it directly) or enumerable multi-step plans (use looper).
+description: >-
+  Prepare a grind mission file and hand off to the flow grind runner (bin/grind). Grind runs the
+  SAME mission N times — each iteration a fresh Claude session that picks 1–3 new items per the
+  mission's picking rules, commits them, and appends to a log. Use grind for large incremental
+  backlogs the user can't enumerate upfront: "add tests across the app", "implement missing
+  features", "sweep style violations", "backfill docstrings". Triggers: "/grind", "prepare a grind",
+  "grind through X", "incrementally implement X". Do NOT use for one-off tasks (do it directly) or
+  enumerable multi-step plans (use looper).
 ---
 
 # Grind — preparing grind missions
 
-Grind is for **long incremental work the human can't enumerate upfront** and each iteration discovers. One mission file (`.agent/grind/<topic>.md`) runs N times via the shipped runner (`bin/grind`); the model picks what to do each run and remembers via a log.
+Grind is for **long incremental work the human can't enumerate upfront** and each iteration
+discovers. One mission file (`.agent/grind/<topic>.md`) runs N times via the shipped runner
+(`bin/grind`); the model picks what to do each run and remembers via a log.
 
-You do **not** run the grind yourself — the runner refuses to launch inside a Claude session. Prepare the mission file and hand off the command.
+You do **not** run the grind yourself — the runner refuses to launch inside a Claude session.
+Prepare the mission file and hand off the command.
 
 ## When to use grind vs looper vs direct work
 
-| Situation | Use |
-| --- | --- |
-| Single focused task done in this session | direct |
-| N distinct pre-defined jobs, each different | looper |
-| "Keep chipping away at X" — items unknown, same mission shape | grind |
-| Mission where "done" is observable (tests pass, no TODOs) | grind |
-| Rewrite with hard ordering dependencies | looper |
+- Single focused task done in this session: direct
+- N distinct pre-defined jobs, each different: looper
+- "Keep chipping away at X" — items unknown, same mission shape: grind
+- Mission where "done" is observable (tests pass, no TODOs): grind
+- Rewrite with hard ordering dependencies: looper
 
-Grind's unique traits: one mission file, many iterations (no enumeration); the model scans and picks each run; cross-iteration memory via a log file (the only state between fresh sessions); a mission-level stop signal (`status:`).
+Grind's unique traits: one mission file, many iterations (no enumeration); the model scans and picks
+each run; cross-iteration memory via a log file (the only state between fresh sessions); a
+mission-level stop signal (`status:`).
 
 ## Mission file format
 
-Filename: `.agent/grind/YYMMDD_HHMMSS_{topic}.md` — 6+6 datetime prefix from `date '+%y%m%d_%H%M%S'`. The topic slug is short kebab-case (`web-tests`, `docstrings`, `style-sweep`). **The runner enforces this** — a mission whose filename doesn't match is rejected at launch (the prefix keeps the topic, log stem, and commit tags stable).
+Filename: `.agent/grind/YYMMDD_HHMMSS_{topic}.md` — 6+6 datetime prefix from `date
+'+%y%m%d_%H%M%S'`. The topic slug is short kebab-case (`web-tests`, `docstrings`, `style-sweep`).
+**The runner enforces this** — a mission whose filename doesn't match is rejected at launch (the
+prefix keeps the topic, log stem, and commit tags stable).
 
 ```markdown
 ---
@@ -63,18 +75,24 @@ Paths to docs, example files, patterns to follow.
 Explicit negative list — what this mission must NOT touch. Keeps every iteration honest.
 ```
 
-> **`max-turns`** is passed to the CLI as `--max-turns` when the installed CLI supports the flag (the runner probes `--help`); on CLIs without it, it's advisory. Either way, keep it as a scope forcing-function: if iterations balloon, tighten `scope-hint` and the picking rules. Wall-clock is capped separately by the runner's watchdog (below).
+> **`max-turns`** is passed to the CLI as `--max-turns` when the installed CLI supports the flag
+> (the runner probes `--help`); on CLIs without it, it's advisory. Either way, keep it as a scope
+> forcing-function: if iterations balloon, tighten `scope-hint` and the picking rules. Wall-clock is
+> capped separately by the runner's watchdog (below).
 
-The Mission and "How to pick" sections are where your effort goes. Bad picking rules make every iteration a coin flip; good ones make grind feel like the model has intent.
+The Mission and "How to pick" sections are where your effort goes. Bad picking rules make every
+iteration a coin flip; good ones make grind feel like the model has intent.
 
 ## Writing good picking rules — the core skill
 
 **Do:**
 - Make "read the log first" step 1 — nothing else matters if the model redoes yesterday's work.
-- Be concrete about finding candidates — shell commands (`grep`, `rg`, `glob`) or file-level instructions.
+- Be concrete about finding candidates — shell commands (`grep`, `rg`, `glob`) or file-level
+  instructions.
 - Rank items — prefer simple/high-impact/well-scoped first, else it picks randomly.
 - Cap scope — 1–3 items, not "as many as fit".
-- Give a deferred-bucket escape hatch — "if an item needs heavy setup (mocks, new helpers), defer it with a reason in the log".
+- Give a deferred-bucket escape hatch — "if an item needs heavy setup (mocks, new helpers), defer it
+  with a reason in the log".
 
 **Don't:**
 - Pre-enumerate items ("do Foo, Bar, Baz") — that's looper.
@@ -84,7 +102,8 @@ The Mission and "How to pick" sections are where your effort goes. Bad picking r
 
 ## How iterations communicate — the log is everything
 
-Each iteration appends a structured block to the mission's memory log (`.agent/grind/{stem}.log`, same stem as the mission), e.g.:
+Each iteration appends a structured block to the mission's memory log (`.agent/grind/{stem}.log`,
+same stem as the mission), e.g.:
 
 ```
 ## iter 5 — 2026-07-13 21:15
@@ -94,31 +113,53 @@ deferred: src/control/ScoringPanel.tsx — heavy store mocking; revisit after he
 notes: vi.mock pattern from src/page.test.ts works for simple components
 ```
 
-The next iteration reads all prior blocks, then **skips** anything under `done` / fully-`scanned` dirs, **may pick up** `deferred` items whose blocker is resolved, and **applies** `notes`. Without the log, every iteration starts blind. (The runner keeps its own transcript in `.agent/grind/{stem}.run.log`, separate from this memory log.)
+The next iteration reads all prior blocks, then **skips** anything under `done` / fully-`scanned`
+dirs, **may pick up** `deferred` items whose blocker is resolved, and **applies** `notes`. Without
+the log, every iteration starts blind. (The runner keeps its own transcript in
+`.agent/grind/{stem}.run.log`, separate from this memory log.)
 
 ## Commit tagging
 
-The runner exports `GRIND_ITERATION` and `GRIND_TOPIC` to each session. Every commit inside iteration N should end with `(grind: {topic} #{N})`. Later: `git log --grep "grind: {topic}"` shows the full mission trail. Write this rule into the mission's Rules section.
+The runner exports `GRIND_ITERATION` and `GRIND_TOPIC` to each session. Every commit inside
+iteration N should end with `(grind: {topic} #{N})`. Later: `git log --grep "grind: {topic}"` shows
+the full mission trail. Write this rule into the mission's Rules section.
 
 ## Lifecycle and stop conditions
 
-`status:` is authoritative and re-read between iterations (edit mid-run → next iteration respects it):
+`status:` is authoritative and re-read between iterations (edit mid-run → next iteration respects
+it):
 
 - `active` — runner processes iterations.
 - `done` — runner stops; won't launch again until `--reset` or you re-activate.
 - `paused` — same as done for the runner; a semantic "will resume" signal.
 
-Three paths to `done`: the model flips it (no candidates left — trusted path), the runner flips it (`done-check` passed, or `max-iterations`/hard-cap 500 reached — fallback), or the user flips it. Ctrl+C aborts without touching status; the next launch resumes from the saved iteration counter (`--reset` restarts from zero and also clears retry state).
+Three paths to `done`: the model flips it (no candidates left — trusted path), the runner flips it
+(`done-check` passed, or `max-iterations`/hard-cap 500 reached — fallback), or the user flips it.
+Ctrl+C aborts without touching status; the next launch resumes from the saved iteration counter
+(`--reset` restarts from zero and also clears retry state).
 
 ### Runner resilience — what happens when an iteration goes wrong
 
 The runner treats every iteration as untrusted and gates progress mechanically:
 
-- **Watchdog** — each iteration has a wall-clock cap (default 900s, `FLOW_ITER_TIMEOUT_SECS`; `0` disables). A hung session gets SIGTERM, then SIGKILL after 10s; the kill routes into the transient-backoff path, not the attempt budget.
-- **Productivity gate** — an iteration only advances when the working tree is **clean** AND it produced a commit tagged `(grind: {topic} #{N})` or flipped the mission status. Anything else is unproductive.
-- **Retry state (`.attempt` file)** — an unproductive iteration retries up to **4 attempts total**, same iteration number. Retries get a *continuation prompt*: inspect `git status`/`git diff`, then **finish** the in-flight item, **revert + restart** it, or **revert + skip** it (logging the deferral). `GRIND_ATTEMPT` is exported so the session knows which attempt it is. The file persists, so retry state survives runner restarts. Exhausting all 4 stops the runner for triage.
-- **Dirty-tree guard** — a fresh iteration refuses to start on uncommitted changes. If the dirt is a previous session's interrupted iteration (first launch, counter already advanced), the runner **auto-resumes** it via the retry path instead of halting.
-- **Transient backoff** — known API-error signatures in the output (429/5xx/overloaded/quota/network), watchdog kills, and instant crashes with no work landed sleep 10–60 min (max 6 backoffs, `FLOW_LONG_BACKOFF_BASE` scales it) and relaunch the SAME iteration + attempt — the attempt budget is untouched.
+- **Watchdog** — each iteration has a wall-clock cap (default 900s, `FLOW_ITER_TIMEOUT_SECS`; `0`
+  disables). A hung session gets SIGTERM, then SIGKILL after 10s; the kill routes into the
+  transient-backoff path, not the attempt budget.
+- **Productivity gate** — an iteration only advances when the working tree is **clean** AND it
+  produced a commit tagged `(grind: {topic} #{N})` or flipped the mission status. Anything else is
+  unproductive.
+- **Retry state (`.attempt` file)** — an unproductive iteration retries up to **4 attempts total**,
+  same iteration number. Retries get a *continuation prompt*: inspect `git status`/`git diff`, then
+  **finish** the in-flight item, **revert + restart** it, or **revert + skip** it (logging the
+  deferral). `GRIND_ATTEMPT` is exported so the session knows which attempt it is. The file
+  persists, so retry state survives runner restarts. Exhausting all 4 stops the runner for triage.
+- **Dirty-tree guard** — a fresh iteration refuses to start on uncommitted changes. If the dirt is a
+  previous session's interrupted iteration (first launch, counter already advanced), the runner
+  **auto-resumes** it via the retry path instead of halting.
+- **Transient backoff** — known API-error signatures in the output
+  (429/5xx/overloaded/quota/network), watchdog kills, and instant crashes with no work landed sleep
+  10–60 min (max 6 backoffs, `FLOW_LONG_BACKOFF_BASE` scales it) and relaunch the SAME iteration +
+  attempt — the attempt budget is untouched.
 
 ## Handing off to the user
 
@@ -138,15 +179,20 @@ echo "$CLAUDE_PLUGIN_ROOT/bin/grind"   # resolve <abs>
 <abs>/bin/grind .agent/grind/{mission}.md -y           # skip the arm-confirmation
 ```
 
-**Pre-flight the mission's tools** (its find-candidate commands, build/test) before handing off — a bad command makes every iteration thrash. The runner writes `.agent/grind/.gitignore` on first run: committed = the mission `.md`, its `.log` memory, and `runner_*.log`; ignored = `*.iter`, `*.attempt`, `*.jsonl`, `*.run.log`.
+**Pre-flight the mission's tools** (its find-candidate commands, build/test) before handing off — a
+bad command makes every iteration thrash. The runner writes `.agent/grind/.gitignore` on first run:
+committed = the mission `.md`, its `.log` memory, and `runner_*.log`; ignored = `*.iter`,
+`*.attempt`, `*.jsonl`, `*.run.log`.
 
 ### Permissions
 
-Jobs run with full tool permissions (`--dangerously-skip-permissions`) so the unattended loop can edit + commit; the runner requires an explicit arm ("yes" or `-y`). Say so plainly.
+Jobs run with full tool permissions (`--dangerously-skip-permissions`) so the unattended loop can
+edit + commit; the runner requires an explicit arm ("yes" or `-y`). Say so plainly.
 
 ### First run — smoke-test it before trusting real work
 
-Prove the loop once on a throwaway mission before pointing grind at a real backlog. In a scratch repo/branch, write a tiny bounded mission and run it `--once`:
+Prove the loop once on a throwaway mission before pointing grind at a real backlog. In a scratch
+repo/branch, write a tiny bounded mission and run it `--once`:
 
 ```markdown
 .agent/grind/000000_000000_smoke.md
@@ -163,24 +209,41 @@ Read the log first. Add exactly one line, then log what you did.
 Anything other than SMOKE.txt.
 ```
 
-From a **separate terminal**: `"$CLAUDE_PLUGIN_ROOT/bin/grind" .agent/grind/000000_000000_smoke.md --once`. **Confirm:** `SMOKE.txt` grew by a line, a commit landed tagged `(grind: smoke #1)`, the memory log `.agent/grind/000000_000000_smoke.log` has an iteration block, and the iteration counter advanced (`--status`). Then let it run unbounded to see it stop at `max-iterations`. `--dry-run`/`--status`/`--reset` never call the model. If sessions hang on permission prompts or it refuses as "nested", see the same notes as the `looper` skill (check `bin/grind --help`, `FLOW_CLAUDE_PERMISSION_MODE`, separate terminal).
+From a **separate terminal**: `"$CLAUDE_PLUGIN_ROOT/bin/grind" .agent/grind/000000_000000_smoke.md
+--once`. **Confirm:** `SMOKE.txt` grew by a line, a commit landed tagged `(grind: smoke #1)`, the
+memory log `.agent/grind/000000_000000_smoke.log` has an iteration block, and the iteration counter
+advanced (`--status`). Then let it run unbounded to see it stop at `max-iterations`.
+`--dry-run`/`--status`/`--reset` never call the model. If sessions hang on permission prompts or it
+refuses as "nested", see the same notes as the `looper` skill (check `bin/grind --help`,
+`FLOW_CLAUDE_PERMISSION_MODE`, separate terminal).
 
 ## Quality defaults
 
-**opus (4.8) + `xhigh`/`max` by default.** Sonnet only for fully mechanical missions (find-replace sweeps), still at `xhigh`/`max` — each iteration picks its own work, which takes judgment. Never declare a mission done off cached test passes; cold-rebuild first.
+**opus (4.8) + `xhigh`/`max` by default.** Sonnet only for fully mechanical missions (find-replace
+sweeps), still at `xhigh`/`max` — each iteration picks its own work, which takes judgment. Never
+declare a mission done off cached test passes; cold-rebuild first.
 
 ## Troubleshooting
 
 - **Iterations do nothing useful** — picking rules too vague; add concrete find-candidate commands.
-- **Iterations touch the same thing** — the log isn't being read/written; tighten the log-block format in Rules.
-- **Iterations balloon past scope** — `scope-hint` too big; drop to "1-2 items", prefer simpler candidates.
-- **Mission never flips to done** — add a `done-check`, or tighten "how to pick" so the model can confidently say "nothing left".
-- **Runner stopped: "exhausted all 4 attempts"** — the iteration failed repeatedly; inspect `git status`, then either commit the partial work with the iteration's `(grind: {topic} #{N})` tag or revert it and write `0` to the mission's `.attempt` file, and re-launch.
-- **Runner refuses: "working tree dirty"** — commit or stash your own changes; if the dirt is an interrupted grind iteration you want resumed, write `1` to the `.attempt` file and re-launch (the continuation prompt decides commit/revert).
+- **Iterations touch the same thing** — the log isn't being read/written; tighten the log-block
+  format in Rules.
+- **Iterations balloon past scope** — `scope-hint` too big; drop to "1-2 items", prefer simpler
+  candidates.
+- **Mission never flips to done** — add a `done-check`, or tighten "how to pick" so the model can
+  confidently say "nothing left".
+- **Runner stopped: "exhausted all 4 attempts"** — the iteration failed repeatedly; inspect `git
+  status`, then either commit the partial work with the iteration's `(grind: {topic} #{N})` tag or
+  revert it and write `0` to the mission's `.attempt` file, and re-launch.
+- **Runner refuses: "working tree dirty"** — commit or stash your own changes; if the dirt is an
+  interrupted grind iteration you want resumed, write `1` to the `.attempt` file and re-launch (the
+  continuation prompt decides commit/revert).
 
 ## What NOT to do
 
 - **Never start the runner yourself.** Prepare the file, print the command, stop.
 - **Don't pre-enumerate items** — if you're listing specific files, you want looper.
-- **Don't skip the out-of-scope section** — it's what keeps the mission focused across dozens of sessions.
-- **Don't write a mission that needs chat context** — each iteration reads only the project's CLAUDE.md + the mission + the log.
+- **Don't skip the out-of-scope section** — it's what keeps the mission focused across dozens of
+  sessions.
+- **Don't write a mission that needs chat context** — each iteration reads only the project's
+  CLAUDE.md + the mission + the log.

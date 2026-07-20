@@ -1,7 +1,12 @@
 ---
 name: scaffold
-description: |
-  One-time bootstrap of a project for the opsi toolkit: create the `.agent/` workspace layout with an index (`.agent/README.md`), and add a single pointer to it from the entrypoint (CLAUDE.md / AGENTS.md). Use when setting up a new or existing repo to use these plugins — "set up opsi here", "scaffold the agent workspace", "wire up the .agent layout", "initialize the toolkit in this project". Idempotent; confirms before editing the entrypoint. Does NOT register individual skills (they auto-trigger) and does NOT generate anything on an ongoing basis.
+description: >-
+  One-time bootstrap of a project for the opsi toolkit: create the `.agent/` workspace layout with
+  an index (`.agent/README.md`), and add a single pointer to it from the entrypoint (CLAUDE.md /
+  AGENTS.md). Use when setting up a new or existing repo to use these plugins — "set up opsi here",
+  "scaffold the agent workspace", "wire up the .agent layout", "initialize the toolkit in this
+  project". Idempotent; confirms before editing the entrypoint. Does NOT register individual skills
+  (they auto-trigger) and does NOT generate anything on an ongoing basis.
 ---
 
 # Scaffold — bootstrap the `.agent/` workspace
@@ -15,25 +20,26 @@ nothing to generate or re-sync afterward.
 ## Why it's shaped this way
 
 - **Skills don't need to be listed in CLAUDE.md to work** — Claude Code auto-triggers them on their
-  descriptions when the plugin is enabled. So this skill does NOT enumerate skills into the entrypoint
-  (that would duplicate the plugin manifests and drift).
-- **The index is static**, not generated from enabled plugins. It describes the standard layout; a dir
-  simply won't exist until you use the matching skill. Nothing to keep in sync.
+  descriptions when the plugin is enabled. So this skill does NOT enumerate skills into the
+  entrypoint (that would duplicate the plugin manifests and drift).
+- **The index is static**, not generated from enabled plugins. It describes the standard layout; a
+  dir simply won't exist until you use the matching skill. Nothing to keep in sync.
 - **It's the only step that touches your entrypoint**, and it asks first.
 
 ## Steps
 
-1. **Find the entrypoint.** Prefer `CLAUDE.md`, else `AGENTS.md`, at the repo root. If neither exists,
-   tell the user and offer the **`scaffold-claude-md`** skill — it writes a house-style CLAUDE.md (a
-   slim router of the hard rules), then this skill adds the pointer. (Claude Code's built-in `/init`
-   writes a full codebase-doc CLAUDE.md instead, if they'd rather.) Never silently create one.
+1. **Find the entrypoint.** Prefer `CLAUDE.md`, else `AGENTS.md`, at the repo root. If neither
+   exists, tell the user and offer the **`scaffold-claude-md`** skill — it writes a house-style
+   CLAUDE.md (a slim router of the hard rules), then this skill adds the pointer. (Claude Code's
+   built-in `/init` writes a full codebase-doc CLAUDE.md instead, if they'd rather.) Never silently
+   create one.
 
-2. **Write `.agent/README.md`** (if absent — never overwrite an existing one without asking). Use the
-   template below. Create the `.agent/` dir if needed; do NOT pre-create the working sub-dirs
+2. **Write `.agent/README.md`** (if absent — never overwrite an existing one without asking). Use
+   the template below. Create the `.agent/` dir if needed; do NOT pre-create the working sub-dirs
    (`plan/`, `loop/`, …) — each skill makes its own on first use.
 
-3. **Add one pointer to the entrypoint** (idempotent — skip if a link to `.agent/README.md` is already
-   there). Insert near the top or in a "Conventions"/"Layout" section:
+3. **Add one pointer to the entrypoint** (idempotent — skip if a link to `.agent/README.md` is
+   already there). Insert near the top or in a "Conventions"/"Layout" section:
 
    ```markdown
    **Agent workspace:** this project uses the opsi toolkit's `.agent/` layout — see

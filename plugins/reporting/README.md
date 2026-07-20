@@ -13,11 +13,13 @@ a rewrite.
 
 ## Contents
 
-| Kind | Name | Purpose |
-|---|---|---|
-| hook | `brevity-reminder` | UserPromptSubmit — injects the full contract text with every prompt. |
-| hook | `contract-pulse` | PostToolUse — re-injects a one-line reminder every Nth tool call (default 10, `REPORT_PULSE_EVERY`), so the contract doesn't decay over a long agentic turn. |
-| hook | `report-guard` | Stop — reads the turn's final assistant message from the transcript; **blocks** it (one rewrite, `stop_hook_active`-guarded) on process narration, headers, tables, or gross over-length (`REPORT_GUARD_MAX_LINES`, default 18). Fenced code blocks are exempt from shape checks. Self-test: `--test`. |
+- `brevity-reminder` (hook): UserPromptSubmit — injects the full contract text with every prompt.
+- `contract-pulse` (hook): PostToolUse — re-injects a one-line reminder every Nth tool call
+  (default 10, `REPORT_PULSE_EVERY`), so the contract doesn't decay over a long agentic turn.
+- `report-guard` (hook): Stop — reads the turn's final assistant message from the transcript;
+  **blocks** it (one rewrite, `stop_hook_active`-guarded) on process narration, headers, tables,
+  or gross over-length (`REPORT_GUARD_MAX_LINES`, default 18). Fenced code blocks are exempt from
+  shape checks. Self-test: `--test`.
 
 Escape hatch for all three: `REPORT_GUARD_OFF=1` (user-set). Fail-open: a missing dependency or
 unreadable transcript never bricks a session.

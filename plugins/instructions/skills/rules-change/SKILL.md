@@ -1,14 +1,19 @@
 ---
 name: rules-change
-description: The sanctioned way to make a T3 change to the instruction system — add/remove a rule, change a cap, or change any hook/skill/agent/settings behavior. Use ONLY on an explicit user request or approval (including approving a retro/audit proposal, or granting a one-time exception). Never invoke as a side effect of another task — if a rule is in your way mid-task, stop and present the conflict first.
+description: >-
+  The sanctioned way to make a T3 change to the instruction system — add/remove a rule, change a
+  cap, or change any hook/skill/agent/settings behavior. Use ONLY on an explicit user request or
+  approval (including approving a retro/audit proposal, or granting a one-time exception). Never
+  invoke as a side effect of another task — if a rule is in your way mid-task, stop and present the
+  conflict first.
 ---
 
 # rules-change
 
-The controlled door for T3 changes (tiers are defined in the `instructions-maintenance` constitution).
-**Precondition: an explicit user request or approval.** If you arrived here mid-task because a rule
-is in the way, STOP — present the conflict; the user picks "one-time exception" or "change the rule".
-Execution resumes only after.
+The controlled door for T3 changes (tiers are defined in the `instructions-maintenance`
+constitution). **Precondition: an explicit user request or approval.** If you arrived here mid-task
+because a rule is in the way, STOP — present the conflict; the user picks "one-time exception" or
+"change the rule". Execution resumes only after.
 
 ## A. One-time exception (the rule stays intact)
 
@@ -31,9 +36,10 @@ Execution resumes only after.
 4. **Reality check.** The project's checks are green after the change. If the new rule makes the
    current repo violate it, fix the repo in the same effort or shrink the rule until it's true — a
    rule that doesn't match reality rots the whole system.
-5. **Log it.** One tier-tagged line in `.agent/instructions-changelog.md` (and/or a decisions entry):
-   what changed, why, trigger.
+5. **Log it.** One tier-tagged line in `.agent/instructions-changelog.md` (and/or a decisions
+   entry): what changed, why, trigger.
 6. **Commit** everything as one change, single-line message per the `commit` skill.
 
-> If an approval-gate hook fires on these edits, that is by design — it's the mechanical signature of
+> If an approval-gate hook fires on these edits, that is by design — it's the mechanical signature
+> of
 > the user's consent.

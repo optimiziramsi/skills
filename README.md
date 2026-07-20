@@ -1,8 +1,8 @@
 # opsi — Claude Code toolkit
 
 A personal [Claude Code plugin marketplace](https://docs.claude.com/en/docs/claude-code/plugins):
-reusable **skills, commands, agents, and hooks** shared across all my projects — so I solve something
-once and get it everywhere, and update it in one place.
+reusable **skills, commands, agents, and hooks** shared across all my projects — so I solve
+something once and get it everywhere, and update it in one place.
 
 ## Install
 
@@ -52,11 +52,11 @@ The snippet lists every plugin the marketplace ships — enable only the ones a 
 
 - **One concern per plugin.** A **command** (`/x`) is a thin shim that invokes a same-named
   **skill** which holds the actual logic (single source of truth).
-- **House layout.** Everything the plugins create lives under **`.agent/`** — `handoff.md`, `lessons/`,
-  `worktrees.md`, `milestones.md`, `plan/`, `milestone/`, `loop/`, `grind/`, `patterns/`, `reviews/` — so
-  the toolkit never clutters your repo root. Your `.docs/` (architecture/specs) and root `.todo` stay
-  yours; skills *link* to `.docs/` but never write it. Each skill degrades gracefully when a project
-  doesn't use a given piece.
+- **House layout.** Everything the plugins create lives under **`.agent/`** — `handoff.md`,
+  `lessons/`, `worktrees.md`, `milestones.md`, `plan/`, `milestone/`, `loop/`, `grind/`,
+  `patterns/`, `reviews/` — so the toolkit never clutters your repo root. Your `.docs/`
+  (architecture/specs) and root `.todo` stay yours; skills *link* to `.docs/` but never write it.
+  Each skill degrades gracefully when a project doesn't use a given piece.
 - **Commits:** bare imperative single line; the default cadence is commit at **topic close, then
   pause for review** before the next topic (opt into commit-as-you-go per session).
 

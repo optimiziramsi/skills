@@ -1,6 +1,8 @@
 ---
 name: continue
-description: Resume work in this repo. Use when the user says "lets continue", "continue", "nadaljuj", "pick up where we left off", or opens a session without a specific ask.
+description: >-
+  Resume work in this repo. Use when the user says "lets continue", "continue", "nadaljuj", "pick up
+  where we left off", or opens a session without a specific ask.
 ---
 
 # Resume a session

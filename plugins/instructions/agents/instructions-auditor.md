@@ -1,6 +1,10 @@
 ---
 name: instructions-auditor
-description: Read-only auditor for a repo's agent-instruction system. Used by /instructions-audit (or directly) to sweep CLAUDE.md, .claude/**, and .agent/** for broken pointers, dead/duplicate rules, contradictions with reality, cap breaches, and enforcement drift. Returns a severity-ranked findings list with file:line evidence; never edits files.
+description: >-
+  Read-only auditor for a repo's agent-instruction system. Used by /instructions-audit (or directly)
+  to sweep CLAUDE.md, .claude/**, and .agent/** for broken pointers, dead/duplicate rules,
+  contradictions with reality, cap breaches, and enforcement drift. Returns a severity-ranked
+  findings list with file:line evidence; never edits files.
 tools: Read, Grep, Glob, Bash
 ---
 

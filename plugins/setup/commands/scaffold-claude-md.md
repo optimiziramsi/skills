@@ -1,5 +1,7 @@
 ---
-description: Write a house-style CLAUDE.md — a slim router of routing + the hard rules that bind every session (runs the scaffold-claude-md skill; never overwrites an existing entrypoint)
+description: >-
+  Write a house-style CLAUDE.md — a slim router of routing + the hard rules that bind every session
+  (runs the scaffold-claude-md skill; never overwrites an existing entrypoint)
 ---
 
 Invoke the `scaffold-claude-md` skill via the Skill tool and follow its SKILL.md steps exactly. This

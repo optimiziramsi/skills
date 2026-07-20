@@ -1,7 +1,11 @@
 ---
 name: review
-description: |
-  Conduct architectural reviews, code audits, and deep-dive analyses. Use this skill when asked to: review code quality, audit architecture, check for drift from specs, deep review a subsystem, security audit, performance audit, or any structured assessment of existing code. Triggers: "review", "audit", "deep dive", "check the code", "how healthy is", "architecture assessment", "code quality". Results go in .agent/reviews/ — never in .docs/.
+description: >-
+  Conduct architectural reviews, code audits, and deep-dive analyses. Use this skill when asked to:
+  review code quality, audit architecture, check for drift from specs, deep review a subsystem,
+  security audit, performance audit, or any structured assessment of existing code. Triggers:
+  "review", "audit", "deep dive", "check the code", "how healthy is", "architecture assessment",
+  "code quality". Results go in .agent/reviews/ — never in .docs/.
 ---
 
 # Review & Audit

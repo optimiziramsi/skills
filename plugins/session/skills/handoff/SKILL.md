@@ -1,7 +1,11 @@
 ---
 name: handoff
-description: |
-  Update `.agent/handoff.md` — ephemeral next-session continuity notes for the next chat. Use when the user signals end of session: "handoff", "prepare for next session", "wrap up", "ready to close", "end session", "we're done for today", "see you tomorrow", or similar. The file is ephemeral session-context ONLY and is HARD-CAPPED at 4k chars; durable knowledge (working style, operational gotchas, engineering lessons) lives in `.agent/lessons/`, not here.
+description: >-
+  Update `.agent/handoff.md` — ephemeral next-session continuity notes for the next chat. Use when
+  the user signals end of session: "handoff", "prepare for next session", "wrap up", "ready to
+  close", "end session", "we're done for today", "see you tomorrow", or similar. The file is
+  ephemeral session-context ONLY and is HARD-CAPPED at 4k chars; durable knowledge (working style,
+  operational gotchas, engineering lessons) lives in `.agent/lessons/`, not here.
 ---
 
 # Handoff
@@ -13,8 +17,9 @@ Assumes the `.agent/` house layout: `.agent/handoff.md`, `.agent/lessons/`, `.do
 
 ## The model
 
-- **`.agent/handoff.md` = ephemeral next-session continuity ONLY.** Where we left off, what's queued,
-  recent project-state changes. Rewritten (overwritten) each handoff. **HARD CAP: 4k characters.**
+- **`.agent/handoff.md` = ephemeral next-session continuity ONLY.** Where we left off, what's
+  queued, recent project-state changes. Rewritten (overwritten) each handoff. **HARD CAP: 4k
+  characters.**
 - **Durable knowledge → `.agent/lessons/`** (working style, operational gotchas, engineering
   lessons), via the `lessons` skill. It is NEVER in handoff.
 - **Architecture / code-shape → `.docs/`** (and a patterns registry if the project keeps one).
@@ -54,15 +59,15 @@ handoff ephemeral.
 
 Total ≤ 4k chars. Per-section:
 
-| Section | Shape | Cap |
-| --- | --- | --- |
-| `_Last updated:_` | One terse line | 1 line |
-| Where we left off | 1 short paragraph (3-5 sentences); name branch + last-shipped + what's queued | ~5 lines |
-| This session's arc | Bullets grouped BY TOPIC, not per-commit | 3-7 bullets, 1 line each |
-| Active milestones / plans | Table, no editorial | ~5 lines |
-| Build state | One paragraph (bullets only if it changed) | ~3 lines |
-| Outstanding | Bullets that POINT at `.todo`/plan files, not re-list | 3-5 bullets |
-| Suggested next topic | 1 paragraph + a few alternatives | ~8 lines |
+- `_Last updated:_` — shape: One terse line. Cap: 1 line.
+- Where we left off — shape: 1 short paragraph (3-5 sentences); name branch + last-shipped +
+  what's queued. Cap: ~5 lines.
+- This session's arc — shape: Bullets grouped BY TOPIC, not per-commit. Cap: 3-7 bullets, 1 line
+  each.
+- Active milestones / plans — shape: Table, no editorial. Cap: ~5 lines.
+- Build state — shape: One paragraph (bullets only if it changed). Cap: ~3 lines.
+- Outstanding — shape: Bullets that POINT at `.todo`/plan files, not re-list. Cap: 3-5 bullets.
+- Suggested next topic — shape: 1 paragraph + a few alternatives. Cap: ~8 lines.
 
 ## Rules
 

@@ -1,6 +1,10 @@
 ---
 name: semantic-reviewer
-description: Run a semantic-bug review against changed files using a 7-item checklist (resource lifecycle, error handling, unbounded growth, idempotent cleanup, empty input, shutdown, unvalidated casts). Catches bugs that grep-based pattern checks miss. Use after architectural refactors or anytime resource/lifecycle code changed. Read-only — produces a findings report; does NOT edit code.
+description: >-
+  Run a semantic-bug review against changed files using a 7-item checklist (resource lifecycle,
+  error handling, unbounded growth, idempotent cleanup, empty input, shutdown, unvalidated casts).
+  Catches bugs that grep-based pattern checks miss. Use after architectural refactors or anytime
+  resource/lifecycle code changed. Read-only — produces a findings report; does NOT edit code.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -10,7 +14,8 @@ grep-based verification misses. You produce a findings report; you never edit co
 ## Inputs
 
 One of: a git ref range (e.g. `HEAD~5..HEAD`); a list of files; or "recent changes" →
-`git diff <main-branch> --name-only` or `git log --since="this morning" --name-only --pretty=format:""`.
+`git diff <main-branch> --name-only` or `git log --since="this morning" --name-only
+--pretty=format:""`.
 
 ## The 7-item semantic checklist
 
@@ -58,4 +63,5 @@ N total. HIGH: X · MED: Y · LOW: Z. Most critical: {item}.
   paths · **LOW** defensive improvement.
 - If a finding matches an existing pattern, still flag it — note "matches existing pattern; consider
   changing the pattern itself".
-- If you find ZERO findings across all 7 categories, say so explicitly — a clean pass gives confidence.
+- If you find ZERO findings across all 7 categories, say so explicitly — a clean pass gives
+  confidence.

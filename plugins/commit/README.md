@@ -3,18 +3,22 @@
 Part of the [`opsi`](../../README.md) marketplace.
 
 An **opinionated** commit convention: bare imperative single-line messages, topic-close +
-pause-for-review cadence, and stage-by-name discipline. Split out from the `git` plugin on purpose — commit style is personal,
-so this is a separate opt-in. Want the git *safety net* (block push/pull/fetch, bulk adds, non-FF
-merges, protected-branch moves, discards) but keep your own commit format? Enable [`git`](../git)
-and skip this.
+pause-for-review cadence, and stage-by-name discipline. Split out from the `git` plugin on purpose —
+commit style is personal, so this is a separate opt-in. Want the git *safety net* (block
+push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, discards) but keep your own
+commit format? Enable [`git`](../git) and skip this.
 
 ## Contents
 
-| Kind | Name | Purpose |
-|---|---|---|
-| skill + command | `commit` | Commit **cadence** (one topic = one commit at topic close, then pause for the user's review; commit-as-you-go is an explicit opt-in), **format** (single line, imperative, no body/trailers), and safe **staging** (stage by name). |
-| hook | `commit-format` | PreToolUse `Bash` — blocks a model `git commit` whose message isn't a bare single line: `Co-Authored-By`, a heredoc body, or multiple `-m`. Fails open; escape hatch `COMMIT_FORMAT_OFF=1`. |
-| hook | `commit-nudge` | Stop — if the session wrote files and the tree is dirty, nudges once to close the topic with a commit (or say why not). One-shot per dirty state; escape hatch `STOP_NUDGE_OFF=1`. |
+- `commit` (skill + command): Commit **cadence** (one topic = one commit at topic close, then
+  pause for the user's review; commit-as-you-go is an explicit opt-in), **format** (single line,
+  imperative, no body/trailers), and safe **staging** (stage by name).
+- `commit-format` (hook): PreToolUse `Bash` — blocks a model `git commit` whose message isn't a
+  bare single line: `Co-Authored-By`, a heredoc body, or multiple `-m`. Fails open; escape hatch
+  `COMMIT_FORMAT_OFF=1`.
+- `commit-nudge` (hook): Stop — if the session wrote files and the tree is dirty, nudges once to
+  close the topic with a commit (or say why not). One-shot per dirty state; escape hatch
+  `STOP_NUDGE_OFF=1`.
 
 ## The split
 
@@ -23,8 +27,8 @@ and skip this.
   (push, pull, fetch, bulk adds, non-FF merges, `reset --hard`, `clean -f`, `--no-verify`, …),
   regardless of commit style.
 
-They're complementary but independent. The `commit` skill describes the safety rules too (as guidance),
-but enabling `git` is what enforces them.
+They're complementary but independent. The `commit` skill describes the safety rules too (as
+guidance), but enabling `git` is what enforces them.
 
 ## Enable
 

@@ -13,22 +13,33 @@ enforcing them. (It does **not** include a coding-style guide — that's project
 
 ## Contents
 
-| Kind | Name | Purpose |
-|---|---|---|
-| skill + command | `manage-patterns` | Author + curate the registry — the file-first, human-reviewed **5-phase workflow** (brainstorm → plan → build code → human review → write pattern), topic-file structure, `blessed`/`decided`/`TODO` status + gating, filename/frontmatter conventions, split/merge. |
-| agent | `pattern-compliance` | Read-only audit of changed code against the formal `.agent/patterns/<topic>.md` bodies — shape match, anti-patterns, edge cases, and status (refuses code following a `decided`/`TODO` pattern). |
-| agent | `pattern-verifier` | Read-only check of changed code against the **project's own** coding-style / convention rules (read fresh each run). The lighter, code-shape pass that pairs with `pattern-compliance`. |
-| hook | `pattern-guards` | PreToolUse — **hard-blocks** an edit whose path is governed only by non-blessed patterns (the gating rule, mechanized). PostToolUse — reminds once/session which pattern checklists govern the edited file, and **auto-regenerates** the routes table when you change a pattern. Fails open; escape hatch `PATTERN_GUARDS_OFF=1`. |
-| hook | `generate-pattern-routes` | Compiles every pattern's `paths:`/`route:`/`status:` frontmatter into `.agent/patterns/pattern-routes.tsv` (the table the guard reads). Runs automatically via the guard; also runnable by hand. |
+- `manage-patterns` (skill + command): Author + curate the registry — the file-first,
+  human-reviewed **5-phase workflow** (brainstorm → plan → build code → human review → write
+  pattern), topic-file structure, `blessed`/`decided`/`TODO` status + gating,
+  filename/frontmatter conventions, split/merge.
+- `pattern-compliance` (agent): Read-only audit of changed code against the formal
+  `.agent/patterns/<topic>.md` bodies — shape match, anti-patterns, edge cases, and status
+  (refuses code following a `decided`/`TODO` pattern).
+- `pattern-verifier` (agent): Read-only check of changed code against the **project's own**
+  coding-style / convention rules (read fresh each run). The lighter, code-shape pass that pairs
+  with `pattern-compliance`.
+- `pattern-guards` (hook): PreToolUse — **hard-blocks** an edit whose path is governed only by
+  non-blessed patterns (the gating rule, mechanized). PostToolUse — reminds once/session which
+  pattern checklists govern the edited file, and **auto-regenerates** the routes table when you
+  change a pattern. Fails open; escape hatch `PATTERN_GUARDS_OFF=1`.
+- `generate-pattern-routes` (hook): Compiles every pattern's `paths:`/`route:`/`status:`
+  frontmatter into `.agent/patterns/pattern-routes.tsv` (the table the guard reads). Runs
+  automatically via the guard; also runnable by hand.
 
 ## How the gate works
 
 Each pattern's frontmatter declares the **globs it governs** (`paths:`) and a **route** (`edit` =
 remind at edit-time; `land` = codebase-wide, review at land-time). `generate-pattern-routes.py`
-compiles those into `.agent/patterns/pattern-routes.tsv`; the `pattern-guards` hook reads it on every
-Write/Edit:
+compiles those into `.agent/patterns/pattern-routes.tsv`; the `pattern-guards` hook reads it on
+every Write/Edit:
 
-- Editing a path governed **only** by `decided`/`TODO` patterns → **blocked** (walk the pattern first).
+- Editing a path governed **only** by `decided`/`TODO` patterns → **blocked** (walk the pattern
+  first).
 - Editing a path a `blessed` pattern also governs → allowed, with a one-time reminder to read its
   `#### Rules — write-time checklist` (any non-blessed overlap is surfaced as a STOP-warning).
 

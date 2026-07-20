@@ -1,7 +1,11 @@
 ---
 name: rename
-description: |
-  Rename a file with full reference cascade — `git mv` the file, then update every non-archive reference across the project. Use when the user says: "rename X to Y", "move X to Y", "X should be called Y", "the file should be Z instead", or signals a path/name change. Catches the dozen-references-cascade problem (renames that work in one place but leave stale pointers everywhere else).
+description: >-
+  Rename a file with full reference cascade — `git mv` the file, then update every non-archive
+  reference across the project. Use when the user says: "rename X to Y", "move X to Y", "X should be
+  called Y", "the file should be Z instead", or signals a path/name change. Catches the
+  dozen-references-cascade problem (renames that work in one place but leave stale pointers
+  everywhere else).
 ---
 
 # Rename
@@ -45,7 +49,8 @@ Skip archive/frozen folders (`*/archive/`) AND archive files (names matching `*a
 
 - **Bare filename** (`status.md` → `README.md`): bulk replace, verify each occurrence is in the
   right context (could match unrelated text).
-- **Full path** (`.docs/status.md` → `.docs/README.md`): bulk replace, simpler — path is more specific.
+- **Full path** (`.docs/status.md` → `.docs/README.md`): bulk replace, simpler — path is more
+  specific.
 - **Directory rename**: `git mv` the directory; update path references; check imports/aliases.
 
 ## When to NOT use this skill
@@ -69,5 +74,6 @@ Skip archive/frozen folders (`*/archive/`) AND archive files (names matching `*a
 
 - Don't touch archive folders or archive-named files (`*archive*.md`). Ever.
 - Don't rewrite commit messages from history.
-- Don't auto-update if grep returns >50 matches — that's an unusual rename, surface to the user first.
+- Don't auto-update if grep returns >50 matches — that's an unusual rename, surface to the user
+  first.
 - Don't rename without `git mv` (loses history).

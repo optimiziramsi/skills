@@ -1,7 +1,11 @@
 ---
 name: feedback
-description: |
-  Process the user's `.todo` inbox into an agent-owned `.agent/FEEDBACK.md` ledger and work the items now. Use when the user says "process feedback", "feedback round", "work through my comments/notes", or mentions new items in `.todo` they want handled this session. Differs from `triage-todo` (which routes items into plans/milestones for later): feedback WORKS items immediately, tracking each through Open → In Progress → Done/Wont Do.
+description: >-
+  Process the user's `.todo` inbox into an agent-owned `.agent/FEEDBACK.md` ledger and work the
+  items now. Use when the user says "process feedback", "feedback round", "work through my
+  comments/notes", or mentions new items in `.todo` they want handled this session. Differs from
+  `triage-todo` (which routes items into plans/milestones for later): feedback WORKS items
+  immediately, tracking each through Open → In Progress → Done/Wont Do.
 ---
 
 # Feedback round

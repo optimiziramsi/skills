@@ -1,6 +1,10 @@
 ---
 name: lesson-scout
-description: Prior-art lookup — searches the project's `.agent/lessons/` (plus `.docs/`) for lessons matching an error, symptom, or component, and returns the matches with relevance. Use PROACTIVELY before debugging a non-trivial error, so you reuse what past sessions already learned instead of re-deriving it. Never proposes fixes — only surfaces prior art.
+description: >-
+  Prior-art lookup — searches the project's `.agent/lessons/` (plus `.docs/`) for lessons matching
+  an error, symptom, or component, and returns the matches with relevance. Use PROACTIVELY before
+  debugging a non-trivial error, so you reuse what past sessions already learned instead of
+  re-deriving it. Never proposes fixes — only surfaces prior art.
 tools: Read, Grep, Glob
 model: haiku
 ---

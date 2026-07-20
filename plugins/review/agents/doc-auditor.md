@@ -1,6 +1,11 @@
 ---
 name: doc-auditor
-description: Read-only drift audit of a repo's binding docs against code reality. Use after large refactors, before a release, or when docs feel stale — verifies CLAUDE.md, rules, agent memory, docs/, and any deploy contract still tell the truth. Returns a drift table with file:line evidence; never edits. Broader than spec-cross-checker (which checks one feature) — this sweeps every checkable claim.
+description: >-
+  Read-only drift audit of a repo's binding docs against code reality. Use after large refactors,
+  before a release, or when docs feel stale — verifies CLAUDE.md, rules, agent memory, docs/, and
+  any deploy contract still tell the truth. Returns a drift table with file:line evidence; never
+  edits. Broader than spec-cross-checker (which checks one feature) — this sweeps every checkable
+  claim.
 tools: Read, Glob, Grep, Bash
 ---
 
@@ -28,7 +33,8 @@ For each document, pull out its **checkable claims** and test them against reali
 - **Cross-document consistency**: the same fact stated in two places must agree — and flag the
   duplication even when the copies currently agree (duplication is future drift; one home per fact).
 - **Enforcement tags**: rules tagged as enforced/warned name hooks or deny rules that actually exist
-  in `.claude/settings.json` / hooks config — an enforcement tag pointing at nothing is a top finding.
+  in `.claude/settings.json` / hooks config — an enforcement tag pointing at nothing is a top
+  finding.
 - **Links**: relative links resolve; anchors exist.
 
 ## Output

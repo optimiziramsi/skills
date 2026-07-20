@@ -1,7 +1,12 @@
 ---
 name: hotfix
-description: |
-  Test-first hotfix protocol for bugs on a deployed environment: reproduce as a failing test, diagnose, minimal fix, then land it on BOTH the mainline and the deployed/release branch via cherry-pick — with all remote git handed to the user. Use when the user reports a bug on prod/staging ("production is broken", "bug on prod", "emergency fix", "hot patch", "rollback and fix") or names a deployed build/tag with a problem. Deploy mechanics (tags, CI, dashboards) stay per-project — this skill ships the discipline, not the pipeline.
+description: >-
+  Test-first hotfix protocol for bugs on a deployed environment: reproduce as a failing test,
+  diagnose, minimal fix, then land it on BOTH the mainline and the deployed/release branch via
+  cherry-pick — with all remote git handed to the user. Use when the user reports a bug on
+  prod/staging ("production is broken", "bug on prod", "emergency fix", "hot patch", "rollback and
+  fix") or names a deployed build/tag with a problem. Deploy mechanics (tags, CI, dashboards) stay
+  per-project — this skill ships the discipline, not the pipeline.
 ---
 
 # Hotfix — test-first, both branches, local git only
@@ -23,8 +28,9 @@ git branch -a | grep -iE 'release|hotfix' | sort -V
 git tag -l | grep -iE 'deploy|prod|release' | head
 ```
 
-**If the project has no release branches/tags** (nothing deployed from a frozen ref), a "bug on prod"
-is a plain bugfix on the mainline — use the normal flow, not this protocol. Say so and proceed simply.
+**If the project has no release branches/tags** (nothing deployed from a frozen ref), a "bug on
+prod" is a plain bugfix on the mainline — use the normal flow, not this protocol. Say so and proceed
+simply.
 
 ## Phase 0 — reproduce as a failing test
 
@@ -43,9 +49,9 @@ already be fixed there, or look different.
 
 ## Phase 2 — diagnose the root cause
 
-Read the code, check recent commits on the deployed ref (`git log --oneline -20 <ref>`), and read the
-project's relevant docs for domain context. **Tell the user what you found before writing the fix** —
-they may have context that changes the approach.
+Read the code, check recent commits on the deployed ref (`git log --oneline -20 <ref>`), and read
+the project's relevant docs for domain context. **Tell the user what you found before writing the
+fix** — they may have context that changes the approach.
 
 ## Phase 3 — the minimal fix
 

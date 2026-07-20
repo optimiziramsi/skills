@@ -1,13 +1,18 @@
 ---
 name: lessons
-description: "Capture and curate durable lessons in `.agent/lessons/` — one file per lesson, indexed in its README, surfaced by tier (enforced hook / routed doc / indexed). Use whenever the user corrects a repeatable mistake ('don't do that anymore', 'I already told you', 'remember this'), asks to save a lesson, right after a hard debugging session, or when curating/pruning the lessons index. Project knowledge lives in-repo here, never in account memory."
+description: >-
+  Capture and curate durable lessons in `.agent/lessons/` — one file per lesson, indexed in its
+  README, surfaced by tier (enforced hook / routed doc / indexed). Use whenever the user corrects a
+  repeatable mistake ('don't do that anymore', 'I already told you', 'remember this'), asks to save
+  a lesson, right after a hard debugging session, or when curating/pruning the lessons index.
+  Project knowledge lives in-repo here, never in account memory.
 ---
 
 # Lessons
 
 Captures and curates hard-won lessons so the same mistake never has to be corrected twice. The
-**content** lives in `.agent/lessons/` (one file per lesson + a `README.md` index); this skill is the
-**how-to** for writing and maintaining it.
+**content** lives in `.agent/lessons/` (one file per lesson + a `README.md` index); this skill is
+the **how-to** for writing and maintaining it.
 
 ## When invoked
 
@@ -26,17 +31,18 @@ When in doubt: if a future session repeating this mistake would annoy the user, 
 
 ## The model — where durable knowledge lives
 
-| Artifact | Holds | Lifecycle |
-| --- | --- | --- |
-| `.agent/lessons/` | Durable cross-session knowledge: engineering lessons, working-style preferences, operational/harness gotchas | Permanent — additive + pruned |
-| `.agent/handoff.md` | ONLY ephemeral next-session continuity. Capped ~4k chars | Refreshed each session |
-| `.agent/patterns/<topic>.md` (if the project keeps a patterns registry) | Canonical code-shape recipes | Per-topic registry |
+- `.agent/lessons/` — holds: Durable cross-session knowledge: engineering lessons, working-style
+  preferences, operational/harness gotchas. Lifecycle: permanent — additive + pruned.
+- `.agent/handoff.md` — holds: ONLY ephemeral next-session continuity. Capped ~4k chars.
+  Lifecycle: refreshed each session.
+- `.agent/patterns/<topic>.md` (if the project keeps a patterns registry) — holds: Canonical
+  code-shape recipes. Lifecycle: per-topic registry.
 
 **Lessons is the durable home; handoff is the ephemeral brief.** If a fact is useful beyond the next
 session, it's a lesson, not a handoff entry.
 
-**In-repo, never account memory.** All project knowledge that would otherwise go to a personal/account
-memory store lives here instead, so anyone who clones the repo inherits it.
+**In-repo, never account memory.** All project knowledge that would otherwise go to a
+personal/account memory store lives here instead, so anyone who clones the repo inherits it.
 
 **Fold-up:** when a lesson hardens into enforced policy with a code-shape recipe, graduate it into a
 patterns doc or a skill and replace the lesson with a one-line pointer (or remove it). Lessons are
@@ -47,30 +53,34 @@ friction-reducers; once enforced by tooling a lesson has graduated out.
 The index is passive — nothing guarantees a session reads a lesson *before* the moment it's needed.
 So every lesson carries exactly one **surfacing tier** (default: indexed):
 
-| Tier | Name | Mechanism | Use when |
-| --- | --- | --- | --- |
-| 3 | **enforced** | a guard hook (e.g. a `lesson-guards` PreToolUse hook) blocks the bad tool call outright and cites the lesson | the violation is mechanically detectable (a greppable bad command) |
-| 2 | **routed** | a read-before pointer wired into the activity's **home doc** — the file already guaranteed loaded when that work happens (a skill, a CLAUDE.md §) | the lesson is tied to a specific risky *moment* |
-| 1 | **indexed** | README index line only (the default) | reference/browsing knowledge; no single moment of risk |
+- Tier 3 — **enforced**: a guard hook (e.g. a `lesson-guards` PreToolUse hook) blocks the bad
+  tool call outright and cites the lesson. Use when: the violation is mechanically detectable (a
+  greppable bad command).
+- Tier 2 — **routed**: a read-before pointer wired into the activity's **home doc** — the file
+  already guaranteed loaded when that work happens (a skill, a CLAUDE.md §). Use when: the lesson
+  is tied to a specific risky *moment*.
+- Tier 1 — **indexed**: README index line only (the default). Use when: reference/browsing
+  knowledge; no single moment of risk.
 
 Tier-2/3 lessons are additionally listed in the README's **⚡ Read-before tripwires** registry
 (moment → lesson → where it's wired), so wiring stays auditable. A tier-3 hook does not retire its
 lesson — the lesson remains the *why* the guard cites.
 
-When adding a guard rule: extend the guard hook, add a matching `--test` case, and run its self-test.
-Guards should fail open (unparsable input → allow) and match only at command positions; keep rules
-narrow — a false block interrupts every session.
+When adding a guard rule: extend the guard hook, add a matching `--test` case, and run its
+self-test. Guards should fail open (unparsable input → allow) and match only at command positions;
+keep rules narrow — a false block interrupts every session.
 
 ## Priority router — how prominently a lesson surfaces
 
 Orthogonal to the surfacing tier (the *mechanism*), every lesson holds one **priority**, expressed
 purely by its position in the README index (no per-file field — the index is the single source):
 
-| Priority | Read when | Cap | Belongs there when |
-| --- | --- | --- | --- |
-| 🔴 **High** | every session start | **10** | applies to every session AND isn't mechanically enforced |
-| 🟡 **Mid** | entering the matching activity (grouped) | **35** | activity-scoped; reading it on entry prevents the mistake |
-| ⚪ **Low** | lookup only (grep when relevant) | (within the total) | enforced-by-hook rationale, narrow facts, rare references |
+- 🔴 **High** — read when: every session start. Cap: **10**. Belongs there when: applies to
+  every session AND isn't mechanically enforced.
+- 🟡 **Mid** — read when: entering the matching activity (grouped). Cap: **35**. Belongs there
+  when: activity-scoped; reading it on entry prevents the mistake.
+- ⚪ **Low** — read when: lookup only (grep when relevant). Cap: (within the total). Belongs
+  there when: enforced-by-hook rationale, narrow facts, rare references.
 
 Caps are ratchets. **Promotion requires demotion when a level is full** — that forced trade IS the
 reordering-by-importance mechanism; never grow a level to avoid choosing. If the project has a
@@ -116,9 +126,9 @@ project actually does; a sensible default set:
 
 - **Update before append** — always extend an existing lesson before adding a new one.
 - **One lesson = one rule, one file.** If a file grows several distinct rules, split it.
-- **Prune when the mechanic is gone** — a lesson comes out when its underlying cause no longer exists
-  (file renamed, system replaced, rule reversed). Not because of age; the `**Origin:**` date helps
-  judge this.
+- **Prune when the mechanic is gone** — a lesson comes out when its underlying cause no longer
+  exists (file renamed, system replaced, rule reversed). Not because of age; the `**Origin:**` date
+  helps judge this.
 - **Fold-up** canonical lessons into a patterns doc or a skill, then remove the lesson.
 
 ## Lesson file format

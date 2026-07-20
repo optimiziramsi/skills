@@ -1,6 +1,9 @@
 ---
 name: qa-gate
-description: Run the full done-gate — typecheck, unit, integration/e2e, and visual verification — before claiming work is done. Use before any "done"/"fixed"/"works" claim, before handoff after code changes, or when the user says "verify", "run the gate", "is it green".
+description: >-
+  Run the full done-gate — typecheck, unit, integration/e2e, and visual verification — before
+  claiming work is done. Use before any "done"/"fixed"/"works" claim, before handoff after code
+  changes, or when the user says "verify", "run the gate", "is it green".
 ---
 
 # QA gate — what "done" means
@@ -19,7 +22,8 @@ You are the QA loop, not the user. Run the project's checks in order and fix as 
    the screenshot/e2e coverage when screens were added or changed. Code that typechecks can still
    render broken.
 5. **Project cross-checks.** Run whatever the project gates on before "green" (a version bump on
-   changed web files, doc/contract sync on deploy-affecting changes, size bounds on new user-writable
-   content, …). These live in the project's own rules/skills — check them.
+   changed web files, doc/contract sync on deploy-affecting changes, size bounds on new
+   user-writable content, …). These live in the project's own rules/skills — check them.
 6. **Report honestly.** Exact command results, failures with their output, flakes named as flakes. A
-   red gate reported red is a good result; **a red gate reported green is the one unforgivable sin.**
+   red gate reported red is a good result; **a red gate reported green is the one unforgivable
+   sin.**

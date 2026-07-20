@@ -1,6 +1,11 @@
 ---
 name: commit
-description: How and when to make git commits. Use proactively — commit at topic close (one logical topic = one commit), then pause for the user's review before starting the next topic, UNLESS the user has opted into commit-as-you-go. Also use whenever explicitly committing or saving changes, or when a git commit is about to happen. Triggers: "commit", "save changes", "commit this", finishing a coherent chunk of work.
+description: >-
+  How and when to make git commits. Use proactively — commit at topic close (one logical topic = one
+  commit), then pause for the user's review before starting the next topic, UNLESS the user has
+  opted into commit-as-you-go. Also use whenever explicitly committing or saving changes, or when a
+  git commit is about to happen. Triggers: "commit", "save changes", "commit this", finishing a
+  coherent chunk of work.
 ---
 
 # Commit

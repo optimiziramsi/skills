@@ -1,5 +1,7 @@
 ---
-description: Architectural review / code audit into .agent/reviews/ — P0/HIGH/MED/LOW findings (runs the review skill)
+description: >-
+  Architectural review / code audit into .agent/reviews/ — P0/HIGH/MED/LOW findings (runs the review
+  skill)
 ---
 
 Invoke the `review` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper

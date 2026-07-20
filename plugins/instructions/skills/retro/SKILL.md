@@ -1,6 +1,11 @@
 ---
 name: retro
-description: Harvest durable learnings from this session into the instruction system — with provenance, dedup, and pruning. Use at the end of a significant session, after a user correction worth keeping, when a convention drifted or a footgun was hit, or when the user says "retro", "wrap up", "save learnings", "what did we learn", "lets stop here", "remember this". The single door for instruction updates.
+description: >-
+  Harvest durable learnings from this session into the instruction system — with provenance, dedup,
+  and pruning. Use at the end of a significant session, after a user correction worth keeping, when
+  a convention drifted or a footgun was hit, or when the user says "retro", "wrap up", "save
+  learnings", "what did we learn", "lets stop here", "remember this". The single door for
+  instruction updates.
 ---
 
 # Retro — route learnings, close the unit
@@ -25,15 +30,19 @@ the narrative.
 
 ## 2. Route each learning to its store
 
-| Learning | Store | Via |
-|---|---|---|
-| Durable fact, gotcha, working agreement, engineering lesson | `.agent/lessons/` | the `lessons` skill |
-| Binding rule (must / never) | the project's binding-rule home — `.claude/rules/*.md` only if the project uses that layer, else its canonical rule book / CLAUDE.md (never create a new instruction layer) | add the enforcement tag; if you write `[ENFORCED]`, the guard must exist — extend a hook in the same change, else tag it `[HONOR]` |
-| Repeatable procedure that was wrong or missing | the matching skill's steps | edit the skill |
-| Architecture / code-shape / recipe | `.docs/` | edit the doc |
-| Volatile "where we left off" state | `.agent/handoff.md` | the `handoff` skill — NOT here |
-| Enforcement gap (a checkable violation slipped through) | a hook | add / extend the guard |
-| One-off, not worth encoding | — | say so, drop it |
+- Durable fact, gotcha, working agreement, engineering lesson → `.agent/lessons/`, via the
+  `lessons` skill.
+- Binding rule (must / never) → the project's binding-rule home — `.claude/rules/*.md` only if
+  the project uses that layer, else its canonical rule book / CLAUDE.md (never create a new
+  instruction layer) — via: add the enforcement tag; if you write `[ENFORCED]`, the guard must
+  exist — extend a hook in the same change, else tag it `[HONOR]`.
+- Repeatable procedure that was wrong or missing → the matching skill's steps, via editing the
+  skill.
+- Architecture / code-shape / recipe → `.docs/`, via editing the doc.
+- Volatile "where we left off" state → `.agent/handoff.md`, via the `handoff` skill — NOT here.
+- Enforcement gap (a checkable violation slipped through) → a hook, via adding / extending the
+  guard.
+- One-off, not worth encoding → no store; say so, drop it.
 
 ## 3. Merge, don't append
 
