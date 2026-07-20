@@ -34,6 +34,10 @@ Checks (pick per-project via "checks"; all default-on, each no-ops when its dir 
   [size]          per-file caps (lines OR chars per entry) + allow-length marker (capped)
   [count]         artifact counts (plans, lessons, milestones, skills, agents, rules, hooks, .todo)
   [audit]         `Last audit:` stamp freshness
+  [wrap]          prose lines hard-wrap at width (default 100); code fences, single-token lines,
+                  GENERATED files exempt — frontmatter is NOT (use folded scalars)
+  [no-tables]     markdown tables banned in governed files (record lists instead); root README.md
+                  excluded by default
 
 Escape hatch: META_LINT_OFF=1. Python3 stdlib only. ADVISORY by design: exit 1 on findings so
 scripts can branch, but nothing should consume it as a blocker.
@@ -58,7 +62,7 @@ DEFAULTS: dict = {
     "checks": [
         "cross-ref", "lessons-index", "lessons-prio", "agents", "skills", "commands",
         "routes", "gen", "filenames", "skill-fm", "dup", "stale", "board", "reference",
-        "size", "count", "audit",
+        "size", "count", "audit", "wrap", "no-tables",
     ],
     # path filtering for the meta-file walk
     "skip_dir_parts": ["archive", "worktrees", "node_modules", ".git", "reviews"],
@@ -148,6 +152,10 @@ DEFAULTS: dict = {
     },
     "reference": {"prefixes": ["packages/", "apps/", "bin/", ".docs/", ".claude/", ".agent/"]},
     "routes": {"tsv": ".agent/patterns/pattern-routes.tsv"},
+    # wrap/no-tables: enable/disable via "checks"; "exclude" globs match repo-relative paths
+    # (root README.md is the sole default exception — GitHub-rendered, human-facing)
+    "wrap": {"width": 100, "exclude": ["README.md"]},
+    "no_tables": {"exclude": ["README.md"]},
 }
 
 MD_LINK_RX = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
@@ -845,6 +853,89 @@ def check_audit_freshness(root: str, cfg: dict) -> list[str]:
     return []
 
 
+# leading indent + any run of list/blockquote/heading markers + an optional reference-def label —
+# what's left is the line's CONTENT for the single-unsplittable-token exemption
+WRAP_MARKER_RX = re.compile(r"^\s*(?:(?:[-*+]|\d{1,3}[.)]|>|#{1,6})\s+)*(?:\[[^\]]+\]:\s*)?")
+
+
+def fence_mask(lines: list[str]) -> list[bool]:
+    """True per line for fence delimiters and everything inside a ``` fence."""
+    mask = []
+    in_fence = False
+    for line in lines:
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            mask.append(True)
+            continue
+        mask.append(in_fence)
+    return mask
+
+
+def governed_lines(root: str, cfg: dict, exclude: list[str]):
+    """Yield (rel, lines, fenced) for governed markdown minus excluded globs and GENERATED files."""
+    marker = cfg["generated"]["marker"]
+    for rel in meta_md_files(root, cfg):
+        if any(fnmatch.fnmatch(rel, pat) for pat in exclude):
+            continue
+        try:
+            with open(os.path.join(root, rel), encoding="utf-8") as f:
+                lines = f.read().splitlines()
+        except OSError:
+            continue
+        if lines and marker in lines[0]:
+            continue  # GENERATED files are machine-written — exempt wholesale
+        yield rel, lines, fence_mask(lines)
+
+
+def check_wrap(root: str, cfg: dict) -> list[str]:
+    """Prose hard-wraps at width. Mechanical exemptions ONLY: fenced lines, single-unsplittable-token
+    lines (long URL/path — use reference-style links), GENERATED files, excluded globs. YAML
+    frontmatter is NOT exempt — long descriptions use folded scalars (`>-`)."""
+    findings = []
+    w = cfg["wrap"]
+    width = int(w["width"])
+    for rel, lines, fenced in governed_lines(root, cfg, w["exclude"]):
+        for lineno, line in enumerate(lines, 1):
+            if fenced[lineno - 1] or len(line) <= width:
+                continue
+            content = WRAP_MARKER_RX.sub("", line, 1).strip()
+            if not re.search(r"\s", content):
+                continue  # single unsplittable token
+            findings.append(f"[wrap] {rel}:{lineno} is {len(line)} chars (wrap at {width})")
+    return findings
+
+
+def is_table_separator(line: str) -> bool:
+    s = line.strip()
+    return "|" in s and "---" in s and set(s) <= set("|-: ")
+
+
+def check_no_tables(root: str, cfg: dict) -> list[str]:
+    """Tables are banned in governed files — record lists (`- field: value` bullets) diff and read
+    better in source view. A table = a `|` header row directly above a `|---|` separator row; plain
+    prose containing `|` never matches. Root README.md excluded by default."""
+    findings = []
+    nt = cfg["no_tables"]
+    for rel, lines, fenced in governed_lines(root, cfg, nt["exclude"]):
+        done_until = -1
+        for i, line in enumerate(lines):
+            if i <= done_until or fenced[i] or not is_table_separator(line):
+                continue
+            if i == 0 or fenced[i - 1] or "|" not in lines[i - 1]:
+                continue  # separator lookalike with no header row above — not a table
+            rows = 2
+            j = i + 1
+            while j < len(lines) and not fenced[j] and lines[j].strip() and "|" in lines[j]:
+                rows += 1
+                j += 1
+            done_until = j - 1
+            findings.append(
+                f"[no-tables] {rel}:{i} table ({rows} rows) — convert to a record list "
+                "(`- field: value` bullets, 2-space continuation lines)"
+            )  # :{i} = the header row's 1-based line number (separator is at 0-based i)
+    return findings
+
+
 CHECKS = [
     ("cross-ref", check_crossrefs),
     ("lessons-index", check_lessons_index),
@@ -863,6 +954,8 @@ CHECKS = [
     ("size", check_sizes),
     ("count", check_counts),
     ("audit", check_audit_freshness),
+    ("wrap", check_wrap),
+    ("no-tables", check_no_tables),
 ]
 
 
@@ -908,6 +1001,10 @@ def run_tests() -> int:
         with open(os.path.join(root, ".agent", "meta-lint.json"), "w") as f:
             json.dump(
                 {
+                    "crossref_roots": [
+                        "CLAUDE.md", "AGENTS.md", ".agent", ".claude/skills", ".claude/agents",
+                        ".claude/commands", "README.md",
+                    ],
                     "size": {
                         "caps": [
                             {"path": ".agent/lessons/README.md", "cap": 170, "unit": "lines"},
@@ -983,11 +1080,36 @@ def run_tests() -> int:
             f.write("item\n" * 130 + "# TMP NOTES\n" + "note\n" * 50)
         with open(os.path.join(root, ".agent", "instructions-changelog.md"), "w") as f:
             f.write("# log\n\nLast audit: 2020-01-01\n\n- old line\n")
+        with open(os.path.join(root, ".agent", "wrapfix.md"), "w") as f:
+            f.write("# W\n")                                          # 1
+            f.write("prose " * 25 + "end\n")                          # 2: 153 chars → flagged
+            f.write("```\n")                                          # 3
+            f.write("fenced " * 20 + "\n")                            # 4: long but fenced → exempt
+            f.write("```\n")                                          # 5
+            f.write("- https://example.com/" + "a" * 110 + "\n")      # 6: single-token bullet → exempt
+            f.write("[ref]: https://example.com/" + "b" * 100 + "\n")  # 7: ref-style link def → exempt
+            f.write("sixty " + "chars " * 9 + "\n")                   # 8: 60 chars → only at width 50
+        with open(os.path.join(root, ".agent", "genfix.md"), "w") as f:
+            f.write("<!-- GENERATED — do not edit -->\n")
+            f.write("generated " * 15 + "\n")  # long, but the file header exempts it
+        with open(os.path.join(root, ".agent", "tablefix.md"), "w") as f:
+            f.write("# T\n")                              # 1
+            f.write("prose with a | pipe stays clean\n")  # 2
+            f.write("| a | b |\n")                        # 3: header row → flagged here
+            f.write("| --- | --- |\n")                    # 4
+            f.write("| 1 | 2 |\n")                        # 5
+            f.write("\n```\n")
+            f.write("| f | g |\n")                        # 8: fenced table → exempt
+            f.write("| --- | --- |\n```\n")
+        with open(os.path.join(root, "README.md"), "w") as f:  # root README: sole table exception
+            f.write("# R\n| a | b |\n| --- | --- |\n| 1 | 2 |\n")
+            f.write("readme prose " * 12 + "\n")  # long prose — README excluded from wrap too
 
         cfg = load_config(os.path.join(root, ".agent", "meta-lint.json"))
         findings = run_all(root, cfg)
         subset_cfg = merge(cfg, {"checks": ["size"]})
         subset = run_all(root, subset_cfg)
+        wrap50 = run_all(root, merge(cfg, {"checks": ["wrap"], "wrap": {"width": 50}}))
 
         empty = tempfile.mkdtemp(prefix="meta-lint-empty-")
         try:
@@ -1026,6 +1148,20 @@ def run_tests() -> int:
             ("count caps quiet under limit", not any("[count]" in f and "skills" in f for f in findings)),
             ("checks subset honored", bool(subset) and all(f.startswith("[size]") for f in subset)),
             ("no config → inactive", inactive),
+            ("long prose flagged", any(f.startswith("[wrap] .agent/wrapfix.md:2 ") for f in findings)),
+            ("fenced long line exempt", not any("wrapfix.md:3" in f or "wrapfix.md:4" in f for f in findings)),
+            ("single-token bullet exempt", not any("wrapfix.md:6" in f for f in findings)),
+            ("ref-style link def exempt", not any("wrapfix.md:7" in f for f in findings)),
+            ("60-char line clean at default width", not any("wrapfix.md:8" in f for f in findings)),
+            ("GENERATED file exempt from wrap", not any("genfix.md" in f for f in findings)),
+            ("root README exempt from wrap", not any(f.startswith("[wrap]") and "README" in f for f in findings)),
+            ("width override flags 60-char line", any("wrapfix.md:8" in f for f in wrap50)),
+            ("wrap off via checks list", not any(f.startswith("[wrap]") for f in subset)),
+            ("table flagged at header row", any(f.startswith("[no-tables] .agent/tablefix.md:3 ") for f in findings)),
+            ("prose pipe not flagged", not any("tablefix.md:2" in f for f in findings)),
+            ("fenced table exempt", not any("tablefix.md:8" in f for f in findings)),
+            ("root README table allowed", not any(f.startswith("[no-tables]") and "README" in f for f in findings)),
+            ("no-tables off via checks list", not any(f.startswith("[no-tables]") for f in subset)),
         ]
         fails = 0
         for name, ok in want:

@@ -3,8 +3,10 @@
   "checks": [
     "cross-ref", "lessons-index", "lessons-prio", "agents", "skills", "commands",
     "routes", "gen", "filenames", "skill-fm", "dup", "stale", "board", "reference",
-    "size", "count", "audit"
+    "size", "count", "audit", "wrap", "no-tables"
   ],
+  "wrap": { "width": 100, "exclude": ["README.md"] },
+  "no_tables": { "exclude": ["README.md"] },
   "skip_dir_parts": ["archive", "worktrees", "node_modules", ".git", "reviews"],
   "archive_file_regex": "-archive\\.md$",
   "content_dir_prefixes": [
