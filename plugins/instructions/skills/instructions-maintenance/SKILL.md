@@ -81,10 +81,11 @@ All governed instruction markdown follows one mechanical format, enforced by met
   dash per RECORD** — never one dash per field; (2) the record's remaining fields sit under the
   dash as 2-space-indented `field: value` lines; (3) a long or multi-line value gets the bare
   key on its own line, the value following on lines indented 4 spaces (2 beyond the field keys),
-  so ownership is unambiguous; (4) ONE blank line between records. The shape is intentionally
-  valid YAML (a list of objects). Field-level diffs beat row-level diffs, and source view stays
-  readable. When converting a table, each row becomes one record led by its key field, the
-  remaining cells folded in as `field: value` pairs — never drop a cell. The record shape is the
+  so ownership is unambiguous; (4) ONE blank line between records. The shape mirrors a YAML list
+  of objects (strict YAML parseability is NOT required — values may open with markdown markers).
+  Field-level diffs beat row-level diffs, and source view stays readable. When converting a
+  table, each row becomes one record led by its key field, the remaining cells folded in as
+  `field: value` pairs — never drop a cell. The record shape is the
   TABLE replacement only: an ordinary bullet list stays an ordinary bullet list — never convert
   one into the other in either direction. Sole exception: the repository-root `README.md`
   (GitHub-rendered, human-facing) may keep tables.
