@@ -176,16 +176,34 @@ Apply in order; if you can't answer all, keep status at `TODO`/`decided` — don
 **Don't hurry.** Five phases, each with a pause point where you check in with the human. Skipping
 phases produces empty templates nobody can use.
 
-- Phase 1 — **Brainstorm**: Discuss the shape in chat. No code, no doc. Walk the self-questions.
-  Pause: YES.
-- Phase 2 — **Plan**: Identify the reference file(s) to build/refactor + what cascades. Use the
-  `plan` skill for big walks. Pause: YES.
-- Phase 3 — **Build the code**: Build/refactor the reference file(s) — real, compiling, wired.
-  No placeholder bodies. Pause: YES.
-- Phase 4 — **Human review of the code**: Human reads + iterates until they sign off. The pattern
-  is derived from CONFIRMED code. Pause: YES.
-- Phase 5 — **Write the pattern**: NOW author the topic file — distilling rules from the
-  just-blessed reference. Pause: YES.
+- phase: 1
+  name: **Brainstorm**
+  what-happens: Discuss the shape in chat. No code, no doc. Walk the self-questions.
+  pause: YES
+
+- phase: 2
+  name: **Plan**
+  what-happens:
+    Identify the reference file(s) to build/refactor + what cascades. Use the `plan` skill for
+    big walks.
+  pause: YES
+
+- phase: 3
+  name: **Build the code**
+  what-happens:
+    Build/refactor the reference file(s) — real, compiling, wired. No placeholder bodies.
+  pause: YES
+
+- phase: 4
+  name: **Human review of the code**
+  what-happens:
+    Human reads + iterates until they sign off. The pattern is derived from CONFIRMED code.
+  pause: YES
+
+- phase: 5
+  name: **Write the pattern**
+  what-happens: NOW author the topic file — distilling rules from the just-blessed reference.
+  pause: YES
 
 **Phase 1 (Brainstorm)** is the conversation — don't open files or pre-empt. Red flags that mean it
 isn't done: multiple undecided approaches; the human said "let me think"; a dependency is itself

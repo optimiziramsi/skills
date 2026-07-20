@@ -10,34 +10,77 @@ runs on a shared directory convention any project can adopt.
 
 ## Contents
 
-- `plan` (skill + command): Single-topic implementation plans in `.agent/plan/`. One plan = one
-  topic = its source of truth.
-- `milestone` (skill + command): Multi-session strategic initiatives in
-  `.agent/milestone/{date}_{slug}/`, each its own scope/steps/progress.
-- `scope-cut` (skill + command): Remove/defer a feature *and everything that trails it* — code,
-  docs, cron, tests, migrations, todo.
-- `triage-todo` (skill + command): Walk `.todo` / `.todo-inbox` and route each item to a plan,
-  milestone, scope-cut, scheduled task, or the bin.
-- `feedback` (skill + command): Process `.todo` items **now**: mirror them into the agent-owned
-  `.agent/FEEDBACK.md` ledger (Open → In Progress → Done/Wont Do, 2-round retention) and work
-  them one at a time. The "work it" sibling of triage-todo's "route it".
-- `todo-readonly-guard` (hook): `.todo` is the **user's** parking lot — denies agent writes to it
-  (Edit/Write/Bash redirects/`sed -i`/`mv`…); deferrals go to `.todo-inbox`. The user arms a
-  session by replying **"ALLOW TODO"** (needed for triage sessions); `TODO_GUARD_SKIP=1` one-off
-  bypass, `TODO_GUARD_DISABLE=1` off. Self-test: `--test`.
-- `looper` (skill + command): Prepare `.agent/loop/` job files — a queue of independent tasks the
-  runner executes as separate background sessions.
-- `grind` (skill + command): Prepare a `.agent/grind/` mission — the same prompt re-run N times,
-  the model picking 1–3 items per iteration until done.
-- `collab` (skill + command): The playbook for long "chat drives decisions, looper executes"
-  sessions that keep the main context lean.
-- `bin/loop` (runner): Executes the `.agent/loop/` queue: one fresh headless `claude` session per
-  pending job, with `blocked-on` ordering, retries + backoff, crash-resume (`running` marker +
-  resume prompt), `--watch`, `--status`, `--dry-run`.
-- `bin/grind` (runner): Executes one `.agent/grind/` mission repeatedly: cross-iteration log
-  memory, `done-check`, `max-iterations` cap, per-iteration watchdog + dirty-tree guard +
-  4-attempt retry state + productivity gate + transient long backoff, enforced
-  `YYMMDD_HHMMSS_{topic}.md` naming, `--once`/`--count`/`--reset`/`--status`.
+- name: `plan`
+  kind: skill + command
+  purpose:
+    Single-topic implementation plans in `.agent/plan/`. One plan = one topic = its source of
+    truth.
+
+- name: `milestone`
+  kind: skill + command
+  purpose:
+    Multi-session strategic initiatives in `.agent/milestone/{date}_{slug}/`, each its own
+    scope/steps/progress.
+
+- name: `scope-cut`
+  kind: skill + command
+  purpose:
+    Remove/defer a feature *and everything that trails it* — code, docs, cron, tests, migrations,
+    todo.
+
+- name: `triage-todo`
+  kind: skill + command
+  purpose:
+    Walk `.todo` / `.todo-inbox` and route each item to a plan, milestone, scope-cut, scheduled
+    task, or the bin.
+
+- name: `feedback`
+  kind: skill + command
+  purpose:
+    Process `.todo` items **now**: mirror them into the agent-owned `.agent/FEEDBACK.md` ledger
+    (Open → In Progress → Done/Wont Do, 2-round retention) and work them one at a time. The "work
+    it" sibling of triage-todo's "route it".
+
+- name: `todo-readonly-guard`
+  kind: hook
+  purpose:
+    `.todo` is the **user's** parking lot — denies agent writes to it (Edit/Write/Bash
+    redirects/`sed -i`/`mv`…); deferrals go to `.todo-inbox`. The user arms a session by replying
+    **"ALLOW TODO"** (needed for triage sessions); `TODO_GUARD_SKIP=1` one-off bypass,
+    `TODO_GUARD_DISABLE=1` off. Self-test: `--test`.
+
+- name: `looper`
+  kind: skill + command
+  purpose:
+    Prepare `.agent/loop/` job files — a queue of independent tasks the runner executes as
+    separate background sessions.
+
+- name: `grind`
+  kind: skill + command
+  purpose:
+    Prepare a `.agent/grind/` mission — the same prompt re-run N times, the model picking 1–3
+    items per iteration until done.
+
+- name: `collab`
+  kind: skill + command
+  purpose:
+    The playbook for long "chat drives decisions, looper executes" sessions that keep the main
+    context lean.
+
+- name: `bin/loop`
+  kind: runner
+  purpose:
+    Executes the `.agent/loop/` queue: one fresh headless `claude` session per pending job, with
+    `blocked-on` ordering, retries + backoff, crash-resume (`running` marker + resume prompt),
+    `--watch`, `--status`, `--dry-run`.
+
+- name: `bin/grind`
+  kind: runner
+  purpose:
+    Executes one `.agent/grind/` mission repeatedly: cross-iteration log memory, `done-check`,
+    `max-iterations` cap, per-iteration watchdog + dirty-tree guard + 4-attempt retry state +
+    productivity gate + transient long backoff, enforced `YYMMDD_HHMMSS_{topic}.md` naming,
+    `--once`/`--count`/`--reset`/`--status`.
 
 ## The directory convention
 
@@ -45,13 +88,33 @@ These skills read and write a small set of dirs, kept **under `.agent/`** (the a
 namespace) so they don't clutter your repo root. Adopt the ones you use; each degrades gracefully if
 a dir is absent.
 
-- `.agent/plan/`: single-topic plans — naming `YYMMDD_HHMMSS_{topic}.md`
-- `.agent/milestone/{date}_{slug}/`: strategic initiatives (folder each) — naming `YYMMDD_{slug}/`
-- `.agent/milestones.md`: active-milestones index (what's in flight)
-- `.agent/loop/`: background job queue + logs — naming `YYMMDD_HHMMSS_{topic}.md`
-- `.agent/grind/`: grind missions + memory logs — naming `YYMMDD_HHMMSS_{topic}.md`
-- `.todo`, `.todo-inbox`: parking lot + agent deferrals (yours, at the repo root) — free-form
-- `.docs/`: your architecture/specs — project-owned; skills *link* here, never write it
+- dir: `.agent/plan/`
+  holds: single-topic plans
+  naming: `YYMMDD_HHMMSS_{topic}.md`
+
+- dir: `.agent/milestone/{date}_{slug}/`
+  holds: strategic initiatives (folder each)
+  naming: `YYMMDD_{slug}/`
+
+- dir: `.agent/milestones.md`
+  holds: active-milestones index (what's in flight)
+  naming: —
+
+- dir: `.agent/loop/`
+  holds: background job queue + logs
+  naming: `YYMMDD_HHMMSS_{topic}.md`
+
+- dir: `.agent/grind/`
+  holds: grind missions + memory logs
+  naming: `YYMMDD_HHMMSS_{topic}.md`
+
+- dir: `.todo`, `.todo-inbox`
+  holds: parking lot + agent deferrals (yours, at the repo root)
+  naming: free-form
+
+- dir: `.docs/`
+  holds: your architecture/specs — project-owned; skills *link* here, never write it
+  naming: —
 
 Timestamps come from `date '+%y%m%d_%H%M%S'` (or `+%y%m%d` for milestones). Closed plans/milestones
 move to an `archive/` subdir — never edited again, never referenced by a live file.

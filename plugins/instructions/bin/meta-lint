@@ -911,9 +911,10 @@ def is_table_separator(line: str) -> bool:
 
 
 def check_no_tables(root: str, cfg: dict) -> list[str]:
-    """Tables are banned in governed files — record lists (`- field: value` bullets) diff and read
-    better in source view. A table = a `|` header row directly above a `|---|` separator row; plain
-    prose containing `|` never matches. Root README.md excluded by default."""
+    """Tables are banned in governed files — record lists (one dash per record, fields as
+    2-space-indented `field: value` lines) diff and read better in source view. A table = a `|`
+    header row directly above a `|---|` separator row; plain prose containing `|` never matches.
+    Root README.md excluded by default."""
     findings = []
     nt = cfg["no_tables"]
     for rel, lines, fenced in governed_lines(root, cfg, nt["exclude"]):
@@ -931,7 +932,7 @@ def check_no_tables(root: str, cfg: dict) -> list[str]:
             done_until = j - 1
             findings.append(
                 f"[no-tables] {rel}:{i} table ({rows} rows) — convert to a record list "
-                "(`- field: value` bullets, 2-space continuation lines)"
+                "(one dash per record, fields as 2-space-indented `field: value` lines)"
             )  # :{i} = the header row's 1-based line number (separator is at 0-based i)
     return findings
 

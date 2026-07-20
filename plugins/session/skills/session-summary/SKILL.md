@@ -61,12 +61,20 @@ another tool (Slack, a journal, a release note draft).
 
 ## Difference from related skills
 
-- `handoff` — audience: Next-session agent (private). Lifecycle: per session. Content: working
-  style + where we left off.
-- `session-summary` — audience: Human (shareable). Lifecycle: per session. Content: what shipped
-  + decisions made.
-- `review` — audience: Human (shareable). Lifecycle: point-in-time. Content: code/architecture
-  findings, P0/HIGH/MED/LOW.
+- skill: `handoff`
+  audience: Next-session agent (private)
+  lifecycle: per session
+  content: working style + where we left off
+
+- skill: `session-summary`
+  audience: Human (shareable)
+  lifecycle: per session
+  content: what shipped + decisions made
+
+- skill: `review`
+  audience: Human (shareable)
+  lifecycle: point-in-time
+  content: code/architecture findings, P0/HIGH/MED/LOW
 
 ## When NOT to use
 

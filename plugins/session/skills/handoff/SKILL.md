@@ -59,15 +59,33 @@ handoff ephemeral.
 
 Total ≤ 4k chars. Per-section:
 
-- `_Last updated:_` — shape: One terse line. Cap: 1 line.
-- Where we left off — shape: 1 short paragraph (3-5 sentences); name branch + last-shipped +
-  what's queued. Cap: ~5 lines.
-- This session's arc — shape: Bullets grouped BY TOPIC, not per-commit. Cap: 3-7 bullets, 1 line
-  each.
-- Active milestones / plans — shape: Table, no editorial. Cap: ~5 lines.
-- Build state — shape: One paragraph (bullets only if it changed). Cap: ~3 lines.
-- Outstanding — shape: Bullets that POINT at `.todo`/plan files, not re-list. Cap: 3-5 bullets.
-- Suggested next topic — shape: 1 paragraph + a few alternatives. Cap: ~8 lines.
+- section: `_Last updated:_`
+  shape: One terse line
+  cap: 1 line
+
+- section: Where we left off
+  shape: 1 short paragraph (3-5 sentences); name branch + last-shipped + what's queued
+  cap: ~5 lines
+
+- section: This session's arc
+  shape: Bullets grouped BY TOPIC, not per-commit
+  cap: 3-7 bullets, 1 line each
+
+- section: Active milestones / plans
+  shape: Table, no editorial
+  cap: ~5 lines
+
+- section: Build state
+  shape: One paragraph (bullets only if it changed)
+  cap: ~3 lines
+
+- section: Outstanding
+  shape: Bullets that POINT at `.todo`/plan files, not re-list
+  cap: 3-5 bullets
+
+- section: Suggested next topic
+  shape: 1 paragraph + a few alternatives
+  cap: ~8 lines
 
 ## Rules
 

@@ -8,18 +8,24 @@ it's the separate opt-in [`commit`](../commit) plugin.
 
 ## Contents
 
-- `git-guard` (hook): PreToolUse `Bash` — blocks push/pull/fetch (you own remote sync; local
-  `git push .` ref updates pass), bulk staging (`add -A`/`--all`/`.`), non-FF `git merge`
-  (`--ff-only` passes), protected-branch ops (`checkout`/`switch`/push-refspec onto `main` by
-  default), `reset --soft <moving-ref>`, `filter-branch`, `reset --hard`, `--no-verify`, and
-  discards of uncommitted work (`clean -f`, `stash drop`, `checkout --`, `restore`). `rebase`,
-  `commit --amend`, and `checkout <ref> -- <path>` are **allowed** by default (rebase + FF
-  landing flows need them) — re-block via `GIT_GUARD_STRICT`. Fails open; escape hatches
-  `GIT_GUARD_OFF=1`, `GIT_GUARD_ALLOW`, `GIT_GUARD_STRICT`, `GIT_GUARD_PROTECTED_BRANCH`.
-- `hotfix` (skill + command): Test-first hotfix for a deployed bug: reproduce as a **failing
-  test** (committed as proof-of-bug), diagnose on the deployed ref, minimal fix, **cherry-pick
-  both ways** (mainline ↔ release branch), all remote ops printed for the user. Deploy mechanics
-  stay per-project.
+- name: `git-guard`
+  kind: hook
+  purpose:
+    PreToolUse `Bash` — blocks push/pull/fetch (you own remote sync; local `git push .` ref
+    updates pass), bulk staging (`add -A`/`--all`/`.`), non-FF `git merge` (`--ff-only` passes),
+    protected-branch ops (`checkout`/`switch`/push-refspec onto `main` by default),
+    `reset --soft <moving-ref>`, `filter-branch`, `reset --hard`, `--no-verify`, and discards of
+    uncommitted work (`clean -f`, `stash drop`, `checkout --`, `restore`). `rebase`,
+    `commit --amend`, and `checkout <ref> -- <path>` are **allowed** by default (rebase + FF
+    landing flows need them) — re-block via `GIT_GUARD_STRICT`. Fails open; escape hatches
+    `GIT_GUARD_OFF=1`, `GIT_GUARD_ALLOW`, `GIT_GUARD_STRICT`, `GIT_GUARD_PROTECTED_BRANCH`.
+
+- name: `hotfix`
+  kind: skill + command
+  purpose:
+    Test-first hotfix for a deployed bug: reproduce as a **failing test** (committed as
+    proof-of-bug), diagnose on the deployed ref, minimal fix, **cherry-pick both ways** (mainline
+    ↔ release branch), all remote ops printed for the user. Deploy mechanics stay per-project.
 
 ## Pairs with `commit`
 

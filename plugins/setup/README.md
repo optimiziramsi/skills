@@ -8,12 +8,19 @@ the house style — once, with no ongoing machinery.
 
 ## Contents
 
-- `scaffold` (skill + command): Create a static `.agent/README.md` index of the workspace layout,
-  and add **one** pointer to it from `CLAUDE.md`/`AGENTS.md` (idempotent, asks before editing).
-- `scaffold-claude-md` (skill + command): Write a house-style **`CLAUDE.md`** — a slim router of
-  routing + the hard rules that bind every session (never-push/never-main git, commit-as-you-go,
-  verified done-gate, in-repo memory, lean reporting; optional roles + governance + caps). Never
-  overwrites an existing entrypoint — reconciles into it.
+- name: `scaffold`
+  kind: skill + command
+  purpose:
+    Create a static `.agent/README.md` index of the workspace layout, and add **one** pointer to
+    it from `CLAUDE.md`/`AGENTS.md` (idempotent, asks before editing).
+
+- name: `scaffold-claude-md`
+  kind: skill + command
+  purpose:
+    Write a house-style **`CLAUDE.md`** — a slim router of routing + the hard rules that bind
+    every session (never-push/never-main git, commit-as-you-go, verified done-gate, in-repo
+    memory, lean reporting; optional roles + governance + caps). Never overwrites an existing
+    entrypoint — reconciles into it.
 
 ## Why one-time, not automatic
 

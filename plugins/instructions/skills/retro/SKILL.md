@@ -30,19 +30,37 @@ the narrative.
 
 ## 2. Route each learning to its store
 
-- Durable fact, gotcha, working agreement, engineering lesson → `.agent/lessons/`, via the
-  `lessons` skill.
-- Binding rule (must / never) → the project's binding-rule home — `.claude/rules/*.md` only if
-  the project uses that layer, else its canonical rule book / CLAUDE.md (never create a new
-  instruction layer) — via: add the enforcement tag; if you write `[ENFORCED]`, the guard must
-  exist — extend a hook in the same change, else tag it `[HONOR]`.
-- Repeatable procedure that was wrong or missing → the matching skill's steps, via editing the
-  skill.
-- Architecture / code-shape / recipe → `.docs/`, via editing the doc.
-- Volatile "where we left off" state → `.agent/handoff.md`, via the `handoff` skill — NOT here.
-- Enforcement gap (a checkable violation slipped through) → a hook, via adding / extending the
-  guard.
-- One-off, not worth encoding → no store; say so, drop it.
+- learning: Durable fact, gotcha, working agreement, engineering lesson
+  store: `.agent/lessons/`
+  via: the `lessons` skill
+
+- learning: Binding rule (must / never)
+  store:
+    the project's binding-rule home — `.claude/rules/*.md` only if the project uses that layer,
+    else its canonical rule book / CLAUDE.md (never create a new instruction layer)
+  via:
+    add the enforcement tag; if you write `[ENFORCED]`, the guard must exist — extend a hook in
+    the same change, else tag it `[HONOR]`
+
+- learning: Repeatable procedure that was wrong or missing
+  store: the matching skill's steps
+  via: edit the skill
+
+- learning: Architecture / code-shape / recipe
+  store: `.docs/`
+  via: edit the doc
+
+- learning: Volatile "where we left off" state
+  store: `.agent/handoff.md`
+  via: the `handoff` skill — NOT here
+
+- learning: Enforcement gap (a checkable violation slipped through)
+  store: a hook
+  via: add / extend the guard
+
+- learning: One-off, not worth encoding
+  store: —
+  via: say so, drop it
 
 ## 3. Merge, don't append
 

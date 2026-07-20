@@ -36,14 +36,29 @@ model.
 Keep an authoritative record list (in this file, or a CLAUDE.md section) of which file owns which
 class of fact, so nothing is documented twice. A typical house layout:
 
-- Session workflow / routing summary: `CLAUDE.md`
-- Path-scoped invariants: `.claude/rules/<domain>.md`
-- Full procedures: `.claude/skills/<name>/SKILL.md`
-- Recurring mistakes, intentional designs: `.agent/lessons/`
-- Architecture / code-shape / recipes: `.docs/`
-- Mechanical enforcement: `.claude/settings.json` + `.claude/hooks/`
-- Applied T2/T3 changes + `Last audit:` stamp: `.agent/instructions-changelog.md`
-- This constitution (tiers, caps, doc-sync gate): this file
+- fact-class: Session workflow / routing summary
+  owner: `CLAUDE.md`
+
+- fact-class: Path-scoped invariants
+  owner: `.claude/rules/<domain>.md`
+
+- fact-class: Full procedures
+  owner: `.claude/skills/<name>/SKILL.md`
+
+- fact-class: Recurring mistakes, intentional designs
+  owner: `.agent/lessons/`
+
+- fact-class: Architecture / code-shape / recipes
+  owner: `.docs/`
+
+- fact-class: Mechanical enforcement
+  owner: `.claude/settings.json` + `.claude/hooks/`
+
+- fact-class: Applied T2/T3 changes + `Last audit:` stamp
+  owner: `.agent/instructions-changelog.md`
+
+- fact-class: This constitution (tiers, caps, doc-sync gate)
+  owner: this file
 
 ## The doc-sync gate
 
@@ -62,22 +77,35 @@ All governed instruction markdown follows one mechanical format, enforced by met
   whose content is a single unsplittable token (a long URL or path — use reference-style link
   definitions); files with a GENERATED header. YAML frontmatter is NOT exempt — a long
   `description:` uses a folded scalar (`>-`) and wraps like prose.
-- **Tables are banned — use record lists**: `- field: value` bullets, long values wrapping onto
-  2-space-indented continuation lines. Field-level diffs beat row-level diffs, and source view
-  stays readable. When a table's rows are records, each row becomes one bullet led by its key
-  field, the remaining cells folded in as `field: value` pairs — never drop a cell. Sole
-  exception: the repository-root `README.md` (GitHub-rendered, human-facing) may keep tables.
+- **Tables are banned — use record lists**: YAML array-of-objects shape. The rules: (1) **one
+  dash per RECORD** — never one dash per field; (2) the record's remaining fields sit under the
+  dash as 2-space-indented `field: value` lines; (3) a long or multi-line value gets the bare
+  key on its own line, the value following on lines indented 4 spaces (2 beyond the field keys),
+  so ownership is unambiguous; (4) ONE blank line between records. The shape is intentionally
+  valid YAML (a list of objects). Field-level diffs beat row-level diffs, and source view stays
+  readable. When converting a table, each row becomes one record led by its key field, the
+  remaining cells folded in as `field: value` pairs — never drop a cell. The record shape is the
+  TABLE replacement only: an ordinary bullet list stays an ordinary bullet list — never convert
+  one into the other in either direction. Sole exception: the repository-root `README.md`
+  (GitHub-rendered, human-facing) may keep tables.
 
   ```markdown
-  | foo  | bar  |
-  | ---- | ---- |
-  | val1 | val2 |
+  | foo   | bar          | baz   |
+  | ----- | ------------ | ----- |
+  | val 1 | a long value | val 3 |
+  | val 4 | val 5        | val 6 |
 
   becomes
 
-  - foo: val1
-  - bar: val2 — a long value wraps at the wrap width and continues on a
-    2-space-indented continuation line
+  - foo: val 1
+    bar:
+      long lorem ipsum wrapped at the 100-col limit
+      continuing lines clearly belong to bar
+    baz: val 3
+
+  - foo: val 4
+    bar: val 5
+    baz: val 6
   ```
 
 - **Index files stay one bullet per entry** — an entry may wrap physically at the wrap width, but

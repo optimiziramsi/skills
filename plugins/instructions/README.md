@@ -7,45 +7,84 @@ system consistent over time — so you fix something once and every future sessi
 
 ## Contents
 
-- `retro` (skill + command): Session-end harvest — route learnings to lessons/rules/docs,
-  merge-don't-append, compact at caps, **apply-safe / propose-risky**, changelog, commit.
-- `lessons` (skill + command): Capture + curate one durable lesson in `.agent/lessons/` —
-  kebab-slug file, README index, two-axis surfacing (enforced-hook / routed-doc / indexed ×
-  High/Mid/Low caps), dedup, prune, fold-up.
-- `instructions-audit` (skill + command): De-rot sweep — broken pointers, dead/duplicate rules,
-  truth-vs-reality drift, cap breaches, enforcement drift; safe fixes applied, risky ones
-  proposed.
-- `instructions-maintenance` (skill + command): The **constitution** — design principles,
-  ownership matrix, extension criteria, governance tiers, retention/caps. The model the other
-  skills apply; load before editing any instruction file.
-- `rules-change` (skill + command): The sanctioned **T3-change door** — explicit approval,
-  coherence + cap check, re-test enforcement, reality check, changelog. What retro/audit route
-  approved changes through.
-- `lesson-scout` (agent): Prior-art lookup — searches `.agent/lessons/` before you re-debug
-  something. Read-only.
-- `instructions-auditor` (agent): Read-only sweep of the instruction surface → severity-ranked
-  findings with `file:line` evidence. Used by `instructions-audit`.
-- `caps` (hook): SessionStart — surface any instruction-surface **cap breaches** (file sizes +
-  skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct
-  breach-set on ANY breach present (pre-existing included, not only what this session bloated).
-  Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails
-  open; escape hatch `CAPS_GUARD_OFF=1`; self-test `--test`.
-- `file-guard` (hook): PreToolUse — writes to **T3 enforcement surfaces**
-  (`.claude/settings*.json`, `.claude/hooks/`) downgrade to an **ask**: a session must not
-  silently rewrite its own guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated);
-  escape hatch `FILE_GUARD_OFF=1`; self-test `--test`.
-- `bin/meta-lint` (engine): Config-driven **instruction-system linter** — 19 mechanical checks
-  (cross-refs, lessons index/priority, agents/skills/commands symmetry, pattern routes,
-  filenames, dup tripwires, sizes in lines OR chars, counts, staleness, boards, audit stamp,
-  100-col `[wrap]`, `[no-tables]`). Activates only where a project ships `.agent/meta-lint.json`;
-  pulsed at SessionStart via `--fast` with a loud-DISARM `|| echo` fallback. Escape hatch
-  `META_LINT_OFF=1`; self-test `--test`.
-- `tripwire-guard` (hook, engine): PreToolUse `Bash` — runs **project-owned command tripwires**
-  from `.agent/guards.d/*.sh` against every Bash command: a guard exits 2 to block (first block
-  wins, reason fed to the agent), 0 to allow, anything else becomes a loud non-blocking warning.
-  No dir/guards → silent no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch
-  `TRIPWIRE_GUARD_OFF=1`; jq-missing loud-DISARM; self-test `--test` (runs each guard's
-  `tripwire_test` too).
+- name: `retro`
+  kind: skill + command
+  purpose:
+    Session-end harvest — route learnings to lessons/rules/docs, merge-don't-append, compact at
+    caps, **apply-safe / propose-risky**, changelog, commit.
+
+- name: `lessons`
+  kind: skill + command
+  purpose:
+    Capture + curate one durable lesson in `.agent/lessons/` — kebab-slug file, README index,
+    two-axis surfacing (enforced-hook / routed-doc / indexed × High/Mid/Low caps), dedup, prune,
+    fold-up.
+
+- name: `instructions-audit`
+  kind: skill + command
+  purpose:
+    De-rot sweep — broken pointers, dead/duplicate rules, truth-vs-reality drift, cap breaches,
+    enforcement drift; safe fixes applied, risky ones proposed.
+
+- name: `instructions-maintenance`
+  kind: skill + command
+  purpose:
+    The **constitution** — design principles, ownership matrix, extension criteria, governance
+    tiers, retention/caps. The model the other skills apply; load before editing any instruction
+    file.
+
+- name: `rules-change`
+  kind: skill + command
+  purpose:
+    The sanctioned **T3-change door** — explicit approval, coherence + cap check, re-test
+    enforcement, reality check, changelog. What retro/audit route approved changes through.
+
+- name: `lesson-scout`
+  kind: agent
+  purpose:
+    Prior-art lookup — searches `.agent/lessons/` before you re-debug something. Read-only.
+
+- name: `instructions-auditor`
+  kind: agent
+  purpose:
+    Read-only sweep of the instruction surface → severity-ranked findings with `file:line`
+    evidence. Used by `instructions-audit`.
+
+- name: `caps`
+  kind: hook
+  purpose:
+    SessionStart — surface any instruction-surface **cap breaches** (file sizes +
+    skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct
+    breach-set on ANY breach present (pre-existing included, not only what this session bloated).
+    Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails
+    open; escape hatch `CAPS_GUARD_OFF=1`; self-test `--test`.
+
+- name: `file-guard`
+  kind: hook
+  purpose:
+    PreToolUse — writes to **T3 enforcement surfaces** (`.claude/settings*.json`,
+    `.claude/hooks/`) downgrade to an **ask**: a session must not silently rewrite its own
+    guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch
+    `FILE_GUARD_OFF=1`; self-test `--test`.
+
+- name: `bin/meta-lint`
+  kind: engine
+  purpose:
+    Config-driven **instruction-system linter** — 19 mechanical checks (cross-refs, lessons
+    index/priority, agents/skills/commands symmetry, pattern routes, filenames, dup tripwires,
+    sizes in lines OR chars, counts, staleness, boards, audit stamp, 100-col `[wrap]`,
+    `[no-tables]`). Activates only where a project ships `.agent/meta-lint.json`; pulsed at
+    SessionStart via `--fast` with a loud-DISARM `|| echo` fallback. Escape hatch
+    `META_LINT_OFF=1`; self-test `--test`.
+
+- name: `tripwire-guard`
+  kind: hook, engine
+  purpose:
+    PreToolUse `Bash` — runs **project-owned command tripwires** from `.agent/guards.d/*.sh`
+    against every Bash command: a guard exits 2 to block (first block wins, reason fed to the
+    agent), 0 to allow, anything else becomes a loud non-blocking warning. No dir/guards → silent
+    no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch `TRIPWIRE_GUARD_OFF=1`;
+    jq-missing loud-DISARM; self-test `--test` (runs each guard's `tripwire_test` too).
 
 The full knowledge system: **define** (`instructions-maintenance`) · **capture** (`lessons`) ·
 **harvest** (`retro`) · **maintain** (`instructions-audit`) · **change** (`rules-change`).
@@ -74,8 +113,8 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
 - **Format checks:** `[wrap]` flags prose lines over `wrap.width` (default 100) — code fences,
   single-unsplittable-token lines (long URLs/paths), and GENERATED files exempt; frontmatter is
   not (use folded scalars). `[no-tables]` flags markdown tables in governed files — convert to
-  record lists (`- field: value` bullets); the repo-root `README.md` is excluded by default,
-  both checks take extra `exclude` globs.
+  record lists (one dash per record, fields as 2-space-indented `field: value` lines); the
+  repo-root `README.md` is excluded by default, both checks take extra `exclude` globs.
 - **Wiring:** SessionStart runs `meta-lint --fast || echo "⚠️ meta-lint DISARMED …"` — fail-open
   but **loud**: the fallback fires only when the engine itself can't run, never on findings.
 - **Coexistence:** where `.agent/meta-lint.json` exists, **meta-lint supersedes `caps.sh`** —

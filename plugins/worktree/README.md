@@ -9,20 +9,40 @@ No-ops entirely when you're not in a linked worktree.
 
 ## Contents
 
-- `worktree` (skill + command; `/worktree`, or worktree-mode triggers): The **parallel-work
-  protocol**: drive one topic on its own worktree as small reviewed slices, landing to the
-  integration branch only on the human's explicit OK. No captain — the human coordinates;
-  `.agent/worktrees.md` is the board. Covers reserve → plan+example → execute → close, plus
-  pause/resume, recycle, and the self-serializing land loop.
-- `worktree-write-guard` (hook; PreToolUse `Edit|Write|MultiEdit|NotebookEdit`): Deny a file
-  write whose absolute path escapes the worktree into the main checkout.
-- `worktree-bash-guard` (hook; PreToolUse `Bash`): Deny a shell write (`>`, `sed -i`, `tee`…)
-  into the main checkout from a worktree. **Opt-in** (false-positive-prone):
-  `WORKTREE_BASH_GUARD_ENABLE=1`.
-- `worktree-leak-detector` (hook; PostToolUse `Edit|Write|…`): After an in-worktree edit, warn
-  loudly if the same path went dirty in the main checkout (a leak already happened).
-- `worktree-detect` (hook; SessionStart): Flag a session rooted in a linked worktree and nudge
-  toward the `/worktree` protocol. Silent in the main checkout.
+- name: `worktree`
+  kind: skill + command
+  event: `/worktree`, or worktree-mode triggers
+  purpose:
+    The **parallel-work protocol**: drive one topic on its own worktree as small reviewed
+    slices, landing to the integration branch only on the human's explicit OK. No captain — the
+    human coordinates; `.agent/worktrees.md` is the board. Covers reserve → plan+example →
+    execute → close, plus pause/resume, recycle, and the self-serializing land loop.
+
+- name: `worktree-write-guard`
+  kind: hook
+  event: PreToolUse `Edit|Write|MultiEdit|NotebookEdit`
+  purpose: Deny a file write whose absolute path escapes the worktree into the main checkout.
+
+- name: `worktree-bash-guard`
+  kind: hook
+  event: PreToolUse `Bash`
+  purpose:
+    Deny a shell write (`>`, `sed -i`, `tee`…) into the main checkout from a worktree. **Opt-in**
+    (false-positive-prone): `WORKTREE_BASH_GUARD_ENABLE=1`.
+
+- name: `worktree-leak-detector`
+  kind: hook
+  event: PostToolUse `Edit|Write|…`
+  purpose:
+    After an in-worktree edit, warn loudly if the same path went dirty in the main checkout (a
+    leak already happened).
+
+- name: `worktree-detect`
+  kind: hook
+  event: SessionStart
+  purpose:
+    Flag a session rooted in a linked worktree and nudge toward the `/worktree` protocol. Silent
+    in the main checkout.
 
 The skill and the guards are complementary: the guards make leaks *mechanically impossible*; the
 skill is the *workflow* on top (who takes what, how slices get reviewed and landed). The skill

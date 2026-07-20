@@ -10,15 +10,25 @@ commit format? Enable [`git`](../git) and skip this.
 
 ## Contents
 
-- `commit` (skill + command): Commit **cadence** (one topic = one commit at topic close, then
-  pause for the user's review; commit-as-you-go is an explicit opt-in), **format** (single line,
-  imperative, no body/trailers), and safe **staging** (stage by name).
-- `commit-format` (hook): PreToolUse `Bash` — blocks a model `git commit` whose message isn't a
-  bare single line: `Co-Authored-By`, a heredoc body, or multiple `-m`. Fails open; escape hatch
-  `COMMIT_FORMAT_OFF=1`.
-- `commit-nudge` (hook): Stop — if the session wrote files and the tree is dirty, nudges once to
-  close the topic with a commit (or say why not). One-shot per dirty state; escape hatch
-  `STOP_NUDGE_OFF=1`.
+- name: `commit`
+  kind: skill + command
+  purpose:
+    Commit **cadence** (one topic = one commit at topic close, then pause for the user's review;
+    commit-as-you-go is an explicit opt-in), **format** (single line, imperative, no
+    body/trailers), and safe **staging** (stage by name).
+
+- name: `commit-format`
+  kind: hook
+  purpose:
+    PreToolUse `Bash` — blocks a model `git commit` whose message isn't a bare single line:
+    `Co-Authored-By`, a heredoc body, or multiple `-m`. Fails open; escape hatch
+    `COMMIT_FORMAT_OFF=1`.
+
+- name: `commit-nudge`
+  kind: hook
+  purpose:
+    Stop — if the session wrote files and the tree is dirty, nudges once to close the topic with
+    a commit (or say why not). One-shot per dirty state; escape hatch `STOP_NUDGE_OFF=1`.
 
 ## The split
 

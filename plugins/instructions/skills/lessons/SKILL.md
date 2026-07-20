@@ -31,12 +31,19 @@ When in doubt: if a future session repeating this mistake would annoy the user, 
 
 ## The model — where durable knowledge lives
 
-- `.agent/lessons/` — holds: Durable cross-session knowledge: engineering lessons, working-style
-  preferences, operational/harness gotchas. Lifecycle: permanent — additive + pruned.
-- `.agent/handoff.md` — holds: ONLY ephemeral next-session continuity. Capped ~4k chars.
-  Lifecycle: refreshed each session.
-- `.agent/patterns/<topic>.md` (if the project keeps a patterns registry) — holds: Canonical
-  code-shape recipes. Lifecycle: per-topic registry.
+- artifact: `.agent/lessons/`
+  holds:
+    Durable cross-session knowledge: engineering lessons, working-style preferences,
+    operational/harness gotchas
+  lifecycle: Permanent — additive + pruned
+
+- artifact: `.agent/handoff.md`
+  holds: ONLY ephemeral next-session continuity. Capped ~4k chars
+  lifecycle: Refreshed each session
+
+- artifact: `.agent/patterns/<topic>.md` (if the project keeps a patterns registry)
+  holds: Canonical code-shape recipes
+  lifecycle: Per-topic registry
 
 **Lessons is the durable home; handoff is the ephemeral brief.** If a fact is useful beyond the next
 session, it's a lesson, not a handoff entry.
@@ -53,14 +60,24 @@ friction-reducers; once enforced by tooling a lesson has graduated out.
 The index is passive — nothing guarantees a session reads a lesson *before* the moment it's needed.
 So every lesson carries exactly one **surfacing tier** (default: indexed):
 
-- Tier 3 — **enforced**: a guard hook (e.g. a `lesson-guards` PreToolUse hook) blocks the bad
-  tool call outright and cites the lesson. Use when: the violation is mechanically detectable (a
-  greppable bad command).
-- Tier 2 — **routed**: a read-before pointer wired into the activity's **home doc** — the file
-  already guaranteed loaded when that work happens (a skill, a CLAUDE.md §). Use when: the lesson
-  is tied to a specific risky *moment*.
-- Tier 1 — **indexed**: README index line only (the default). Use when: reference/browsing
-  knowledge; no single moment of risk.
+- tier: 3
+  name: **enforced**
+  mechanism:
+    a guard hook (e.g. a `lesson-guards` PreToolUse hook) blocks the bad tool call outright and
+    cites the lesson
+  use-when: the violation is mechanically detectable (a greppable bad command)
+
+- tier: 2
+  name: **routed**
+  mechanism:
+    a read-before pointer wired into the activity's **home doc** — the file already guaranteed
+    loaded when that work happens (a skill, a CLAUDE.md §)
+  use-when: the lesson is tied to a specific risky *moment*
+
+- tier: 1
+  name: **indexed**
+  mechanism: README index line only (the default)
+  use-when: reference/browsing knowledge; no single moment of risk
 
 Tier-2/3 lessons are additionally listed in the README's **⚡ Read-before tripwires** registry
 (moment → lesson → where it's wired), so wiring stays auditable. A tier-3 hook does not retire its
@@ -75,12 +92,20 @@ keep rules narrow — a false block interrupts every session.
 Orthogonal to the surfacing tier (the *mechanism*), every lesson holds one **priority**, expressed
 purely by its position in the README index (no per-file field — the index is the single source):
 
-- 🔴 **High** — read when: every session start. Cap: **10**. Belongs there when: applies to
-  every session AND isn't mechanically enforced.
-- 🟡 **Mid** — read when: entering the matching activity (grouped). Cap: **35**. Belongs there
-  when: activity-scoped; reading it on entry prevents the mistake.
-- ⚪ **Low** — read when: lookup only (grep when relevant). Cap: (within the total). Belongs
-  there when: enforced-by-hook rationale, narrow facts, rare references.
+- priority: 🔴 **High**
+  read-when: every session start
+  cap: **10**
+  belongs-there-when: applies to every session AND isn't mechanically enforced
+
+- priority: 🟡 **Mid**
+  read-when: entering the matching activity (grouped)
+  cap: **35**
+  belongs-there-when: activity-scoped; reading it on entry prevents the mistake
+
+- priority: ⚪ **Low**
+  read-when: lookup only (grep when relevant)
+  cap: (within the total)
+  belongs-there-when: enforced-by-hook rationale, narrow facts, rare references
 
 Caps are ratchets. **Promotion requires demotion when a level is full** — that forced trade IS the
 reordering-by-importance mechanism; never grow a level to avoid choosing. If the project has a
