@@ -18,7 +18,7 @@ system consistent over time — so you fix something once and every future sessi
 | agent | `instructions-auditor` | Read-only sweep of the instruction surface → severity-ranked findings with `file:line` evidence. Used by `instructions-audit`. |
 | hook | `caps` | SessionStart — surface any instruction-surface **cap breaches** (file sizes + skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct breach-set on ANY breach present (pre-existing included, not only what this session bloated). Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails open; escape hatch `CAPS_GUARD_OFF=1`; self-test `--test`. |
 | hook | `file-guard` | PreToolUse — writes to **T3 enforcement surfaces** (`.claude/settings*.json`, `.claude/hooks/`) downgrade to an **ask**: a session must not silently rewrite its own guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch `FILE_GUARD_OFF=1`; self-test `--test`. |
-| engine | `bin/meta-lint` | Config-driven **instruction-system linter** — 17 mechanical checks (cross-refs, lessons index/priority, agents/skills/commands symmetry, pattern routes, filenames, dup tripwires, sizes in lines OR chars, counts, staleness, boards, audit stamp). Activates only where a project ships `.agent/meta-lint.json`; pulsed at SessionStart via `--fast` with a loud-DISARM `\|\| echo` fallback. Escape hatch `META_LINT_OFF=1`; self-test `--test`. |
+| engine | `bin/meta-lint` | Config-driven **instruction-system linter** — 19 mechanical checks (cross-refs, lessons index/priority, agents/skills/commands symmetry, pattern routes, filenames, dup tripwires, sizes in lines OR chars, counts, staleness, boards, audit stamp, 100-col `[wrap]`, `[no-tables]`). Activates only where a project ships `.agent/meta-lint.json`; pulsed at SessionStart via `--fast` with a loud-DISARM `\|\| echo` fallback. Escape hatch `META_LINT_OFF=1`; self-test `--test`. |
 | hook (engine) | `tripwire-guard` | PreToolUse `Bash` — runs **project-owned command tripwires** from `.agent/guards.d/*.sh` against every Bash command: a guard exits 2 to block (first block wins, reason fed to the agent), 0 to allow, anything else becomes a loud non-blocking warning. No dir/guards → silent no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch `TRIPWIRE_GUARD_OFF=1`; jq-missing loud-DISARM; self-test `--test` (runs each guard's `tripwire_test` too). |
 
 The full knowledge system: **define** (`instructions-maintenance`) · **capture** (`lessons`) ·
@@ -45,6 +45,11 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
 
 - **Modes:** full run (findings listed, exit 1 — advisory), `--fast` (one-line summary, exit 0 —
   the SessionStart pulse), `--test` (self-test), `--config P` / `--root D` overrides.
+- **Format checks:** `[wrap]` flags prose lines over `wrap.width` (default 100) — code fences,
+  single-unsplittable-token lines (long URLs/paths), and GENERATED files exempt; frontmatter is
+  not (use folded scalars). `[no-tables]` flags markdown tables in governed files — convert to
+  record lists (`- field: value` bullets); the repo-root `README.md` is excluded by default,
+  both checks take extra `exclude` globs.
 - **Wiring:** SessionStart runs `meta-lint --fast || echo "⚠️ meta-lint DISARMED …"` — fail-open
   but **loud**: the fallback fires only when the engine itself can't run, never on findings.
 - **Coexistence:** where `.agent/meta-lint.json` exists, **meta-lint supersedes `caps.sh`** —

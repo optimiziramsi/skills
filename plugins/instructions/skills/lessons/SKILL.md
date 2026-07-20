@@ -139,8 +139,9 @@ note it).
 
 ## README index format
 
-`README.md` is the index loaded as the entry point — one line per lesson (`[Title](file.md) — hook`),
-routed by priority (🔴 High flat list · 🟡 Mid grouped by activity · ⚪ Low flat list), never the
-lesson content itself. The **⚡ Read-before tripwires** section at the top is the wiring registry for
-enforced + routed lessons; a tier-2/3 lesson appears both there and in its priority home. Keep index
-lines to ONE line each — the index is scanned every session; compactness is a feature.
+`README.md` is the index loaded as the entry point — one bullet per lesson (`[Title](file.md) —
+hook`), routed by priority (🔴 High flat list · 🟡 Mid grouped by activity · ⚪ Low flat list), never
+the lesson content itself. The **⚡ Read-before tripwires** section at the top is the wiring registry
+for enforced + routed lessons; a tier-2/3 lesson appears both there and in its priority home. Keep
+index entries to ONE bullet each — an entry may wrap physically at the project's wrap width; the
+index is scanned every session; compactness is a feature.

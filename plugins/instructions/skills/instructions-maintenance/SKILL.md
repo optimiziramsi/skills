@@ -48,6 +48,36 @@ fact, so nothing is documented twice. A typical house layout:
 When you and a doc disagree about reality, reality wins — fix the doc; if the misread caused a wrong
 action, also write a lesson (`lessons` skill).
 
+## File format — 100-col wrap + record lists
+
+All governed instruction markdown follows one mechanical format, enforced by meta-lint's `[wrap]` +
+`[no-tables]` checks where the project runs the engine:
+
+- **Hard-wrap prose at 100 columns.** Mechanical exemptions ONLY: lines inside code fences; lines
+  whose content is a single unsplittable token (a long URL or path — use reference-style link
+  definitions); files with a GENERATED header. YAML frontmatter is NOT exempt — a long
+  `description:` uses a folded scalar (`>-`) and wraps like prose.
+- **Tables are banned — use record lists**: `- field: value` bullets, long values wrapping onto
+  2-space-indented continuation lines. Field-level diffs beat row-level diffs, and source view
+  stays readable. When a table's rows are records, each row becomes one bullet led by its key
+  field, the remaining cells folded in as `field: value` pairs — never drop a cell. Sole
+  exception: the repository-root `README.md` (GitHub-rendered, human-facing) may keep tables.
+
+  ```markdown
+  | foo  | bar  |
+  | ---- | ---- |
+  | val1 | val2 |
+
+  becomes
+
+  - foo: val1
+  - bar: val2 — a long value wraps at the wrap width and continues on a
+    2-space-indented continuation line
+  ```
+
+- **Index files stay one bullet per entry** — an entry may wrap physically at the wrap width, but
+  never grows into a second bullet or a paragraph.
+
 ## Extension criteria — when to add each mechanism
 
 - **Skill** (`.claude/skills/<name>/SKILL.md`): a task type recurred ≥2× with a repo-specific
