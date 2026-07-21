@@ -149,6 +149,9 @@ via `TRIPWIRE_INTEGRATION_BRANCH`, default `develop`):
   (`TRIPWIRE_BOARD_FILE`, default `.agent/worktrees.md`) that the integration branch deleted.
 - **`docs-drift-warn.sh`** — warn-only: a landing push that changes source
   (`TRIPWIRE_SRC_RX`) without touching docs (`TRIPWIRE_DOCS_RX`).
+- **`cap-gate.sh`** — blocking: refuses a `git commit` while the instruction surface is over cap —
+  the enforcement complement to the nudge-only `caps` hook. Caps env-overridable (`CAP_CLAUDE` …);
+  `CAP_GATE_OFF=1` to bypass.
 
 Escape hatches: prefix the ONE false-positiving command with `TRIPWIRE_SKIP=1` (one-shot, visible
 in the transcript); `TRIPWIRE_GUARD_OFF=1` kill switch; `TRIPWIRE_GUARDS_DIR` overrides the
