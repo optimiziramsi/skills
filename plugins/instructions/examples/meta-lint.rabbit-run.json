@@ -262,6 +262,17 @@
           "^archive$"
         ],
         "label": "YYMMDD_{slug}"
+      },
+      {
+        "dirs": [
+          ".agent/lessons"
+        ],
+        "target": "files",
+        "regex": "^(\\d+-)?[a-z0-9][a-z0-9-]*\\.md$",
+        "allow": [
+          "^README\\.md$"
+        ],
+        "label": "kebab slug, optional NN- ordering prefix"
       }
     ]
   },

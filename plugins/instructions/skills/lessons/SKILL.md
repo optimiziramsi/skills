@@ -140,7 +140,10 @@ project actually does; a sensible default set:
 2. **Pick the priority** (and, for Mid, the group). If the target level is at its cap, promotion
    requires demoting something — make the trade explicit.
 3. **Create `.agent/lessons/<slug>.md`** — `<slug>` is kebab-case, short, describes the rule
-   (e.g. `never-launch-runners`, `fix-source-schema-first`). One lesson per file.
+   (e.g. `never-launch-runners`, `fix-source-schema-first`). One lesson per file. The exact filename
+   shape is a project choice: a permanent numeric ordering prefix (`01-never-launch-runners.md`) is
+   fine — pin whatever convention you want by adding a `.agent/lessons` rule to meta-lint's
+   `filenames.rules` (see `examples/meta-lint.rabbit-run.json`); nothing enforces bare kebab.
 4. **Write the file** (format below).
 5. **Pick the surfacing tier.** Default **indexed**; if the mistake happens at a specific risky
    moment, **route** it (pointer in the home doc + a ⚡ registry row); if it's a greppable bad

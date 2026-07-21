@@ -4,6 +4,10 @@ Changes to this repo's instruction system + the plugins it ships — newest firs
 (**T2** apply-safe · **T3** via `rules-change`). Governance doors: the `retro` / `rules-change`
 skills (instructions@opsi), which this repo dogfoods.
 
+- **2026-07-21 · T3** — lessons: slug filename shape is a project choice — a permanent numeric
+  `NN-` ordering prefix is blessed, pinnable via meta-lint `filenames.rules` for `.agent/lessons`
+  (example rule added to `meta-lint.rabbit-run.json`); lessons skill note; instructions 0.3.4 →
+  0.3.5. Trigger: hub pt2 — hub uses a permanent `NN-slug`. Approved in-session.
 - **2026-07-21 · T3** — commit-nudge: opt-in `COMMIT_NUDGE_EXTRA_DIRS=<dirs>` folds dirty *sibling*
   trees into the nudge + one-shot state; added a self-test (previously untested); commit 0.1.0 →
   0.1.1. Trigger: hub pt5b — a dirty `../gitops` went unseen. Approved in-session.
