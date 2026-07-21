@@ -1,6 +1,6 @@
 {
   "name": "instructions",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Keep the agent instruction system alive — retro/lessons/instructions-audit/instructions-maintenance/rules-change skills + 2 audit agents, with apply-safe/propose-risky governance, a caps hook that mechanically enforces the instruction-surface size/count caps, a file-guard hook that makes writes to enforcement surfaces (settings, hooks) ask the user, a config-driven meta-lint engine (project instruction-system linter behind .agent/meta-lint.json, pulsed at SessionStart and blocking at Stop on a size/count cap breach), and a tripwire-guard engine running project-owned .agent/guards.d asserts on Bash commands.",
   "author": {
     "name": "optimiziramsi"
