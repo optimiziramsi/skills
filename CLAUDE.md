@@ -45,6 +45,10 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
   `commands/`, `agents/`, `hooks/`, `README.md`). Register every plugin in
   [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json); keep plugin.json /
   marketplace / README descriptions in sync.
+- **Bump the plugin's version on any change to it.** Any edit under `plugins/<name>/`
+  (hook/skill/command/agent/config) bumps `plugins/<name>/.claude-plugin/plugin.json` `version` in
+  the **same commit** — CCD only re-materializes an installed plugin on a version *change*, so a
+  same-version edit never reaches consumers ([why](.agent/lessons/plugin-version-bump-on-edit.md)).
 - **Runtime output lives under the consumer's `.agent/`** — plugins never clutter a project's
   root.
 - **Ships the system, not conventions.** No product, stack, or deploy specifics baked into a

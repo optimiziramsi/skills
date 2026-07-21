@@ -20,6 +20,25 @@ is repo-specific, zero overlap.
 - The `/plugin` UI writes enablement at GLOBAL scope even when you pick a project — that contaminates
   `~/.claude`. Edit `.claude/settings.json` as a FILE; if `@opsi` reappears in global, strip it.
 
+## Updating an opsi plugin (a marketplace update ≠ an install update)
+
+Getting a new plugin *version* to actually bind in a consumer repo takes more than re-fetching the
+marketplace — two independent things must move, then a restart:
+
+- **The author must bump the version.** CCD binds a plugin by its *installed* version and only
+  re-materializes its install cache when that version *changes*. A same-version code change never
+  reaches you, however many times you restart — re-fetching the marketplace clone updates the clone,
+  not your installed cache. (Field case: a `git-guard` `reset` block sat dead across three restarts
+  because the fix shipped without a version bump. opsi now treats "touch `plugins/<name>/` → bump its
+  `plugin.json`" as an authoring rule, so this should not recur — but verify the version moved.)
+- **You must update the install, not just the marketplace.** Even once the marketplace advances
+  (e.g. `0.1.0 → 0.1.1`) and that version is materialized, `~/.claude/plugins/installed_plugins.json`
+  can still pin the old version, and CCD keeps binding the old code. Update the plugin (`/plugin` →
+  update, or re-point the install record) so the pin advances, **then restart** — plugins bind at
+  session start.
+- **Verify the bind, don't trust the fetch.** Confirm the new behavior actually fires (the new guard
+  rule, the changed skill), not merely that `/plugin` shows a newer version available.
+
 ## Editing settings.json during adoption
 
 - The desktop/app (auto-mode) runtime blocks an agent from editing `.claude/settings.json`. A
