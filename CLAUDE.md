@@ -9,11 +9,11 @@ every session; everything else is linked, not restated.
 1. Read [`.agent/handoff.md`](.agent/handoff.md) — current state + next up. "lets continue" means:
    resume at its **Next up**.
 2. Read [`.agent/MEMORY.md`](.agent/MEMORY.md) — durable facts, decisions, gotchas.
-3. `.agent/` is split by durability. **Tracked:** `.agent/lessons/` (this repo dogfoods its own
-   lessons system) and the root `.todo`. **Gitignored** (private working continuity, absent from a
-   fresh clone): `.agent/MEMORY.md`, `handoff.md`, `FEEDBACK.md`, `.todo-inbox`, runner state
-   (`loop/`, `grind/`). Migration record + source snapshots stay in the gitignored `_review/`
-   (`REVIEW.md`, `MIGRATION.md`).
+3. This repo tracks its own working continuity like an ordinary project: `.agent/` (memory,
+   handoff, lessons) and the root `.todo` / `.todo-inbox` are versioned. Only machine-local or
+   path-bearing artifacts stay gitignored — runner scratch (`.agent/loop/`, `.agent/grind/`),
+   `.claude/settings.local.json`, `_review/` migration staging, and OS/build junk. Keep committed
+   `.agent/` content free of real local paths and personal data.
 
 ## Hard rules — every session, no exceptions
 
