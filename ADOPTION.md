@@ -57,7 +57,10 @@ marketplace — two independent things must move, then a restart:
 - `git fetch` is BLOCKED by default. If your repo treats read-only fetch as fine, set
   `GIT_GUARD_ALLOW=fetch` in `.claude/settings.json` `env`. (`GIT_GUARD_ALLOW` takes comma-separated
   relax tokens: fetch, bulk-add, merge, protected-branch, soft-reset. Discards / `--no-verify` have
-  no token — use `GIT_GUARD_OFF`.)
+  no token — use `GIT_GUARD_OFF`.) `GIT_GUARD_ALLOW=fetch` is **all-or-nothing** — no per-remote /
+  per-command granularity. To permit one remote only, relax fetch globally and re-block the rest
+  with a project tripwire (`.agent/guards.d/*.sh`) matching `git fetch <other-remote>`. (Native
+  per-remote fetch support is a proposed guard enhancement, not yet shipped.)
 
 ## What a repo keeps local (the zero-overlap line)
 
@@ -66,6 +69,10 @@ marketplace — two independent things must move, then a restart:
 - Enforcement the plugins do not cover: project tripwires (`.agent/guards.d/`); a commit-guard for
   repo-specific post-commit checks (version bump, deploy-contract); the cap NUMBERS in
   `.agent/meta-lint.json` (the engine is instructions@opsi — only the policy is yours).
+- Project-specific session / commit signals. The shipped `session-start` and `commit-nudge` hooks
+  are deliberately **current-repo-scoped**; CCD composes multiple hooks per event, so layer your own
+  SessionStart / Stop hook for state they don't cover — extra start-up context, or a dirty *sibling*
+  worktree (e.g. `../gitops`) that `commit-nudge` won't see.
 
 ## A sequence that worked
 
