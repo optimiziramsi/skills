@@ -1,0 +1,44 @@
+# .todo-inbox — agent deferrals awaiting user triage (record list, newest on top)
+
+Intake batch 2026-07-21 — optimiziramsi/hub Phase-18 §Divergences (6). Routed via /retro +
+/rules-change this session; dispositions noted inline. Clear with /triage-todo once confirmed.
+
+- topic: tolerate/configure a permanent numeric NN- lesson slug prefix
+  type: meta
+  origin: 2026-07-21 (hub divergence pt2)
+  why: needs-user-decision
+  context: DECIDED configurable. Slug is kebab by default; a permanent NN- ordering prefix is
+    allowed and pinnable via meta-lint `filenames.rules` (already generic over dirs). Ship a
+    documented example rule + a lessons-skill note.
+
+- topic: commit-nudge should flag a dirty sibling tree (../gitops)
+  type: feature
+  origin: 2026-07-21 (hub divergence pt5)
+  why: out-of-scope — the hook is current-repo-scoped by design (T3 to change)
+  context: DECIDED build opt-in. COMMIT_NUDGE_EXTRA_DIRS=<dirs>. 5a (2nd SessionStart) = keep;
+    hook composition documented (3a11d51).
+
+- topic: narrow per-remote git-guard fetch allow
+  type: feature
+  origin: 2026-07-21 (hub divergence pt3)
+  why: out-of-scope of a doc fix — guard behavior is T3
+  context: DECIDED build. GIT_GUARD_ALLOW_FETCH=<remotes>. Doc workaround applied earlier (3a11d51).
+
+- topic: make .agent/lessons + .docs paths layout-configurable in skills
+  type: refactor
+  origin: 2026-07-21 (hub divergence pt1)
+  why: needs-user-decision — full skills-layout-awareness is high-churn
+  context: DECIDED skip-full; safe doc note applied (retro SKILL, bc18f8a). meta-lint `layout`
+    already configures the linter's view.
+
+- topic: ship a pre-commit cap-gate tripwire example
+  type: feature
+  origin: 2026-07-21 (hub divergence pt4)
+  why: out-of-scope of the nudge-only caps.sh hook
+  context: DONE — examples/guards.d/cap-gate.sh shipped (94b3258, instructions 0.3.3).
+
+- topic: install docs cover only settings JSON
+  type: chore
+  origin: 2026-07-21 (hub divergence pt6)
+  why: out-of-scope of code — a docs gap
+  context: DONE — README install load-protocol + ADOPTION pointer (83255af).
