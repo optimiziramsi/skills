@@ -1,6 +1,6 @@
 {
   "name": "git",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Git safety net for Claude — a PreToolUse guard that blocks destructive/remote/history ops (push, pull, amend, rebase, reset --hard, --no-verify, and discards of uncommitted work) — plus a test-first hotfix skill (failing test → minimal fix → cherry-pick both ways, remotes handed to the user). Commit message style is a separate opt-in: the commit plugin.",
   "author": {
     "name": "optimiziramsi"
