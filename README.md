@@ -32,6 +32,17 @@ In your `settings.json` (user-level or a project's `.claude/settings.json`):
 The snippet lists every plugin the marketplace ships — enable only the ones a given project needs
 (delete the rest); a plugin's hooks activate wherever it's enabled.
 
+That JSON registers and enables the plugins, but it does not by itself **load** them:
+
+- **Keep it project-only.** Put the block in the project's `.claude/settings.json`, not `~/.claude`.
+  The `/plugin` UI writes enablement to **global** scope even when you pick a project — edit the file
+  directly, and strip `@opsi` from `~/.claude` if it leaks in.
+- **Install + full restart binds.** Enablement isn't installation: install the plugin (`/plugin`, or
+  approve the first-load prompt) and **restart** — plugins bind at session start, never mid-session.
+  Floor: CC / CCD **≥ 2.1.195** (older builds silently don't load a project-only external plugin).
+
+Full adoption protocol, the zero-overlap line, and the gotchas: **[ADOPTION.md](ADOPTION.md)**.
+
 ## Plugins
 
 | Plugin | Provides |
