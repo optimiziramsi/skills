@@ -18,7 +18,8 @@ it's the separate opt-in [`commit`](../commit) plugin.
     uncommitted work (`clean -f`, `stash drop`, `checkout --`, `restore`). `rebase`,
     `commit --amend`, and `checkout <ref> -- <path>` are **allowed** by default (rebase + FF
     landing flows need them) — re-block via `GIT_GUARD_STRICT`. Fails open; escape hatches
-    `GIT_GUARD_OFF=1`, `GIT_GUARD_ALLOW`, `GIT_GUARD_STRICT`, `GIT_GUARD_PROTECTED_BRANCH`.
+    `GIT_GUARD_OFF=1`, `GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`, `GIT_GUARD_STRICT`,
+    `GIT_GUARD_PROTECTED_BRANCH`.
 
 - name: `hotfix`
   kind: skill + command
@@ -73,5 +74,8 @@ Enable `git` alone to get the guardrails while keeping your own commit format.
 >   push-refspec onto the protected branch), `soft-reset` (`git reset --soft <ref>` beyond
 >   `HEAD~N`/sha). The destructive core (push/pull, `reset --hard`, discards, `--no-verify`) has
 >   no allow token — that's what `GIT_GUARD_OFF` is for.
+> - `GIT_GUARD_ALLOW_FETCH=origin,upstream` — comma-separated **remote names**: permit
+>   `git fetch <remote>` for those remotes only, narrower than the all-or-nothing `fetch` token.
+>   Bare `git fetch`, `--all`, and `--multiple` stay blocked.
 > - `GIT_GUARD_PROTECTED_BRANCH=main` — comma-separated protected branch name(s); default `main`
 >   (e.g. `main,master`, or your deploy branch).

@@ -39,6 +39,9 @@ session. Escape hatches (user-set only — the hook reads its own process env):
                                 need them: `fetch`, `bulk-add`, `merge`, `protected-branch`,
                                 `soft-reset`. (The destructive core — push/pull, reset --hard,
                                 discards, --no-verify — has no allow token; use GIT_GUARD_OFF.)
+  GIT_GUARD_ALLOW_FETCH         comma-separated REMOTE names — permit `git fetch <remote>` for those
+                                remotes only (narrower than the all-or-nothing `fetch` token). Bare
+                                `git fetch`, `--all`, and `--multiple` stay blocked.
   GIT_GUARD_PROTECTED_BRANCH    comma-separated protected branch name(s); default `main`.
 """
 import json
@@ -129,8 +132,13 @@ def check(command):
         if sub == "pull":
             return "`git pull` is forbidden — the user owns remote sync"
         if sub == "fetch" and "fetch" not in allow:
-            return ("`git fetch` syncs the remote — the user owns remote sync "
-                    "(GIT_GUARD_ALLOW=fetch if this project permits read-only fetches)")
+            allow_fetch = env_tokens("GIT_GUARD_ALLOW_FETCH")
+            target = positional[0] if positional else ""     # `git fetch <remote> [refspec...]`
+            multi = any(a in ("--all", "--multiple") for a in args)
+            if multi or not (allow_fetch and target and target in allow_fetch):
+                return ("`git fetch` syncs the remote — the user owns remote sync "
+                        "(GIT_GUARD_ALLOW=fetch for all remotes, or "
+                        "GIT_GUARD_ALLOW_FETCH=<remote,...> to permit named remotes only)")
 
         # staging discipline — bulk adds sweep in files you didn't mean to commit
         if sub == "add" and "bulk-add" not in allow:
@@ -212,12 +220,14 @@ def check(command):
 
 def self_test():
     fails = 0
-    env_keys = ("GIT_GUARD_ALLOW", "GIT_GUARD_STRICT", "GIT_GUARD_PROTECTED_BRANCH")
+    env_keys = ("GIT_GUARD_ALLOW", "GIT_GUARD_ALLOW_FETCH", "GIT_GUARD_STRICT",
+                "GIT_GUARD_PROTECTED_BRANCH")
 
-    def chk(name, want_blocked, cmd, allow="", strict="", protected=""):
+    def chk(name, want_blocked, cmd, allow="", strict="", protected="", allow_fetch=""):
         nonlocal fails
         saved = {k: os.environ.get(k) for k in env_keys}
         os.environ["GIT_GUARD_ALLOW"] = allow
+        os.environ["GIT_GUARD_ALLOW_FETCH"] = allow_fetch
         os.environ["GIT_GUARD_STRICT"] = strict
         if protected:
             os.environ["GIT_GUARD_PROTECTED_BRANCH"] = protected
@@ -249,6 +259,17 @@ def self_test():
     chk("bare fetch blocked", True, "git fetch")
     chk("fetch allowed via GIT_GUARD_ALLOW", False, "git fetch origin", allow="fetch")
     chk("git -C push blocked", True, "git -C /x/y push origin develop")
+
+    # per-remote fetch allow (GIT_GUARD_ALLOW_FETCH) — narrower than the blanket `fetch` token
+    chk("fetch named remote allowed via ALLOW_FETCH", False, "git fetch origin", allow_fetch="origin")
+    chk("fetch other remote blocked under ALLOW_FETCH", True, "git fetch upstream", allow_fetch="origin")
+    chk("fetch named among several allowed", False, "git fetch upstream", allow_fetch="origin,upstream")
+    chk("fetch named remote + refspec allowed", False, "git fetch origin main", allow_fetch="origin")
+    chk("bare fetch still blocked under ALLOW_FETCH", True, "git fetch", allow_fetch="origin")
+    chk("fetch --all blocked under ALLOW_FETCH", True, "git fetch --all", allow_fetch="origin")
+    chk("fetch --multiple blocked under ALLOW_FETCH", True,
+        "git fetch --multiple origin upstream", allow_fetch="origin,upstream")
+    chk("blanket fetch token still allows any remote", False, "git fetch upstream", allow="fetch")
 
     # protected branch
     chk("push refspec to protected blocked", True, "git push . HEAD:main")
