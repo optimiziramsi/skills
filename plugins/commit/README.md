@@ -28,7 +28,9 @@ commit format? Enable [`git`](../git) and skip this.
   kind: hook
   purpose:
     Stop — if the session wrote files and the tree is dirty, nudges once to close the topic with
-    a commit (or say why not). One-shot per dirty state; escape hatch `STOP_NUDGE_OFF=1`.
+    a commit (or say why not). One-shot per dirty state; escape hatch `STOP_NUDGE_OFF=1`. Opt-in
+    `COMMIT_NUDGE_EXTRA_DIRS=../gitops,../infra` also flags dirty *sibling* trees the current repo
+    can't see.
 
 ## The split
 

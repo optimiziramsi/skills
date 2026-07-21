@@ -4,6 +4,9 @@ Changes to this repo's instruction system + the plugins it ships — newest firs
 (**T2** apply-safe · **T3** via `rules-change`). Governance doors: the `retro` / `rules-change`
 skills (instructions@opsi), which this repo dogfoods.
 
+- **2026-07-21 · T3** — commit-nudge: opt-in `COMMIT_NUDGE_EXTRA_DIRS=<dirs>` folds dirty *sibling*
+  trees into the nudge + one-shot state; added a self-test (previously untested); commit 0.1.0 →
+  0.1.1. Trigger: hub pt5b — a dirty `../gitops` went unseen. Approved in-session.
 - **2026-07-21 · T3** — git-guard: `GIT_GUARD_ALLOW_FETCH=<remotes>` permits `git fetch <remote>`
   for named remotes only (bare/`--all`/`--multiple` stay blocked); +8 self-test cases; git 0.1.1 →
   0.1.2. Trigger: hub pt3 — the all-or-nothing `GIT_GUARD_ALLOW=fetch` was too coarse. Approved

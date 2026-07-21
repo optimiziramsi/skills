@@ -70,9 +70,9 @@ marketplace — two independent things must move, then a restart:
   repo-specific post-commit checks (version bump, deploy-contract); the cap NUMBERS in
   `.agent/meta-lint.json` (the engine is instructions@opsi — only the policy is yours).
 - Project-specific session / commit signals. The shipped `session-start` and `commit-nudge` hooks
-  are deliberately **current-repo-scoped**; CCD composes multiple hooks per event, so layer your own
-  SessionStart / Stop hook for state they don't cover — extra start-up context, or a dirty *sibling*
-  worktree (e.g. `../gitops`) that `commit-nudge` won't see.
+  are deliberately **current-repo-scoped**. For a dirty *sibling* worktree, set
+  `COMMIT_NUDGE_EXTRA_DIRS=../gitops`; for anything else they don't cover (e.g. extra start-up
+  context), CCD composes multiple hooks per event — layer your own SessionStart / Stop hook.
 
 ## A sequence that worked
 
