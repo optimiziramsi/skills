@@ -13,8 +13,10 @@ description: >-
 This is how the instruction system self-updates without rotting. Harvest what this session taught,
 route each learning to the store that owns it, and keep the system lean.
 
-Assumes the `.agent/` house layout: `.agent/lessons/`, `.claude/rules/`, `.docs/`,
-`.agent/handoff.md`, `.agent/instructions-changelog.md`.
+Assumes the **default** `.agent/` house layout: `.agent/lessons/`, `.claude/rules/`, `.docs/`,
+`.agent/handoff.md`, `.agent/instructions-changelog.md`. A project on a different layout (e.g. keeps
+`docs/` at the repo root instead of `.docs/`) maps each to its own equivalent — the paths named in
+these skills are the convention, not a hard requirement.
 
 ## 1. Harvest
 
