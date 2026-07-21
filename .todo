@@ -1,0 +1,13 @@
+# opsi — todo
+
+- Push `init-marketplace` — nothing is installable until pushed (remote pushes are user-owned); then follow `_review/MIGRATION.md` to disable local dupes, and drop the 3 worktree guards from `~/.claude/settings.json` if enabling `worktree@opsi`.
+- Live-test the flow runner against a real `claude -p` from a plain terminal (nested guard blocks it inside a session; how-to in the looper/grind skills' "First run — smoke-test it"; memory: flow-runner-needs-live-test).
+- (done) Build the isolation-reviewer agent → `review` plugin — shipped genericized (tenancy model established first, 7 bug classes) in 0031f7a; doc-auditor (docs-vs-code drift audit) came along from the same sweep.
+- (done) Extract the git-extras kernel → `git` plugin — `hotfix` skill shipped (test-first, cherry-pick both ways, remotes user-owned) in b53a7df; `release` stays domain-locked (Portainer/build-ID machinery).
+- (done) Fold kupimkuham's `feedback` `.todo` processor into flow — shipped as its own `feedback` skill beside `triage-todo` (work-now ledger vs route-later) in 2ece616, plus the `todo-readonly-guard` hook.
+- (done) Decide: enable `flow@opsi` in THIS repo? — user said YES (2026-07-18): registered the checkout as a directory marketplace in `.claude/settings.local.json` (gitignored) with `flow@opsi` enabled. From next session the todo-readonly-guard is live — updating `.todo` needs the user to arm with "ALLOW TODO"; unarmed deferrals go to `.todo-inbox`. CLAUDE.md updated.
+- make grind and loop worktree aware (right now, they must work from the checkout root)
+  - maybe make grind and loop somehow runnable from checkout, but their working dir is in fact a worktree
+  - maybe make a single looper / grinder script (ran from checkout root), but it scans and handles all worktrees or you pick worktrees if not passed as args already ...
+  - all those commands should come from chats already / chat should help you prepare the commands to run
+  - just to double check, if I undertand, chat itself can not run long lasting commands ... is there some kind of possible bypass or something to that?

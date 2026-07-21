@@ -1,9 +1,13 @@
 # migration staging — per-project .claude copies + review notes; not part of the marketplace
 _review/
 
-# this repo's own working continuity (handoff, todo) — private, not part of the public marketplace
-.agent/
-.todo
+# this repo's own working continuity. Track the DURABLE knowledge, ignore the EPHEMERAL runtime.
+# Ignore every .agent/ child, then re-include the durable lessons dir. MEMORY.md, handoff.md,
+# FEEDBACK.md, loop/, grind/ stay local (private, absent from a fresh clone).
+.agent/*
+!.agent/lessons/
+!.agent/lessons/**
+# .todo (this repo's agent-maintained list) is tracked; .todo-inbox (deferral queue) stays local.
 .todo-inbox
 
 # machine-local Claude settings (registers this checkout as a directory marketplace to dogfood it)
