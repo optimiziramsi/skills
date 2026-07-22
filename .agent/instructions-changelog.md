@@ -2,7 +2,7 @@
 
 Changes to this repo's instruction system + the plugins it ships — newest first, tier-tagged
 (**T2** apply-safe · **T3** via `rules-change`). Governance doors: the `retro` / `rules-change`
-skills (instructions@opsi), which this repo dogfoods.
+skills (shipped in `optimiziramsi-skills`; pre-consolidation `instructions@opsi`), which this repo dogfoods.
 
 - **2026-07-21 · T3** — lessons: slug filename shape is a project choice — a permanent numeric
   `NN-` ordering prefix is blessed, pinnable via meta-lint `filenames.rules` for `.agent/lessons`

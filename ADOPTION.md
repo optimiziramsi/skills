@@ -1,17 +1,18 @@
 # Adopting `opsi` into an existing repo
 
-How to enable the opsi plugins in a project, plus the non-obvious gotchas — distilled from a real
-adoption (2026-07, CCD 2.1.215). Goal: the plugins own the generic system, the repo keeps only what
-is repo-specific, zero overlap.
+How to enable the opsi plugin in a project, plus the non-obvious gotchas — distilled from a real
+adoption (2026-07, CCD 2.1.215, then the 11-plugin marketplace; since the 2026-07 consolidation (0.0.1) everything ships as
+the single `optimiziramsi-skills@optimiziramsi` plugin — see [MIGRATION.md](MIGRATION.md)). Goal: the plugin owns the
+generic system, the repo keeps only what is repo-specific, zero overlap.
 
 ## Enable — marketplace global, plugins per-project
 
 - Two layers, two homes. The **marketplace registration** lives in global `~/.claude/settings.json`:
-  `extraKnownMarketplaces.opsi = {"source": {"source": "github", "repo": "optimiziramsi/skills"}}`
+  `extraKnownMarketplaces.optimiziramsi = {"source": {"source": "github", "repo": "optimiziramsi/skills"}}`
   — the `github` form takes `repo:`, not `url:`; a `git` form (`{"source": "git", "url":
   "https://github.com/optimiziramsi/skills.git"}`) also works. **Plugin enablement** lives in the
-  project's committed `.claude/settings.json` `enabledPlugins` (`"<plugin>@opsi": true`). Never
-  enable opsi plugins in global settings — enables travel with the repo.
+  project's committed `.claude/settings.json` `enabledPlugins` (`"optimiziramsi-skills@optimiziramsi": true`). Never
+  enable it in global settings — enables travel with the repo.
 - Why the marketplace is NOT declared per-project: the name registers once in the global registry
   (`~/.claude/plugins/known_marketplaces.json`); startup syncs the settings declaration into the
   registry, and a second project-level declaration of the same name is just a competing identity
@@ -24,7 +25,7 @@ is repo-specific, zero overlap.
   **"Install for project (shared)"**. That writes a `project` row AND the repo-settings enable —
   the same records CC's `/plugin` install creates. From then on, Manage Plugins shows scope
   PROJECT and the plugin-page enable switch works correctly both ways at project scope. Repeat per
-  plugin, per repo.
+  repo (one plugin since the consolidation).
   - The `+` beside a plugin in Browse and the plain Install button are "install for me": a global
     `user` row + a global-settings enable.
   - "Install for project (local)" installs into the project itself rather than the shared
@@ -33,8 +34,8 @@ is repo-specific, zero overlap.
   - **Per-project (opsi's default):** install-for-project-shared in each repo; toggle via the UI
     switch or the repo settings file. Zero global traces; enables travel with the code.
   - **Global:** install-for-me once (`user` row + global enable), then hand-add
-    `"<plugin>@opsi": false` in each repo that must NOT run it — settings merge, so the global
-    enable wins wherever you don't override.
+    `"optimiziramsi-skills@optimiziramsi": false` in each repo that must NOT run it — settings
+    merge, so the global enable wins wherever you don't override.
   Mixing scopes for one plugin is the failure mode: settings merge and enable BOTH records, the
   list shows DOUBLE entries (one per row — a truthful render of a real dual install), the toggle
   flickers (the repo `true` shadows the global `false` it writes), and the two rows pin versions
@@ -50,8 +51,8 @@ is repo-specific, zero overlap.
 - The list's CONTEXT is the new-session project pre-selection, not the chat you opened it from —
   switching that picker swaps the whole `+` → Plugins view (enables, doubles, versions) for every
   open chat. Check the selected project before reading anything off the list. Tag semantics are
-  asymmetric: an enable key REMOVED from settings shows DISABLED; an explicit `"<plugin>@opsi":
-  false` DELISTS the plugin entirely.
+  asymmetric: an enable key REMOVED from settings shows DISABLED; an explicit
+  `"optimiziramsi-skills@optimiziramsi": false` DELISTS the plugin entirely.
 - Floor: CCD/CC >= 2.1.195. On older builds a project-only external plugin silently does NOT load
   (an install-gate, not a settings error).
 - Plugins bind at session start — restart CCD after any enable/install/marketplace change; a
@@ -68,8 +69,9 @@ marketplace — two independent things must move, then a restart:
   re-materializes its install cache when that version *changes*. A same-version code change never
   reaches you, however many times you restart — re-fetching the marketplace clone updates the clone,
   not your installed cache. (Field case: a `git-guard` `reset` block sat dead across three restarts
-  because the fix shipped without a version bump. opsi now treats "touch `plugins/<name>/` → bump its
-  `plugin.json`" as an authoring rule, so this should not recur — but verify the version moved.)
+  because the fix shipped without a version bump. opsi now treats "any consumer-visible change →
+  bump `.claude-plugin/plugin.json`" as an authoring rule, so this should not recur — but verify
+  the version moved.)
 - **You must update the install, not just the marketplace.** Even once the marketplace advances
   (e.g. `0.1.0 → 0.1.1`) and that version is materialized, `~/.claude/plugins/installed_plugins.json`
   can still pin the old version, and CCD keeps binding the old code. Update the plugin (`/plugin` →
@@ -85,10 +87,10 @@ independently — with per-project installs, the update is per repo (update with
 selected), and any other repos' rows stay pinned where they were.
 
 - What writes what: **marketplace update** — CCD: session `+` → Plugins → Manage plugins →
-  Marketplaces → opsi → `⋯` → Update; CLI: `claude plugin marketplace update opsi` — refreshes the
-  clone under `~/.claude/plugins/marketplaces/opsi` only, pins untouched. **Plugin update** — CCD:
+  Marketplaces → optimiziramsi → `⋯` → Update; CLI: `claude plugin marketplace update optimiziramsi` — refreshes the
+  clone under `~/.claude/plugins/marketplaces/optimiziramsi` only, pins untouched. **Plugin update** — CCD:
   Manage plugins → plugin page → Update (offers "update to X"); CLI: `claude plugin update
-  <name>@opsi` — rewrites the pin and materializes `~/.claude/plugins/cache/opsi/<name>/<ver>/`.
+  optimiziramsi-skills@optimiziramsi` — rewrites the pin and materializes `~/.claude/plugins/cache/optimiziramsi/optimiziramsi-skills/<ver>/`.
   **Restart alone** writes nothing (no auto-refresh of marketplaces); **session start** re-resolves
   bindings in memory from settings + registry + pins.
 - Full author→consumer chain, no skippable step: bump `plugin.json` + push → marketplace update
@@ -101,13 +103,13 @@ selected), and any other repos' rows stay pinned where they were.
   enablement + settings/hook edits from a terminal worker (or hand the exact file to the owner).
   Deletions and doc edits are fine from either.
 
-## git@opsi — two defaults that surprise
+## The git safety net — two defaults that surprise
 
 - amend/rebase PASS by default. The git-guard is a remote/discard safety net (push/pull/fetch,
   bulk-add, non-FF merge, protected-branch move, reset --hard, discards); it deliberately allows
   amend/rebase for FF-landing flows. If your repo enforces append-only history on protected branches
   ONLY (amend/rebase fine in worktrees), a branch-aware project tripwire in `.agent/guards.d/*.sh`
-  (via instructions@opsi tripwire-guard) is the precise fit — `GIT_GUARD_STRICT` re-blocks globally,
+  (via opsi's tripwire-guard) is the precise fit — `GIT_GUARD_STRICT` re-blocks globally,
   not per-branch.
 - `git fetch` is BLOCKED by default. If your repo treats read-only fetch as fine, set
   `GIT_GUARD_ALLOW=fetch` in `.claude/settings.json` `env`. (`GIT_GUARD_ALLOW` takes comma-separated
@@ -123,7 +125,7 @@ selected), and any other repos' rows stay pinned where they were.
 - Domain skills with no generic equivalent (e.g. a deploy-contract sync).
 - Enforcement the plugins do not cover: project tripwires (`.agent/guards.d/`); a commit-guard for
   repo-specific post-commit checks (version bump, deploy-contract); the cap NUMBERS in
-  `.agent/meta-lint.json` (the engine is instructions@opsi — only the policy is yours).
+  `.agent/meta-lint.json` (the engine is opsi's meta-lint — only the policy is yours).
 - Project-specific session / commit signals. The shipped `session-start` and `commit-nudge` hooks
   are deliberately **current-repo-scoped**. For a dirty *sibling* worktree, set
   `COMMIT_NUDGE_EXTRA_DIRS=../gitops`; for anything else they don't cover (e.g. extra start-up
@@ -131,7 +133,7 @@ selected), and any other repos' rows stay pinned where they were.
 
 ## A sequence that worked
 
-- Prove load — enable, restart, verify `@opsi` resolves + hooks fire. No deletions yet.
+- Prove load — enable, restart, verify `@optimiziramsi` resolves + hooks fire. No deletions yet.
 - Port caps — write `.agent/meta-lint.json` with the repo's numbers; it supersedes the `caps.sh` hook.
 - Remove dupes — delete the local skills/agents/hooks the plugins now ship; rewire `settings.json`;
   keep the repo-specific pieces; add tripwires for any enforcement the plugins do not replicate.

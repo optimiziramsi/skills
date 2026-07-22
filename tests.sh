@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # tests.sh — the marketplace done-gate, mechanized (CLAUDE.md § Hard rules: "Done means validated").
-# Run from the repo root before committing plugin changes:
-#   1. every plugin.json / hooks.json / marketplace.json parses
-#   2. marketplace.json ↔ plugins/ directory listing agree both ways
-#   3. every hook that ships a --test self-test passes it
+# The repo root IS the single optimiziramsi-skills plugin (mattpocock/skills layout). Run from the repo root:
+#   1. plugin.json / hooks.json / marketplace.json parse
+#   2. marketplace.json lists exactly the one root-sourced plugin
+#   3. every hook / bin tool that ships a --test self-test passes it
 set -u
 cd "$(dirname "$0")" || exit 1
 fails=0
@@ -11,9 +11,10 @@ note() { echo "$@"; }
 fail() { echo "FAIL  $*"; fails=$((fails + 1)); }
 
 note "=== 1. JSON validity ==="
-for f in .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json plugins/*/hooks/hooks.json; do
-  [ -f "$f" ] || continue
-  if python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" 2>/dev/null; then
+for f in .claude-plugin/marketplace.json .claude-plugin/plugin.json hooks/hooks.json; do
+  if [ ! -f "$f" ]; then
+    fail "$f missing"
+  elif python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" 2>/dev/null; then
     note "ok    $f"
   else
     fail "$f does not parse"
@@ -21,18 +22,23 @@ for f in .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json pl
 done
 
 note ""
-note "=== 2. marketplace <-> plugins/ agree ==="
-listed=$(python3 -c "import json; print('\n'.join(sorted(p['name'] for p in json.load(open('.claude-plugin/marketplace.json'))['plugins'])))")
-present=$(ls -d plugins/*/ | sed 's|plugins/||;s|/||' | sort)
-if [ "$listed" = "$present" ]; then
-  note "ok    $(echo "$listed" | wc -l | tr -d ' ') plugins, both ways"
+note "=== 2. marketplace <-> plugin agree ==="
+if python3 - <<'EOF'
+import json, sys
+mp = json.load(open('.claude-plugin/marketplace.json'))['plugins']
+pj = json.load(open('.claude-plugin/plugin.json'))
+ok = (len(mp) == 1 and mp[0]['name'] == pj['name'] and mp[0]['source'] in ('./', '.'))
+sys.exit(0 if ok else 1)
+EOF
+then
+  note "ok    single root-sourced plugin, names agree"
 else
-  fail "mismatch — marketplace-only: [$(comm -23 <(echo "$listed") <(echo "$present") | tr '\n' ' ')] dir-only: [$(comm -13 <(echo "$listed") <(echo "$present") | tr '\n' ' ')]"
+  fail "marketplace must list exactly one plugin, name matching plugin.json, source ./"
 fi
 
 note ""
 note "=== 3. self-tests (every hook / bin tool that advertises --test) ==="
-for h in plugins/*/hooks/*.py plugins/*/hooks/*.sh plugins/*/bin/*; do
+for h in hooks/*.py hooks/*.sh bin/*; do
   [ -f "$h" ] || continue
   grep -q -e '--test' "$h" || continue
   case "$h" in

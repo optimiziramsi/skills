@@ -1,0 +1,22 @@
+{
+  "name": "optimiziramsi-skills",
+  "version": "0.0.1",
+  "description": "optimiziramsi's Claude Code toolkit as ONE plugin — git safety net, house commit style, lean reporting, session continuity, structured review, work-management flow (+ looper/grind runner), instruction-system upkeep (caps/meta-lint/tripwires), pattern registry, worktree protocol, repo utilities, and one-time scaffolds. Opinionated concerns carry env kill-switches; guards self-gate on project config.",
+  "author": {
+    "name": "optimiziramsi"
+  },
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "git",
+    "commit",
+    "reporting",
+    "session",
+    "review",
+    "flow",
+    "instructions",
+    "patterns",
+    "worktree",
+    "claude-code"
+  ]
+}

@@ -1,10 +1,12 @@
-# Bump the plugin's `plugin.json` version in the SAME commit as any `plugins/<name>/` change
+# Bump `plugin.json` version in the SAME commit as any shipped-content change
 
-Any edit under `plugins/<name>/` (hook, skill, command, agent, config) MUST bump that plugin's
-`plugins/<name>/.claude-plugin/plugin.json` `version` in the **same commit**. A code change with no
-version bump does **not** reach installed consumers: CCD binds a plugin by its *installed* version
-and only re-materializes its install cache when the version *changes*. Same version in → the old
-code stays bound, no matter how many restarts, and re-fetching the marketplace clone doesn't help.
+Any edit to shipped content (hook, skill, command, agent, bin, manifest) MUST bump
+`.claude-plugin/plugin.json` `version` in the **same commit**. (Pre-1.0 this repo shipped 11
+plugins, each with its own `plugins/<name>/.claude-plugin/plugin.json` — same rule, per plugin.)
+A code change with no version bump does **not** reach installed consumers: CCD binds a plugin by
+its *installed* version and only re-materializes its install cache when the version *changes*.
+Same version in → the old code stays bound, no matter how many restarts, and re-fetching the
+marketplace clone doesn't help.
 
 ## What bit us (2026-07)
 
@@ -18,9 +20,8 @@ the new hook code bind. The discipline the `instructions` plugin already follows
 
 ## The rule
 
-- Touch anything under `plugins/<name>/` → bump `plugins/<name>/.claude-plugin/plugin.json`
-  `version` in the same commit. No exceptions for "it's just a hook tweak" — that is exactly the
-  case that bit us.
+- Touch any shipped content → bump `.claude-plugin/plugin.json` `version` in the same commit. No
+  exceptions for "it's just a hook tweak" — that is exactly the case that bit us.
 - Bumping is necessary but not sufficient on the consumer side: a marketplace update is **not** a
   plugin-install update. The consumer must also update the install record and restart. See
   `ADOPTION.md` § "Updating an opsi plugin".

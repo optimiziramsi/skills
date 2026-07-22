@@ -3,7 +3,7 @@
 Durable, hard-won lessons for **this** repo (the opsi marketplace) — one file per lesson, this
 README the entry-point index. Content lives in the linked files; this list is scanned every session.
 Priority: 🔴 High (read every session) · 🟡 Mid (grouped by activity, read on entry) · ⚪ Low (lookup).
-Curation rules: the `lessons` skill (instructions@opsi), which this repo dogfoods.
+Curation rules: the `lessons` skill (shipped in `optimiziramsi-skills`; pre-consolidation `instructions@opsi`), which this repo dogfoods.
 
 ## ⚡ Read-before tripwires
 

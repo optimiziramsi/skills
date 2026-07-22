@@ -45,29 +45,45 @@ git diffs and LLMs mangle them.
 - **Other status** (plans, milestones, job files): prose ("Step 1 — done (commit abc)") or a `status:`
   field — never brackets. The opsi toolkit already complies.
 
-## flow@opsi dogfooded HERE — .todo writes need arming (2026-07-18, user)
+## Single-plugin restructure — repo root IS the plugin (2026-07-22, user)
 
-This checkout registers itself as a **directory marketplace** in `.claude/settings.local.json`
-(gitignored; absolute path) with `flow@opsi` enabled — user's call. Consequence: the
-`todo-readonly-guard` hook is live in this repo, so **updating `.todo` requires the user to arm the
-session with "ALLOW TODO"** (or prefix bash with `TODO_GUARD_SKIP=1`); unarmed deferrals go to
-`.todo-inbox`. The `(done)`-prefix format itself is unchanged.
+Naming (user, same session): plugin **`optimiziramsi-skills`**, marketplace renamed **`opsi` →
+`optimiziramsi`** → install identity `optimiziramsi-skills@optimiziramsi` (the
+mattpocock-skills@mattpocock pattern). "opsi" survives only as the informal toolkit/brand name in
+prose. Because the MARKETPLACE name changed, consumers can't just update: remove the `opsi`
+registration, re-add (manifest resolves the new name), rename any `extraKnownMarketplaces.opsi`
+settings key — MIGRATION.md step 1.
 
-**Gotcha found 2026-07-18 (session 5):** `extraKnownMarketplaces` + `enabledPlugins` in settings
-alone did **not** install the plugin — the marketplace registered but `flow@opsi` never loaded (no
-flow skills in-session; guard canary passed through). Fix: `claude plugin install --scope local
-flow@opsi` (now shows enabled, scope local, in `claude plugin list`). Plugins load at session start
-→ **verify on next boot**: flow skills visible and/or a `.todo`-write canary gets denied.
+11 plugins consolidated into ONE plugin at **0.0.1** (user: not live / not production-ready —
+1.0.0 is reserved for go-live), repo root = plugin root
+(mattpocock/skills layout; user asked for it explicitly — update pain across 11 versions/installs
+in field-testing). `.claude-plugin/{marketplace,plugin}.json` + root `skills/ commands/ agents/
+hooks/ bin/ docs/ examples/`. Version rule now: any shipped-content change bumps the single root
+`.claude-plugin/plugin.json` (repo-meta exempt). Per-project tailoring = env kill-switches
+(README table), not plugin selection. Old-plugin history is in the renames (all moves were 100%
+`git mv`). Built on branch `single-plugin` (2026-07-22); consumer migration steps in root
+MIGRATION.md — delete that file once all repos migrated.
+
+## Dogfood state — settings.local.json REMOVED by user (observed 2026-07-22)
+
+The 2026-07-18 directory-marketplace dogfood (`.claude/settings.local.json` + `claude plugin
+install --scope local flow@opsi`) is **gone**: the file no longer exists; the opsi marketplace is
+now registered **globally from GitHub** (`known_marketplaces.json`: github optimiziramsi/skills,
+autoUpdate). `claude plugin list` shows the old per-plugin installs as project-scoped rows across
+consumer repos, all disabled for this checkout → **todo-readonly-guard is NOT live here right
+now**; `.todo` stays user-owned by convention regardless (deferrals → `.todo-inbox`). Re-dogfood
+after the merge: install `optimiziramsi-skills@optimiziramsi` at project scope here. (Still true: settings alone
+install nothing — an install record + restart binds; plugins load at session start.)
 
 ## Flow runner not yet live-tested (2026-07-13; USER-only, confirmed 2026-07-18)
 
-`plugins/flow/bin/{loop,grind}` were built + tested with a FAKE `CLAUDE_BIN`, never against a real
+`bin/{loop,grind}` (pre-consolidation: `plugins/flow/bin/`) were built + tested with a FAKE `CLAUDE_BIN`, never against a real
 `claude -p`. Session 5 attempt from inside a session (`FLOW_ALLOW_NESTED=1`) was **blocked by the
 permission classifier** — spawning an unattended nested `claude -p` is not something the agent can
 (or should) do. It must be run by the USER from a plain terminal; `--dry-run`/`--status`/queue
 detection verified live and work. A scratch repo + smoke job can be prepared under the session
 scratchpad (any empty git repo works; the smoke-job recipe is in the looper skill's "First run"
 section).
-Run: `cd <scratch> && python3 <repo>/plugins/flow/bin/loop --model sonnet` → type `yes`. Confirm:
+Run: `cd <scratch> && python3 <repo>/bin/loop --model sonnet` → type `yes`. Confirm:
 SMOKE.txt says "ok", job-status flipped to done, ## Report filled, new commit in `git log`.
 Remove this note once the live test passes.

@@ -1,5 +1,23 @@
 # .todo-inbox — agent deferrals awaiting user triage (record list, newest on top)
 
+- topic: migrate consumer repos to the single optimiziramsi-skills@optimiziramsi plugin
+  type: chore
+  origin: 2026-07-22 (single-plugin restructure, branch single-plugin)
+  why: USER action — installs/settings surgery across repos, remotes/pushes user-owned
+  context: after merge+push of 0.0.1, once machine-wide: re-register the RENAMED marketplace
+    (remove `opsi`, re-add → resolves `optimiziramsi`; rename any extraKnownMarketplaces.opsi
+    key). Then per repo: uninstall old <name>@opsi rows, enabledPlugins →
+    "optimiziramsi-skills@optimiziramsi": true, install for project, restart, verify bind
+    (MIGRATION.md). Delete MIGRATION.md when done. Stale .todo item "Push init-marketplace…" is
+    superseded by this.
+
+- topic: re-dogfood optimiziramsi-skills@optimiziramsi in THIS repo
+  type: chore
+  origin: 2026-07-22 (settings.local.json found removed; guard not live)
+  why: needs-user-decision — install scope is the user's install state
+  context: install optimiziramsi-skills@optimiziramsi at project scope here post-merge; todo-readonly-guard goes live
+    again (ALLOW TODO to arm .todo edits).
+
 Intake batch 2026-07-21 — optimiziramsi/hub Phase-18 §Divergences (6). Routed via /retro +
 /rules-change this session; dispositions noted inline. Clear with /triage-todo once confirmed.
 
