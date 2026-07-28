@@ -114,6 +114,95 @@ def claude_bin() -> str:
     return os.environ.get("CLAUDE_BIN") or "claude"
 
 
+# ── Worktree selection ──────────────────────────────────────────────────────
+# The runners are cwd-relative: the job dir, the repo they commit into, and the
+# worktree-confinement detection all key off the current directory. So targeting a
+# worktree is only ever a question of picking the cwd — `--worktree NAME` resolves a
+# name to a path and chdirs, nothing downstream changes.
+def list_worktrees(cwd: str = None):
+    """Every worktree of the repo containing `cwd`, main checkout first.
+
+    Returns [{"path", "branch", "name", "is_main"}]; `branch` is "" when detached.
+    Returns [] when git is unavailable or `cwd` is not in a repo.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "worktree", "list", "--porcelain"],
+            cwd=cwd or os.getcwd(), capture_output=True, text=True, check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return []
+    trees, cur = [], None
+    for line in out.splitlines():
+        if line.startswith("worktree "):
+            cur = {"path": line[9:], "branch": "", "is_main": not trees}
+            cur["name"] = os.path.basename(cur["path"].rstrip("/"))
+            trees.append(cur)
+        elif line.startswith("branch ") and cur is not None:
+            # `branch refs/heads/feature/foo` → `feature/foo`
+            cur["branch"] = line[7:].replace("refs/heads/", "", 1)
+    return trees
+
+
+def resolve_worktree(name: str, cwd: str = None):
+    """Resolve a `--worktree` argument to one worktree dict, or die with the candidates.
+
+    Match order (first non-empty wins, and a tie inside one tier is an error rather
+    than a guess): reserved alias → filesystem path → exact branch → exact directory
+    name → unique substring of either. `.` means "right here" and returns None.
+    """
+    raw = (name or "").strip()
+    if raw in ("", "."):
+        return None
+    trees = list_worktrees(cwd)
+    if not trees:
+        die("--worktree needs a git repository (none found here).")
+
+    def _fail(msg):
+        listing = "\n".join(
+            f"    {t['name']:<28} {t['branch'] or '(detached)'}"
+            + ("  ← main checkout" if t["is_main"] else "")
+            for t in trees
+        )
+        die(f"{msg}\n  worktrees:\n{listing}")
+
+    if raw in ("root", "main-checkout", "checkout"):
+        return trees[0]
+    real = os.path.realpath(os.path.expanduser(raw))
+    for t in trees:
+        if os.path.realpath(t["path"]) == real:
+            return t
+    for tier in (lambda t: t["branch"] == raw, lambda t: t["name"] == raw):
+        hits = [t for t in trees if tier(t)]
+        if len(hits) == 1:
+            return hits[0]
+        if len(hits) > 1:
+            _fail(f"--worktree {raw!r} is ambiguous.")
+    hits = [t for t in trees if raw in t["branch"] or raw in t["name"]]
+    if len(hits) == 1:
+        return hits[0]
+    if len(hits) > 1:
+        _fail(f"--worktree {raw!r} matches {len(hits)} worktrees — be more specific.")
+    _fail(f"no worktree matches --worktree {raw!r}.")
+
+
+def select_worktree(name: str) -> None:
+    """Resolve `--worktree NAME` and chdir into it, announcing the move.
+
+    Everything after this point is cwd-relative, so this is the whole mechanism: run
+    the wrapper from the checkout root, name a worktree, work happens over there.
+    """
+    t = resolve_worktree(name)
+    if t is None:
+        return
+    if not os.path.isdir(t["path"]):
+        die(f"worktree {t['name']!r} is registered but its directory is gone: {t['path']}\n"
+            "  (run `git worktree prune` in the main checkout)")
+    os.chdir(t["path"])
+    where = "main checkout" if t["is_main"] else "worktree"
+    info(dim(f"→ {where} {t['path']}  [{t['branch'] or 'detached'}]"))
+
+
 def ensure_claude_available() -> None:
     b = claude_bin()
     if os.path.sep in b:
@@ -485,3 +574,72 @@ Hard rules:
 You MUST end by writing a terminal status into this work item's frontmatter and a short
 note in its Report/Log section, then committing. {status_contract}
 """
+
+
+# ── Self-test (`python3 _flowlib.py --test`; run by the repo's tests.sh) ─────
+def _self_test() -> int:
+    import tempfile
+    fails = 0
+
+    def check(label, cond):
+        nonlocal fails
+        if cond:
+            print(f"PASS  {label}")
+        else:
+            print(f"FAIL  {label}")
+            fails += 1
+
+    def resolves_to(name, expect_path, tmp):
+        try:
+            t = resolve_worktree(name, cwd=tmp)
+        except SystemExit:
+            return False
+        return t is not None and os.path.realpath(t["path"]) == os.path.realpath(expect_path)
+
+    def dies_on(name, tmp):
+        import contextlib
+        import io
+        try:  # swallow the expected error banner so --test output stays readable
+            with contextlib.redirect_stderr(io.StringIO()):
+                resolve_worktree(name, cwd=tmp)
+            return False
+        except SystemExit:
+            return True
+
+    tmp = tempfile.mkdtemp()
+    tmp = os.path.realpath(tmp)  # macOS /var → /private/var
+    try:
+        repo, wt_a, wt_b = f"{tmp}/repo", f"{tmp}/repo/.wt/alpha", f"{tmp}/repo/.wt/beta"
+        q = {"capture_output": True, "check": True}
+        subprocess.run(["git", "init", "-q", "-b", "trunk", repo], **q)
+        subprocess.run(["git", "-C", repo, "commit", "-q", "--allow-empty", "-m", "i"], **q)
+        for path, branch in ((wt_a, "feature/alpha-work"), (wt_b, "feature/beta-work")):
+            subprocess.run(["git", "-C", repo, "worktree", "add", "-q", path, "-b", branch], **q)
+
+        trees = list_worktrees(repo)
+        check("lists every worktree", len(trees) == 3)
+        check("main checkout is first", trees[0]["is_main"] and not trees[1]["is_main"])
+        check("branch names are stripped of refs/heads/",
+              sorted(t["branch"] for t in trees) == ["feature/alpha-work", "feature/beta-work", "trunk"])
+        check("'.' means stay put", resolve_worktree(".", cwd=repo) is None)
+        check("'' means stay put", resolve_worktree("", cwd=repo) is None)
+        check("resolves a reserved root alias", resolves_to("root", repo, repo))
+        check("resolves an exact branch", resolves_to("feature/alpha-work", wt_a, repo))
+        check("resolves an exact directory name", resolves_to("beta", wt_b, repo))
+        check("resolves a filesystem path", resolves_to(wt_a, wt_a, repo))
+        check("resolves a unique substring", resolves_to("alpha", wt_a, repo))
+        check("refuses an ambiguous substring", dies_on("work", repo))
+        check("refuses an unknown name", dies_on("nope", repo))
+        # A directory name must not be beaten by a substring hit elsewhere.
+        check("exact name wins over substring", resolves_to("alpha", wt_a, repo))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print("all tests passed" if not fails else f"{fails} FAILED")
+    return fails
+
+
+if __name__ == "__main__":
+    if "--test" in sys.argv[1:]:
+        sys.exit(_self_test())
+    print(__doc__)

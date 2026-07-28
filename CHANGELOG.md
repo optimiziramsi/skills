@@ -9,6 +9,18 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.5 — 2026-07-28
+
+The flow runners can be pointed at a worktree instead of being `cd`-ed into one.
+
+- **`loop --worktree NAME`** — resolve a worktree by branch, directory name, path, a unique
+  substring of either, or `root` for the main checkout, then run there. The runners were always
+  cwd-relative (job dir, the repo they commit into, worktree-confinement detection), so selecting a
+  worktree is only ever picking the cwd: the flag chdirs before anything reads the filesystem and
+  nothing downstream changes. An ambiguous name is an error listing the candidates, never a guess.
+- `_flowlib.py --test` is new and runs in the repo done-gate (13 cases over a real throwaway repo
+  with two worktrees).
+
 ## 0.0.4 — 2026-07-28
 
 Single-branch repos can land worktree work; the guard stops taxing every Bash call.

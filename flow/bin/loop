@@ -22,6 +22,10 @@ Options:
   --model NAME       default model when a job omits `model:` (default: opus)
   --retries N        max retries per job on failure (default: per-job max-retries, else 2)
   --dir DIR          job directory (default: .agent/loop)
+  --worktree NAME    run against a git worktree instead of the current directory.
+                     NAME is a branch, a worktree directory name, a path, a unique
+                     substring of either, or `root` for the main checkout. Launch
+                     from the checkout root and the runner moves itself over.
   -h, --help         this help
 
 Job frontmatter (see the `looper` skill for the full spec):
@@ -62,6 +66,7 @@ def parse_args(argv):
     opts = {
         "watch": False, "status": False, "dry_run": False, "yes": False,
         "model": fl.DEFAULT_MODEL, "retries": None, "dir": ".agent/loop",
+        "worktree": None,
     }
     it = iter(argv)
     for a in it:
@@ -82,6 +87,8 @@ def parse_args(argv):
             opts["retries"] = int(next(it))
         elif a == "--dir":
             opts["dir"] = next(it)
+        elif a == "--worktree":
+            opts["worktree"] = next(it)
         else:
             fl.die(f"unknown argument: {a} (try --help)")
     return opts
@@ -295,6 +302,9 @@ def arm_or_exit(opts, queue):
 
 def main():
     opts = parse_args(sys.argv[1:])
+    # Before anything reads the filesystem: --worktree just moves the cwd, and every
+    # path below (job dir, the repo being committed into) is relative to it.
+    fl.select_worktree(opts["worktree"])
     job_dir = opts["dir"]
 
     if opts["status"]:
