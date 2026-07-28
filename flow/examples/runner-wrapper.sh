@@ -23,7 +23,7 @@
 #   bin/loop --worktree all                  # every worktree that has pending jobs
 set -eu
 
-WRAPPER_VERSION=0.0.5          # kept in lockstep with .claude-plugin/plugin.json by tests.sh
+WRAPPER_VERSION=0.0.6          # kept in lockstep with .claude-plugin/plugin.json by tests.sh
 
 tool=$(basename "$0")
 case "$tool" in

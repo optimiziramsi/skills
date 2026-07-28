@@ -583,49 +583,36 @@ def long_backoff_sleep(step: int) -> None:
 # The guards are the `worktree` topic's, deliberately NOT a second copy living here: one
 # implementation, one self-test, one set of edge cases. The cost is a cross-topic path
 # dependency — flow/bin/ → worktree/hooks/ — which `confine_hooks()` fails loudly on.
-def _git_out(cwd, *args):
-    r = subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True)
-    return r.stdout.strip() if r.returncode == 0 else None
+def plugin_root():
+    """…/<plugin>/flow/bin/_flowlib.py → …/<plugin>"""
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+sys.path.insert(0, os.path.join(plugin_root(), "lib"))
+import hookio  # noqa: E402
 
 
 def worktree_context(cwd=None):
     """dict(is_linked, wt_root, main_root, branch) when cwd is in a git work tree, else None.
 
-    `is_linked` is True only for a LINKED worktree (git-dir != git-common-dir). `wt_root` is the
-    worktree root; `main_root` is the main checkout (the parent of the shared git-common-dir).
-    All realpath-resolved, so downstream path comparisons are apples-to-apples.
+    Thin alias for `hookio.worktree` so the runners and the guards agree on what a worktree
+    is by construction rather than by two implementations staying in sync.
     """
-    cwd = cwd or os.getcwd()
-    if _git_out(cwd, "rev-parse", "--is-inside-work-tree") != "true":
-        return None
-    wt = _git_out(cwd, "rev-parse", "--show-toplevel")
-    gd = _git_out(cwd, "rev-parse", "--absolute-git-dir")
-    common = _git_out(cwd, "rev-parse", "--git-common-dir")
-    if not (wt and gd and common):
-        return None
-    if not os.path.isabs(common):
-        common = os.path.abspath(os.path.join(cwd, common))
-    return {
-        "is_linked": os.path.realpath(gd) != os.path.realpath(common),
-        "wt_root": os.path.realpath(wt),
-        "main_root": os.path.realpath(os.path.dirname(common)),
-        "branch": _git_out(cwd, "rev-parse", "--abbrev-ref", "HEAD") or "?",
-    }
+    return hookio.worktree(cwd or os.getcwd())
 
 
 CONFINE_HOOKS = (  # (relative path from the plugin root, tool matcher)
-    ("worktree/hooks/worktree-write-guard.sh", "Edit|Write|MultiEdit|NotebookEdit"),
-    ("worktree/hooks/worktree-bash-guard.sh", "Bash"),
+    ("worktree/hooks/worktree-write-guard.py", "Edit|Write|MultiEdit|NotebookEdit"),
+    ("worktree/hooks/worktree-bash-guard.py", "Bash"),
 )
+CONFINE_TESTS = "worktree/tests/test_worktree.py"
 
 
 def confine_hooks():
     """[(absolute guard path, matcher)] — dies if the `worktree` topic isn't beside us."""
-    # …/<plugin>/flow/bin/_flowlib.py → …/<plugin>
-    plugin_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     out = []
     for rel, matcher in CONFINE_HOOKS:
-        path = os.path.join(plugin_root, rel)
+        path = os.path.join(plugin_root(), rel)
         if not os.path.exists(path):
             die(f"worktree confinement needs the `worktree` topic's guard, which is missing:\n"
                 f"  {path}\n"
@@ -644,7 +631,8 @@ def confine_settings_json(hooks):
     so no paths are baked into the settings blob.
     """
     return json.dumps({"hooks": {"PreToolUse": [
-        {"matcher": matcher, "hooks": [{"type": "command", "command": f"bash {shlex.quote(path)}"}]}
+        {"matcher": matcher,
+         "hooks": [{"type": "command", "command": f"python3 {shlex.quote(path)}"}]}
         for path, matcher in hooks
     ]}})
 
@@ -727,12 +715,12 @@ def worktree_preflight():
             "confinement into its children. Update the CLI, run from the main checkout, or set "
             "FLOW_WORKTREE_UNSAFE=1 to run WITHOUT confinement (not recommended).")
     hooks = confine_hooks()
-    for path, _ in hooks:
-        st = subprocess.run(["bash", path, "--test"], capture_output=True, text=True)
-        if st.returncode != 0:
-            die(f"guard self-test FAILED ({os.path.basename(path)}) — refusing to run:\n"
-                f"{st.stdout}\n{st.stderr}")
-    info(dim(f"    guard self-tests: ok ({len(hooks)})"))
+    tests = os.path.join(plugin_root(), CONFINE_TESTS)
+    st = subprocess.run([sys.executable, tests], capture_output=True, text=True)
+    if st.returncode != 0:
+        die(f"guard self-tests FAILED ({CONFINE_TESTS}) — refusing to run:\n"
+            f"{st.stdout}\n{st.stderr}")
+    info(dim(f"    guard self-tests: ok ({st.stdout.count('PASS')})"))
     settings = confine_settings_json(hooks)
     probe_model = os.environ.get("FLOW_PROBE_MODEL", PROBE_MODEL_DEFAULT)
     info(dim(f"    verifying confinement with a live leak-probe ({probe_model}, one throwaway session)…"))

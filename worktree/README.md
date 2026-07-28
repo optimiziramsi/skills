@@ -52,6 +52,12 @@ Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1` (write-guard **and** the Session
 `WORKTREE_LEAK_DETECT_DISABLE=1`, `WORKTREE_BASH_GUARD_ENABLE=1` (opt-in),
 `WORKTREE_GUARD_MODE=json|exit2` (default `json`).
 
+All four guards are python3 (stdlib only) over the shared [`lib/hookio.py`](../lib/hookio.py), so
+they have no `jq` dependency and cannot disarm themselves on a missing tool. Their tests live in
+[`tests/test_worktree.py`](tests/test_worktree.py), not inside the guards — run them with
+`python3 worktree/tests/test_worktree.py` (the flow runners also run this file before arming
+worktree confinement).
+
 ## The integration branch
 
 The skill lands work into a configurable **integration branch** — your repo's day-to-day merge

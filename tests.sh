@@ -125,8 +125,22 @@ else
 fi
 
 note ""
-note "=== 7. self-tests (every hook / bin tool that advertises --test) ==="
-for h in */hooks/*.py */hooks/*.sh */bin/*; do
+note "=== 7a. topic test suites (*/tests/*.py) ==="
+for t in */tests/*.py; do
+  [ -f "$t" ] || continue
+  if out=$(python3 "$t" 2>&1); then
+    note "ok    $t ($(grep -c '^PASS' <<<"$out" | tr -d ' ') tests)"
+  else
+    fail "$t:"
+    echo "$out" | tail -15
+  fi
+done
+
+note ""
+note "=== 7b. inline self-tests (anything shipping --test) ==="
+# Deliberately wider than the component dirs: examples/guards.d/*.sh ship self-tests too, and
+# a narrower glob left them silently unrun for their whole life.
+for h in */hooks/* */bin/* */examples/*.sh */examples/*/*.sh; do
   [ -f "$h" ] || continue
   grep -q -e '--test' "$h" || continue
   case "$h" in

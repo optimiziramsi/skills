@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-detect.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-detect.py\"",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-write-guard.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-write-guard.py\"",
             "timeout": 10
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-bash-guard.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-bash-guard.py\"",
             "timeout": 10
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-leak-detector.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/worktree/hooks/worktree-leak-detector.py\"",
             "timeout": 10
           }
         ]
