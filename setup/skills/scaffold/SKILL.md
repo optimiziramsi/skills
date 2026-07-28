@@ -67,10 +67,15 @@ nothing to generate or re-sync afterward.
    ```
 
    **Tell them to commit these.** That is the point: a tracked wrapper exists in every worktree by
-   construction, carries no machine-specific path (it resolves the installed plugin at run time),
-   and survives plugin version bumps — where a symlink into the versioned plugin cache does none of
-   the three. Existing `bin/loop`? Don't overwrite silently: diff it against the template and offer
-   the refresh. Skip this step entirely if the project doesn't use `looper` / `grind`.
+   construction and carries no machine-specific path (it resolves the installed plugin at run
+   time) — where a symlink into the versioned plugin cache does neither. Existing `bin/loop`?
+   Don't overwrite silently: diff it against the template and offer the refresh. Skip this step
+   entirely if the project doesn't use `looper` / `grind`.
+
+   **The wrapper is version-locked to the plugin** — it refuses to run against a runner of a
+   different version, so a plugin update means re-copying it (its own error message prints the
+   command). That is deliberate: a stale wrapper passing flags a newer runner renamed is exactly
+   the drift the lock exists to catch. `FLOW_WRAPPER_ALLOW_DRIFT=1` overrides for one run.
 
 6. **Stop.** Do not register individual skills, do not create a cron/generator, do not add more than
    the one pointer. Setup is done.

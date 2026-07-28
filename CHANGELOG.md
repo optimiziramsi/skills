@@ -29,7 +29,10 @@ The flow runners can be pointed at a worktree instead of being `cd`-ed into one.
   copy in the plugin cache), so it holds no machine path and can be **tracked** — which means it
   exists in every worktree by construction and survives plugin updates. The old advice (symlink
   into the versioned cache) does none of the three. One template, two identical copies: it
-  dispatches on its own filename.
+  dispatches on its own filename. **Version-locked:** the wrapper is stamped with the plugin
+  version it came from and refuses to run against a different one, printing the refresh command —
+  a stale wrapper passing flags a newer runner renamed is the drift the lock exists to catch
+  (`FLOW_WRAPPER_ALLOW_DRIFT=1` overrides). `tests.sh` check 8 keeps the stamp honest.
 - `_flowlib.py --test` is new and runs in the repo done-gate (13 cases over a real throwaway repo
   with two worktrees).
 

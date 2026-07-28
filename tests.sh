@@ -9,6 +9,7 @@
 #   5. every /command has the same-named skill it shims (CLAUDE.md § Authoring conventions)
 #   6. `claude plugin validate . --strict` (skipped when the CLI is absent)
 #   7. every hook / bin tool that ships a --test self-test passes it
+#   8. the runner-wrapper template's version stamp matches plugin.json
 set -u
 cd "$(dirname "$0")" || exit 1
 fails=0
@@ -140,6 +141,19 @@ for h in */hooks/*.py */hooks/*.sh */bin/*; do
     echo "$out" | tail -15
   fi
 done
+
+note ""
+note "=== 8. runner-wrapper version lock ==="
+# The scaffolded bin/loop wrapper refuses to run against a plugin of a different version, so its
+# stamp MUST track plugin.json — a forgotten bump here breaks every consumer's wrapper on update.
+wrapper=flow/examples/runner-wrapper.sh
+plugin_version=$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+wrapper_version=$(sed -n 's/^WRAPPER_VERSION=\([^ ]*\).*/\1/p' "$wrapper" | head -1)
+if [ "$wrapper_version" = "$plugin_version" ]; then
+  note "ok    $wrapper stamped $wrapper_version"
+else
+  fail "$wrapper stamps WRAPPER_VERSION=$wrapper_version but plugin.json is $plugin_version"
+fi
 
 note ""
 if [ "$fails" -eq 0 ]; then note "ALL GREEN"; else note "$fails FAILURE(S)"; fi
