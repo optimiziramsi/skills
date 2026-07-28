@@ -72,10 +72,8 @@ nothing to generate or re-sync afterward.
    Don't overwrite silently: diff it against the template and offer the refresh. Skip this step
    entirely if the project doesn't use `looper` / `grind`.
 
-   **The wrapper is version-locked to the plugin** — it refuses to run against a runner of a
-   different version, so a plugin update means re-copying it (its own error message prints the
-   command). That is deliberate: a stale wrapper passing flags a newer runner renamed is exactly
-   the drift the lock exists to catch. `FLOW_WRAPPER_ALLOW_DRIFT=1` overrides for one run.
+   The wrapper carries no version of its own: it resolves whatever plugin version is installed
+   and execs it, so a plugin update needs no re-copy.
 
 6. **Stop.** Do not register individual skills, do not create a cron/generator, do not add more than
    the one pointer. Setup is done.
