@@ -12,8 +12,11 @@ Hard-blocks (exit 2, reason fed back to the model):
                                       refspecs targeting it (`HEAD:<protected>`, `:<protected>`,
                                       `--delete`). Name(s) from GIT_GUARD_PROTECTED_BRANCH; unset,
                                       the repo's OWN default branch is detected (origin/HEAD →
-                                      init.defaultBranch → first existing of main/master/develop/
-                                      trunk), so `develop`-based projects need no config
+                                      first existing of main/master/develop/trunk → repo-local
+                                      init.defaultBranch), so `develop`-based projects need no
+                                      config. EXCEPTION: a fast-forward landing push into the
+                                      declared GIT_GUARD_INTEGRATION_BRANCH passes even when that
+                                      branch is also protected (single-branch repos) — see below
   - git reset --soft <moving-ref>     soft-reset squashes only against HEAD~N / a sha — a branch
                                       or remote ref can advance underneath you
   - git filter-branch                 history rewrite
@@ -50,6 +53,13 @@ session. Escape hatches (user-set only — the hook reads its own process env):
                                 protected branch differs from the default (e.g. `main` protected
                                 while day-to-day work lands on `develop`), or to protect several
                                 (`main,release`). Empty string = protect nothing.
+  GIT_GUARD_INTEGRATION_BRANCH  ONE branch name — where day-to-day work lands (`develop` in a
+                                two-tier repo, the single branch in a GitHub-flow one). Only
+                                needed when it is ALSO protected: then `git push . HEAD:<it>` —
+                                the worktree protocol's fast-forward land — is permitted, while
+                                `checkout`/`switch`/`merge` onto it and every force (`+`) or
+                                delete (`:<it>`, `--delete`) refspec stay blocked. Leave unset in
+                                a two-tier repo: `develop` isn't protected, so lands already pass.
 """
 import json
 import os
@@ -102,6 +112,9 @@ def env_tokens(name: str):
     return {t.strip() for t in os.environ.get(name, "").split(",") if t.strip()}
 
 
+_DETECT_CACHE = {}
+
+
 def detected_default_branch():
     """The repo's OWN default branch, so `main` is never assumed.
 
@@ -112,7 +125,18 @@ def detected_default_branch():
     Deliberately never reads GLOBAL `init.defaultBranch`: that is a property of the user's
     machine, not of the project, and would make every repo on the box look like `main`.
     Any git failure returns None; this must never raise inside a PreToolUse hook.
+
+    Memoized per cwd: this costs several `git` subprocesses (~30 ms), and the hook runs on
+    EVERY Bash tool call. Callers must also reach it lazily — see `check()`.
     """
+    key = os.getcwd()
+    if key in _DETECT_CACHE:
+        return _DETECT_CACHE[key]
+    _DETECT_CACHE[key] = value = _detect_default_branch_uncached()
+    return value
+
+
+def _detect_default_branch_uncached():
     def run(*args):
         try:
             return subprocess.run(("git",) + args, capture_output=True, text=True, timeout=2)
@@ -152,6 +176,17 @@ def protected_branches():
     return {detected} if detected else {"main", "master"}
 
 
+def integration_branch():
+    """The ONE branch day-to-day work lands into, or "" when the project didn't declare it.
+
+    Only load-bearing where the integration branch is ALSO protected — a single-branch repo,
+    where `main` is both the production branch and the one worktrees are cut from and land
+    into. Without this the protected-branch rule blocks the worktree protocol's own
+    `git push . HEAD:<integration>` and no slice can ever land.
+    """
+    return os.environ.get("GIT_GUARD_INTEGRATION_BRANCH", "").strip()
+
+
 # safe soft-reset targets: nothing (defaults HEAD), HEAD~N/HEAD^-style, or a sha
 SAFE_SOFT_TARGET = re.compile(r"^(?:(?:HEAD|@)(?:[~^][0-9]*)*|[0-9a-fA-F]{7,40})$")
 
@@ -160,7 +195,16 @@ def check(command):
     """Return a block reason for the first offending git segment, or None if clean."""
     allow = env_tokens("GIT_GUARD_ALLOW")
     strict = env_tokens("GIT_GUARD_STRICT")
-    protected = protected_branches()
+    # LAZY: resolving the protected set can shell out to git (~30 ms) and this runs on every
+    # Bash call — only the two rules that consult it may pay that cost, and only when reached.
+    protected = None
+
+    def protected_set():
+        nonlocal protected
+        if protected is None:
+            protected = protected_branches()
+        return protected
+
     for seg in segments(command):
         parsed = parse_git(tokenize(seg))
         if not parsed:
@@ -174,14 +218,25 @@ def check(command):
                 return ("`git push` is forbidden — the user owns remote sync "
                         "(local landing `git push . <ref>` is fine)")
             if "protected-branch" not in allow:
+                deleting = "--delete" in args or "-d" in args
+                integration = integration_branch()
                 for spec in positional[1:]:
-                    dest = spec.lstrip("+").rsplit(":", 1)[-1]
+                    forced = spec.startswith("+")
+                    src, sep, dst = spec.lstrip("+").partition(":")
+                    dest = dst if sep else src
                     if dest.startswith("refs/heads/"):
                         dest = dest[len("refs/heads/"):]
-                    if (":" in spec or "--delete" in args or "-d" in args) and dest in protected:
-                        return (f"push refspec targets protected branch `{dest}` — protected "
-                                "branches are never the agent's to move "
-                                "(GIT_GUARD_PROTECTED_BRANCH to change which)")
+                    if not ((sep or deleting) and dest in protected_set()):
+                        continue
+                    # the worktree protocol's land: a NON-forced, non-deleting push of a real
+                    # source ref into the branch this project declared as its integration branch
+                    if integration and dest == integration and sep and src \
+                            and not forced and not deleting:
+                        continue
+                    return (f"push refspec targets protected branch `{dest}` — protected "
+                            "branches are never the agent's to move "
+                            "(GIT_GUARD_PROTECTED_BRANCH to change which; "
+                            "GIT_GUARD_INTEGRATION_BRANCH to permit the fast-forward land)")
         if sub == "pull":
             return "`git pull` is forbidden — the user owns remote sync"
         if sub == "fetch" and "fetch" not in allow:
@@ -239,7 +294,7 @@ def check(command):
         if sub in ("checkout", "switch") and "protected-branch" not in allow:
             dd = args.index("--") if "--" in args else len(args)
             head_positional = [a for a in args[:dd] if not a.startswith("-")]
-            if head_positional[:1] and head_positional[0] in protected:
+            if head_positional[:1] and head_positional[0] in protected_set():
                 return (f"`git {sub} {head_positional[0]}` — the protected branch is off-limits "
                         "to the agent; work on a feature branch "
                         "(GIT_GUARD_PROTECTED_BRANCH to change which)")
@@ -274,9 +329,10 @@ def check(command):
 def self_test():
     fails = 0
     env_keys = ("GIT_GUARD_ALLOW", "GIT_GUARD_ALLOW_FETCH", "GIT_GUARD_STRICT",
-                "GIT_GUARD_PROTECTED_BRANCH")
+                "GIT_GUARD_PROTECTED_BRANCH", "GIT_GUARD_INTEGRATION_BRANCH")
 
-    def chk(name, want_blocked, cmd, allow="", strict="", protected="main", allow_fetch=""):
+    def chk(name, want_blocked, cmd, allow="", strict="", protected="main", allow_fetch="",
+            integration=""):
         # `protected` defaults to an EXPLICIT "main" so these cases never depend on the branch
         # layout of whatever repo the self-test runs in (auto-detection is covered separately).
         nonlocal fails
@@ -285,6 +341,7 @@ def self_test():
         os.environ["GIT_GUARD_ALLOW_FETCH"] = allow_fetch
         os.environ["GIT_GUARD_STRICT"] = strict
         os.environ["GIT_GUARD_PROTECTED_BRANCH"] = protected
+        os.environ["GIT_GUARD_INTEGRATION_BRANCH"] = integration
         try:
             reason = check(cmd)
         finally:
@@ -341,6 +398,24 @@ def self_test():
     chk("multi protected branches blocked", True, "git switch trunk", protected="main,trunk")
     chk("protected-branch allow token relaxes", False, "git checkout main",
         allow="protected-branch")
+
+    # integration branch == protected branch (single-branch repo): the land passes, nothing else
+    chk("land into protected integration allowed", False, "git push . HEAD:main",
+        integration="main")
+    chk("land into refs/heads/<integration> allowed", False, "git push . HEAD:refs/heads/main",
+        integration="main")
+    chk("land from a named branch allowed", False, "git push . feature/x:main",
+        integration="main")
+    chk("forced land into integration blocked", True, "git push . +HEAD:main", integration="main")
+    chk("delete-refspec of integration blocked", True, "git push . :main", integration="main")
+    chk("--delete of integration blocked", True, "git push . --delete main", integration="main")
+    chk("checkout of protected integration still blocked", True, "git checkout main",
+        integration="main")
+    chk("integration naming a DIFFERENT branch does not unlock protected", True,
+        "git push . HEAD:main", integration="develop")
+    chk("integration unset keeps protected push blocked", True, "git push . HEAD:main")
+    chk("land into one protected leaves the others blocked", True, "git push . HEAD:release",
+        protected="main,release", integration="main")
 
     # staging discipline
     chk("add -A blocked", True, "git add -A")
@@ -423,18 +498,23 @@ def self_test():
         nonlocal fails
         tmp = tempfile.mkdtemp()
         cwd = os.getcwd()
-        saved = os.environ.get("GIT_GUARD_PROTECTED_BRANCH")
+        saved = {k: os.environ.get(k)
+                 for k in ("GIT_GUARD_PROTECTED_BRANCH", "GIT_CEILING_DIRECTORIES")}
         os.environ.pop("GIT_GUARD_PROTECTED_BRANCH", None)
+        # stop git walking ABOVE the throwaway dir — otherwise the "not a repo" case finds
+        # whatever repo happens to contain $TMPDIR on this machine and the test flakes
+        os.environ["GIT_CEILING_DIRECTORIES"] = os.path.dirname(tmp)
         try:
             setup(tmp)
             os.chdir(tmp)
             got = protected_branches()
         finally:
             os.chdir(cwd)
-            if saved is None:
-                os.environ.pop("GIT_GUARD_PROTECTED_BRANCH", None)
-            else:
-                os.environ["GIT_GUARD_PROTECTED_BRANCH"] = saved
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
             shutil.rmtree(tmp, ignore_errors=True)
         if got == want:
             print(f"PASS  {name}")

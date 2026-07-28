@@ -85,3 +85,10 @@ Enable `git` alone to get the guardrails while keeping your own commit format.
 >   right branch with no configuration. Set it explicitly when the protected branch is **not** the
 >   default — e.g. `main` protected while day-to-day work lands on `develop` — or to protect
 >   several (`main,release`). An empty string protects nothing.
+> - `GIT_GUARD_INTEGRATION_BRANCH=main` — the **one** branch day-to-day work lands into. Only
+>   needed when that branch is **also protected**, i.e. a single-branch repo where `main` is both
+>   production and the branch worktrees are cut from: without it the protected-branch rule blocks
+>   the `worktree` protocol's own `git push . HEAD:<integration>` and no slice can ever land. It
+>   permits **only** that fast-forward land — force (`+HEAD:main`) and delete (`:main`,
+>   `--delete main`) refspecs stay blocked, as does `checkout`/`switch` onto the branch. Leave it
+>   unset in a two-tier repo: `develop` isn't protected there, so lands already pass.

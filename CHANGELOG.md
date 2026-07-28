@@ -9,6 +9,39 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.4 — 2026-07-28
+
+Single-branch repos can land worktree work; the guard stops taxing every Bash call.
+
+- **`GIT_GUARD_INTEGRATION_BRANCH`** — names the one branch day-to-day work lands into. Only
+  load-bearing where that branch is *also* protected (a GitHub-flow repo whose `main` is both
+  production and the base worktrees are cut from): there the protected-branch rule was blocking
+  the `worktree` protocol's own `git push . HEAD:<integration>`, so no slice could ever land. The
+  flag permits exactly that fast-forward land — force (`+HEAD:main`), delete (`:main`,
+  `--delete main`), and `checkout`/`switch` onto the branch all stay blocked, as does a land into
+  any *other* protected branch. Two-tier (`main` + `develop`) repos leave it unset.
+- **~29 ms shaved off every Bash tool call.** Default-branch detection shells out to `git`, and
+  `check()` was resolving it before it knew the command was even git-related — `ls -la` paid for
+  up to five subprocesses. It is now reached lazily by the two rules that need it, and memoized
+  per cwd.
+- Fixed the detection order stated in `git-guard`'s module docstring (it listed
+  `init.defaultBranch` before the first-existing-branch probe; the code does the reverse), and
+  pinned `GIT_CEILING_DIRECTORIES` in the detection self-test so the "not a repo" case can't be
+  fooled by a `$TMPDIR` that happens to sit inside a git repo.
+- This repo now ships a tracked `.claude/settings.json` declaring its own
+  `GIT_GUARD_PROTECTED_BRANCH` / `GIT_GUARD_INTEGRATION_BRANCH` (both `main`) — dogfooding the
+  single-branch case.
+- **The `worktree` protocol's landing wiring changed.** It used to say "keep the main repo on
+  `<integration>`" — which makes the human's own checkout the thing that must stay clean, so their
+  branch switches and uncommitted work break every worker's land. It now pins `<integration>` in a
+  dedicated `.claude/worktrees/_integration` worktree that nobody edits: clean by construction, so
+  lands are always accepted; it locks `<integration>` against accidental checkout elsewhere; and
+  the human's checkout is free to sit on any branch in any state. `receive.denyCurrentBranch=
+  updateInstead` must be **repo-level** — a `--worktree`-scoped value is ignored by `receive-pack`.
+  The skill also now reads `<integration>` / `<protected>` from the settings `env` instead of
+  guessing, skips the HARD GATE's fork-point compare when the two are the same branch, and checks
+  the landing wiring up front rather than discovering it at push time.
+
 ## 0.0.3 — 2026-07-28
 
 Publishing readiness, plus the end of the `main` assumption.

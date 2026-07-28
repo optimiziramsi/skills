@@ -10,6 +10,9 @@ _review/
 # machine-local Claude settings (registers this checkout as a directory marketplace to dogfood it)
 .claude/settings.local.json
 
+# linked git worktrees live here (incl. the pinned _integration one) — machine-local checkouts
+.claude/worktrees/
+
 # Python bytecode from running the flow runners
 __pycache__/
 *.pyc

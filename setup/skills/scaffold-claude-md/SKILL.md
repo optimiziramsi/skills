@@ -64,6 +64,10 @@ look) and the **hard rules that bind every session**. Everything else has one ca
      the `git` plugin would detect: `GIT_GUARD_PROTECTED_BRANCH=<protected>` (comma-separated for
      several). The guard auto-detects the repo's default branch, which is right for the
      single-branch case but not when the protected and integration branches differ.
+   - **Single-branch repos also need `GIT_GUARD_INTEGRATION_BRANCH=<integration>`** in that same
+     `env` block. When `<protected>` and `<integration>` are the same branch, the guard would
+     otherwise block the `worktree` protocol's own `git push . HEAD:<integration>` and no work
+     could ever land; the flag permits that fast-forward land and nothing else.
 
 4. **Prune to the project's plugins.** The template names the `git` / `commit` / `instructions`
    plugins that back each rule. Drop references to any plugin the project won't enable (ask if

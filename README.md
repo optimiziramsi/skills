@@ -98,6 +98,9 @@ own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `worktree` 
 `<integration>` / `<protected>` from the project, `scaffold-claude-md` reads the branch layout out
 of the repo before writing a rule about it, and the tripwire examples take
 `TRIPWIRE_INTEGRATION_BRANCH`. `develop`-, `trunk`-, and `master`-based projects need no config.
+**Single-branch repos need one line:** where the integration branch *is* the protected branch, set
+`GIT_GUARD_INTEGRATION_BRANCH` so the `worktree` protocol's fast-forward land is permitted while
+force/delete refspecs and `checkout` onto it stay blocked.
 
 ## Conventions
 

@@ -28,14 +28,22 @@ hard-blocks any Write/Edit whose path resolves outside the active worktree (miti
 
 ## The integration branch (set this first)
 
-Throughout, **`<integration>`** is the branch worktrees land into and rebase onto — usually the
-repo's main branch (`main`, `develop`, or `trunk`; pick the one the team merges day-to-day work
-into). Substitute it everywhere below.
+Throughout, **`<integration>`** is the branch worktrees land into and rebase onto — the one the team
+merges day-to-day work into. **Read it, don't guess it:** the project declares it as
+`GIT_GUARD_INTEGRATION_BRANCH` in `.claude/settings.json` `env` (and its protected branch as
+`GIT_GUARD_PROTECTED_BRANCH`). Neither declared → probe (`git symbolic-ref --short
+refs/remotes/origin/HEAD`, `git branch --format='%(refname:short)'`) and **confirm with the human
+before landing anything**. Substitute both everywhere below.
 
 - Worktree branches are fresh `feature/*` cut **off `<integration>`**. You **never** commit directly
   to `<integration>` — everything reaches it through the gate.
-- If the project also keeps a **protected release branch** (e.g. `main` when `<integration>` is
-  `develop`), never base a worktree on it and never land there; that branch is the human's alone.
+- **Two-tier repo** (`develop` + a protected `main`): `<integration>` = `develop`, `<protected>` =
+  `main`. Never base a worktree on `<protected>` and never land there; that branch is the human's
+  alone.
+- **Single-branch repo** (GitHub-flow, one long-lived branch): `<integration>` **is** `<protected>`
+  — the same branch is both the worktree base and the land target. Everything below still holds;
+  the only differences are that the HARD GATE's fork-point compare is moot (§ Start) and that the
+  `git` plugin's guard needs `GIT_GUARD_INTEGRATION_BRANCH` set, or it blocks your landing push.
 
 ## Voice — terse, no narration
 
@@ -153,20 +161,28 @@ at all, cut off the right base:
 ```sh
 pwd                                          # must resolve under the worktrees dir, NOT the main-repo root
 git rev-parse --abbrev-ref HEAD              # a fresh feature/* branch — NOT <integration> itself
+# fork-point compare — SKIP this line entirely when <integration> IS <protected> (single-branch repo)
 I=$(git merge-base HEAD <integration>); P=$(git merge-base HEAD <protected>)
 git merge-base --is-ancestor "$I" "$P" && [ "$I" != "$P" ] && echo "STOP: forked off <protected>" || echo "ok: off <integration>"
+# landing wiring — where <integration> is checked out decides whether your land can ever push
+git worktree list                            # is <integration> checked out, and where?
+git config --get receive.denyCurrentBranch   # must be updateInstead if it IS checked out somewhere
 ```
 
 `pwd` catches a session that fell back to the main repo; the branch check catches a worktree sitting
 directly on `<integration>`. The **fork-point compare** catches a branch cut off the protected
-branch (`<protected>`, e.g. `main` — a session-picker default) — "is `<integration>` an ancestor of
-HEAD" is **unreliable** because `<integration>` moves; compare the two fork-points, don't
-ancestor-test. (No separate protected branch in the project → the compare is moot; the first two
-checks suffice.) On **any mismatch — including a fork-point STOP — HARD STOP and ask.** Hand the
-human a **ready-to-paste restart prompt**: a new-session with worktree ON and base `<integration>`
-for a fresh one, or `cd <worktree-path> && claude` to reopen an existing one. **You never create the
-worktree.** If the project needs env bootstrap (a fresh worktree has no local env/secrets), run it
-now.
+branch (`<protected>`, e.g. `main` when `<integration>` is `develop` — a session-picker default) —
+"is `<integration>` an ancestor of HEAD" is **unreliable** because `<integration>` moves; compare the
+two fork-points, don't ancestor-test. **Single-branch repo (`<integration>` == `<protected>`) → skip
+the compare**; the two fork-points are the same commit by construction and the test would fire on
+every correct worktree. The **wiring check** is cheap and saves a whole slice: a land whose push
+can't be accepted fails only at gate step 5, after review and approval (§ Landing → One-time repo
+wiring for the fix). On **any mismatch — including a fork-point STOP — HARD STOP and ask** (a wiring
+gap is a *report it now*, not a stop — it's the human's one-time setup, not a broken worktree). Hand
+the human a **ready-to-paste restart prompt**: a new-session with worktree ON and base
+`<integration>` for a fresh one, or `cd <worktree-path> && claude` to reopen an existing one. **You
+never create the worktree.** If the project needs env bootstrap (a fresh worktree has no local
+env/secrets), run it now.
 
 **Path discipline:** the hook guards **tool** writes; **Bash redirects aren't probed**, so keep
 shell writes relative to the worktree cwd and never `>` an absolute main-repo path. Derive every
@@ -194,8 +210,10 @@ The loop, in your worktree on your branch:
    side for everything that isn't yours and re-apply only your own row — reconstructing the file
    from your stale in-context copy resurrects rows siblings deleted.
 3. **re-verify** — full typecheck / build / tests **again** (a clean rebase can still break
-   things) + confirm the main checkout is clean. If the project keeps pattern/style checks and the
-   diff touches governed areas, run them and fix findings before pushing.
+   things) + confirm the main checkout is clean (leak check) **and** that the tree holding
+   `<integration>`, if any, is clean (the push is refused otherwise). If the project keeps
+   pattern/style checks and the diff touches governed areas, run them and fix findings before
+   pushing.
 4. **obsolete-check** — if the diff collapsed to ~nothing (a sibling did it), stop: report
    done-by-sibling.
 5. **squash** — `git reset --soft HEAD~<N> && git commit` (N = the commits in your slice, **counted
@@ -217,14 +235,37 @@ The loop, in your worktree on your branch:
 churning faster than you can land — **stop and tell the human**. Never loop unbounded.
 
 **Stop and return immediately — do NOT retry — on:** a rebase conflict you can't cleanly
-auto-resolve; verify breaking after a rebase; a **dirty main checkout** (the push is refused while
-`<integration>`'s working tree has uncommitted changes — never touch the human's checkout, so ask
-them to clean it); or a **leak** (the main checkout shows your edits).
+auto-resolve; verify breaking after a rebase; a **dirty `<integration>` checkout** (git refuses the
+push while the working tree holding `<integration>` has uncommitted changes — never touch someone
+else's tree, so report it and ask); a **guard block** on the push (`GIT_GUARD_INTEGRATION_BRANCH`
+isn't declared — § The integration branch); or a **leak** (the main checkout shows your edits).
 
-**One-time repo wiring (so the push self-advances `<integration>`):** keep the main repo on
-`<integration>` with `git config receive.denyCurrentBranch updateInstead`, so a worker's push
-auto-advances the coordinator's working tree (which must be clean — hence the dirty-checkout stop).
-*Fallback: park the main repo off `<integration>`.*
+### One-time repo wiring — pin `<integration>` in its own worktree
+
+Git refuses a push to a branch that is **checked out in any worktree** — the main checkout *or* a
+linked one. `receive.denyCurrentBranch=updateInstead` lifts that, but only while **that tree is
+clean**, and the setting must be **repo-level** (a `--worktree`-scoped value is ignored by
+`receive-pack`). So the human's own checkout must never be the thing holding `<integration>` — the
+moment they sit on it with edits in flight, every worker's land is refused.
+
+**Do this once per repo:**
+
+```sh
+git worktree add .claude/worktrees/_integration <integration>   # from the main checkout
+git config receive.denyCurrentBranch updateInstead              # repo-level, not --worktree
+```
+
+Now `<integration>` lives in a tree **nobody edits** — so it is clean by construction and every land
+is accepted, the human's own checkout is free to sit on any branch in any state, and the dedicated
+worktree **locks** `<integration>` so it can't be accidentally checked out elsewhere and break lands.
+It also keeps the landed state materialized, so the integration branch can be built and run without
+disturbing anyone.
+
+*Fallback (no materialized integration tree): keep `<integration>` checked out **nowhere** — then the
+push fast-forwards with no config at all, regardless of any tree's state. Cheaper, but it depends on
+nobody ever checking `<integration>` out.* **Never** land with `git update-ref` / `git branch -f`
+instead: `branch -f` refuses when the branch is checked out, and `update-ref` silently succeeds and
+leaves that worktree's index desynced from HEAD.
 
 ### Land report
 
@@ -233,7 +274,7 @@ approving; after the FF, confirm the **Ready** line with final SHAs.
 
 ```
 <topic / branch> — chunk ready to land
-Ready:   <branch>@<sha>, rebased on <integration>@<sha>, verified (typecheck / lint / tests / behavior), main checkout clean
+Ready:   <branch>@<sha>, rebased on <integration>@<sha>, verified (typecheck / lint / tests / behavior), main checkout clean (no leak)
 Summary: <one line — what this slice changes>
 
 Significant — the human should know BEFORE the land (omit if none):
