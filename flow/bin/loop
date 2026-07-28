@@ -26,6 +26,8 @@ Options:
                      NAME is a branch, a worktree directory name, a path, a unique
                      substring of either, or `root` for the main checkout. Launch
                      from the checkout root and the runner moves itself over.
+                     `--worktree all` handles every worktree that has pending jobs,
+                     one child runner each, armed once up front (not with --watch).
   -h, --help         this help
 
 Job frontmatter (see the `looper` skill for the full spec):
@@ -38,6 +40,7 @@ Env escape hatches: CLAUDE_BIN, FLOW_ALLOW_NESTED=1, FLOW_CLAUDE_PERMISSION_MODE
 """
 import glob
 import os
+import subprocess
 import sys
 import time
 
@@ -300,8 +303,71 @@ def arm_or_exit(opts, queue):
         fl.die("aborted.")
 
 
+def survey_worktrees(job_dir, need_queue=True):
+    """[(worktree, runnable-count)] over every worktree that has a `job_dir`.
+
+    `need_queue` keeps only the trees with something runnable — that is the set worth
+    launching a runner for. `--status` wants them all.
+    """
+    found = []
+    for t in fl.list_worktrees():
+        d = os.path.join(t["path"], job_dir)
+        if not os.path.isdir(d):
+            continue
+        n = len(runnable_queue(load_jobs(d)))
+        if n or not need_queue:
+            found.append((t, n))
+    return found
+
+
+def _child_argv(argv):
+    """This runner's argv with `--worktree <value>` removed (the child gets its own)."""
+    out, skip = [], False
+    for a in argv:
+        if skip:
+            skip = False
+        elif a == "--worktree":
+            skip = True
+        else:
+            out.append(a)
+    return out
+
+
+def run_every_worktree(opts, argv):
+    """`--worktree all`: handle every worktree in turn, one child runner each.
+
+    A child process per worktree rather than chdir-ing in a loop — each tree gets its
+    own cwd, its own confinement preflight, and its own crash blast radius. The arm
+    prompt happens ONCE, here; children inherit that decision as `-y`.
+    """
+    if opts["watch"]:
+        fl.die("--worktree all does not compose with --watch (the first tree would never "
+               "drain).\n  Run one watching runner per worktree instead.")
+    targets = survey_worktrees(opts["dir"], need_queue=not opts["status"])
+    if not targets:
+        what = "job directory" if opts["status"] else "pending jobs"
+        fl.info(fl.dim(f"no worktree has {what} in {opts['dir']}/."))
+        return
+    rest = _child_argv(argv)
+    if not (opts["status"] or opts["dry_run"]):
+        fl.info(fl.bold(f"{len(targets)} worktree(s) with pending jobs:"))
+        for t, n in targets:
+            fl.info(f"  {t['name']:<28} {t['branch'] or '(detached)'}" + fl.dim(f"  — {n} job(s)"))
+        fl.nested_guard()
+        fl.ensure_claude_available()
+        arm_or_exit(opts, [None] * sum(n for _, n in targets))
+        rest += ["-y"]
+    for t, _ in targets:
+        fl.info(fl.bold(f"\n══ {t['name']}  [{t['branch'] or 'detached'}]"))
+        subprocess.run([sys.executable, os.path.abspath(__file__),
+                        "--worktree", t["path"], *rest])
+
+
 def main():
     opts = parse_args(sys.argv[1:])
+    if (opts["worktree"] or "").strip().lower() == "all":
+        run_every_worktree(opts, sys.argv[1:])
+        return
     # Before anything reads the filesystem: --worktree just moves the cwd, and every
     # path below (job dir, the repo being committed into) is relative to it.
     fl.select_worktree(opts["worktree"])

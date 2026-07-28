@@ -18,6 +18,11 @@ The flow runners can be pointed at a worktree instead of being `cd`-ed into one.
   cwd-relative (job dir, the repo they commit into, worktree-confinement detection), so selecting a
   worktree is only ever picking the cwd: the flag chdirs before anything reads the filesystem and
   nothing downstream changes. An ambiguous name is an error listing the candidates, never a guess.
+- **`grind --worktree NAME`** — the same flag, same resolver.
+- **`loop --worktree all`** — surveys every worktree, lists the ones with pending jobs, arms once,
+  then runs a child runner per tree (a child rather than a chdir loop: own cwd, own preflight, own
+  crash blast radius). Composes with `--status` / `--dry-run`; refused with `--watch`, which would
+  park on the first tree forever.
 - `_flowlib.py --test` is new and runs in the repo done-gate (13 cases over a real throwaway repo
   with two worktrees).
 

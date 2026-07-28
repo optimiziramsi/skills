@@ -36,6 +36,10 @@ Options:
   --reset            clear the iteration + attempt counters and flip status back to active
   -y, --yes          skip the arm-confirmation (for unattended/cron runs)
   --dir DIR          mission directory (default: .agent/grind)
+  --worktree NAME    run against a git worktree instead of the current directory.
+                     NAME is a branch, a worktree directory name, a path, a unique
+                     substring of either, or `root` for the main checkout. Launch
+                     from the checkout root and the runner moves itself over.
   -h, --help         this help
 
 Mission frontmatter (see the `grind` skill for the full spec):
@@ -71,7 +75,8 @@ GITIGNORE_BODY = (
 
 def parse_args(argv):
     opts = {"mission": None, "once": False, "count": None, "status": False,
-            "dry_run": False, "reset": False, "yes": False, "dir": ".agent/grind"}
+            "dry_run": False, "reset": False, "yes": False, "dir": ".agent/grind",
+            "worktree": None}
     it = iter(argv)
     for a in it:
         if a in ("-h", "--help"):
@@ -96,6 +101,8 @@ def parse_args(argv):
             opts["yes"] = True
         elif a == "--dir":
             opts["dir"] = next(it)
+        elif a == "--worktree":
+            opts["worktree"] = next(it)
         elif a.startswith("-"):
             fl.die(f"unknown argument: {a} (try --help)")
         elif opts["mission"] is None:
@@ -339,6 +346,9 @@ def arm_or_exit(opts, mission_path, meta):
 
 def main():
     opts = parse_args(sys.argv[1:])
+    # Before anything reads the filesystem: --worktree just moves the cwd, and every
+    # path below (mission dir, the repo being committed into) is relative to it.
+    fl.select_worktree(opts["worktree"])
     job_dir = opts["dir"]
     mission_path = resolve_mission(opts)
     stem = os.path.splitext(os.path.basename(mission_path))[0]
