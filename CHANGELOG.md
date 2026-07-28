@@ -9,6 +9,38 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.6 — 2026-07-28
+
+A slimming pass over the shipped scripts. No behavior removed except one guard-of-a-guard that
+could not fire; everything else is the same rules with less scaffolding and far more tests.
+
+- **Every hook is python3 now, over a shared [`lib/hookio.py`](lib/hookio.py) — and `jq` is gone.**
+  Ten hooks were bash+`jq`, and five of them shipped a `"⚠️ DISARMED — jq not found"` path: on any
+  host without `jq` those guards silently switched themselves **off**. `python3` is the one
+  interpreter a Claude Code host already needs, so the guards can no longer disarm. The duplicated
+  plumbing each of them re-derived — read the payload, find the tool's file paths, resolve the
+  worktree roots, emit a deny/ask/notice verdict, nag once per state, skip read-only sessions —
+  now lives once in `hookio`. Worst offender retired: `todo-readonly-guard`'s write-detector was a
+  single line of nested shell quoting; it is five named regex alternatives you can edit.
+- **Tests moved out of the shipped files into `<topic>/tests/`, and the gate actually runs them.**
+  A guard should read as its decision, not as its test suite (`git-guard.py` was 237 lines of test
+  against 258 of logic). `tests.sh` gained check 7a for `*/tests/*.py`; its old glob never reached
+  `instructions/examples/guards.d/*.sh`, so **17 tests had never once executed**.
+- **First tests for `bin/loop`, `bin/grind`, the wrapper template, and `contract-pulse`** — the
+  three largest shipped programs and the file every consumer copies had none. 55 cases drive the
+  runners' real control flow (dependency ordering, crash-resume, the productivity gate, the retry
+  ladder, the dirty-tree guard, transient backoff) against a stubbed CLI. Suite: 78 → 438 tests.
+- **The wrapper's version lock is removed; `flow/examples/runner-wrapper.sh` is 95 → 29 lines.**
+  It guarded a scenario the design cannot produce: the wrapper contributes no flags of its own, it
+  `exec`s with `"$@"` verbatim, so a "stale wrapper passing a renamed flag" cannot happen — the
+  lock only ever fired as a false alarm after a plugin update. Gone with it: `WRAPPER_VERSION`,
+  `FLOW_WRAPPER_ALLOW_DRIFT`, `tests.sh` check 8, and the rule that a plugin bump means re-copying
+  the wrapper. **Consumers should refresh `bin/loop` + `bin/grind` once**, then never again.
+- **One real bug:** `commit-nudge`'s `COMMIT_NUDGE_EXTRA_DIRS` resolved relative sibling paths
+  against the process cwd rather than the project dir, so `../gitops` pointed somewhere else
+  depending on where the hook ran. Also: docstrings in `git-guard` and `meta-lint` that restated
+  their READMEs are now pointers, and `meta-lint`'s stale `caps.sh` references are corrected.
+
 ## 0.0.5 — 2026-07-28
 
 The flow runners can be pointed at a worktree instead of being `cd`-ed into one.
