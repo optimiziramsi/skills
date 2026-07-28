@@ -8,10 +8,13 @@ Import from a hook at <plugin>/<topic>/hooks/x.py:
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
     import hookio
 """
+import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
+import tempfile
 
 # ── input ───────────────────────────────────────────────────────────────────
 
@@ -77,6 +80,45 @@ def _verdict(decision, reason):
 def notice(message):
     """Surface a message to the session without blocking anything."""
     print(json.dumps({"systemMessage": message}))
+
+
+WROTE_FILES = re.compile(r'"name": ?"(Edit|Write|MultiEdit|NotebookEdit)"')
+
+
+def wrote_files(transcript):
+    """True unless the transcript proves this session never used a file-writing tool.
+
+    Lets a Stop hook skip read-only / chat sessions. An absent or unreadable transcript
+    answers True: nagging is the safe default when we cannot tell.
+    """
+    if not transcript or not os.path.isfile(transcript):
+        return True
+    try:
+        with open(transcript, encoding="utf-8", errors="replace") as handle:
+            return any(WROTE_FILES.search(line) for line in handle)
+    except OSError:
+        return True
+
+
+def first_time(tag, session_id, state):
+    """True the first time `state` is seen for this session under `tag`, False after.
+
+    How a Stop hook nags once per distinct situation instead of on every stop. The marker is
+    a temp file keyed by session, so it dies with the machine's temp dir and never leaks
+    between sessions.
+    """
+    marker = os.path.join(tempfile.gettempdir(), f"opsi-{tag}-{session_id or 'unknown'}")
+    digest = hashlib.sha1(state.encode()).hexdigest()
+    try:
+        if os.path.exists(marker):
+            with open(marker) as handle:
+                if handle.read() == digest:
+                    return False
+        with open(marker, "w") as handle:
+            handle.write(digest)
+    except OSError:
+        pass
+    return True
 
 
 def guard(body):

@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/caps.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/caps.py\"",
             "timeout": 10
           },
           {
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/caps.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/caps.py\"",
             "timeout": 10
           },
           {

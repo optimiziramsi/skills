@@ -57,7 +57,7 @@ system consistent over time — so you fix something once and every future sessi
     skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct
     breach-set on ANY breach present (pre-existing included, not only what this session bloated).
     Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails
-    open; escape hatch `CAPS_GUARD_OFF=1`; self-test `--test`.
+    open; escape hatch `CAPS_GUARD_OFF=1`; tests: `python3 instructions/tests/test_caps.py`.
 
 - name: `file-guard`
   kind: hook
@@ -124,8 +124,8 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
   but **loud**: the fallback fires only when the engine itself can't run, never on findings. Stop
   runs `meta-lint --stop` bare (no `|| echo`, so its exit 2 actually blocks); only the size/count
   caps run there, and only a file-writing session over a cap is stopped.
-- **Coexistence:** where `.agent/meta-lint.json` exists, **meta-lint supersedes `caps.sh`** —
-  caps.sh detects the config and skips itself at BOTH SessionStart and Stop, so exactly one engine
+- **Coexistence:** where `.agent/meta-lint.json` exists, **meta-lint supersedes `caps`** —
+  caps detects the config and skips itself at BOTH SessionStart and Stop, so exactly one engine
   surfaces caps and nothing double-reports or double-blocks.
 - **Example policy:** [`examples/meta-lint.rabbit-run.json`](examples/meta-lint.rabbit-run.json) —
   a full-strength real-project config (line caps per file class, 4 dup tripwires, RR counts,
@@ -133,7 +133,7 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
 
 ## tripwire-guard — project-owned command tripwires
 
-The ENGINE is a PreToolUse `Bash` hook (`hooks/tripwire-guard.sh`); the PROJECT supplies the
+The ENGINE is a PreToolUse `Bash` hook (`hooks/tripwire-guard.py`); the PROJECT supplies the
 guards as **`.agent/guards.d/*.sh`** scripts (no dir → silent no-op). Each guard is executed in
 sorted order with the Bash command in `$TRIPWIRE_COMMAND` and the full tool-input JSON in
 `$TRIPWIRE_INPUT` + on stdin: **exit 2 + printed reason = block** (first block wins), exit 0 =

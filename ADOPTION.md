@@ -134,7 +134,7 @@ selected), and any other repos' rows stay pinned where they were.
 ## A sequence that worked
 
 - Prove load — enable, restart, verify `@optimiziramsi` resolves + hooks fire. No deletions yet.
-- Port caps — write `.agent/meta-lint.json` with the repo's numbers; it supersedes the `caps.sh` hook.
+- Port caps — write `.agent/meta-lint.json` with the repo's numbers; it supersedes the `caps` hook.
 - Remove dupes — delete the local skills/agents/hooks the plugins now ship; rewire `settings.json`;
   keep the repo-specific pieces; add tripwires for any enforcement the plugins do not replicate.
 - Docs — rewrite the instruction docs to name the real (plugin-backed) guards; get meta-lint green.

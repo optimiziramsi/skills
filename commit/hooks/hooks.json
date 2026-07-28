@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/commit/hooks/commit-nudge.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/commit/hooks/commit-nudge.py\"",
             "timeout": 10
           }
         ]
