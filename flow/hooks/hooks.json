@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/flow/hooks/todo-readonly-guard.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/flow/hooks/todo-readonly-guard.py\"",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/flow/hooks/todo-readonly-guard.sh\" --prompt-scan",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/flow/hooks/todo-readonly-guard.py\" --prompt-scan",
             "timeout": 10
           }
         ]

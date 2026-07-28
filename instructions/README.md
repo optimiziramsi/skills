@@ -84,8 +84,8 @@ system consistent over time — so you fix something once and every future sessi
     PreToolUse `Bash` — runs **project-owned command tripwires** from `.agent/guards.d/*.sh`
     against every Bash command: a guard exits 2 to block (first block wins, reason fed to the
     agent), 0 to allow, anything else becomes a loud non-blocking warning. No dir/guards → silent
-    no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch `TRIPWIRE_GUARD_OFF=1`;
-    jq-missing loud-DISARM; self-test `--test` (runs each guard's `tripwire_test` too).
+    no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch `TRIPWIRE_GUARD_OFF=1`.
+    Engine tests: `python3 instructions/tests/test_tripwire.py`.
 
 The full knowledge system: **define** (`instructions-maintenance`) · **capture** (`lessons`) ·
 **harvest** (`retro`) · **maintain** (`instructions-audit`) · **change** (`rules-change`).
@@ -155,7 +155,8 @@ via `TRIPWIRE_INTEGRATION_BRANCH`, default `develop`):
 
 Escape hatches: prefix the ONE false-positiving command with `TRIPWIRE_SKIP=1` (one-shot, visible
 in the transcript); `TRIPWIRE_GUARD_OFF=1` kill switch; `TRIPWIRE_GUARDS_DIR` overrides the
-discovery dir. Missing jq disarms LOUDLY (systemMessage), never silently.
+discovery dir. The engine is python3 (stdlib only) — no `jq`, so it has no way to disarm itself;
+the guards it runs stay ordinary bash scripts.
 
 ## Enable
 

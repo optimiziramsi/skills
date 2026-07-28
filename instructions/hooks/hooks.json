@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/tripwire-guard.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/tripwire-guard.py\"",
             "timeout": 30
           }
         ]
