@@ -1,8 +1,9 @@
 # Handoff
 
-_Last updated:_ 2026-07-28 — session 9: **0.0.4 landed on `main` (`8c10e3c`) from a worktree, via
-the normal `git push . HEAD:main` land — no manual squash recipe needed any more.** `main` is 2
-commits ahead of `origin/main`; **the push is the user's**. `./tests.sh` ALL GREEN.
+_Last updated:_ 2026-07-28 — session 9: **0.0.4 landed on `main` from a worktree, via the normal
+`git push . HEAD:main` land — no manual squash recipe needed any more.** Check `git rev-list
+--count origin/main..main` before assuming `main` is pushed; **the push is always the user's**.
+`./tests.sh` ALL GREEN.
 
 Sessions 7–8's `update-ref`/`commit-tree` landing recipe is **obsolete** — don't reuse it. The
 guard now permits the land push directly (below), and `update-ref` was always unsafe when the
