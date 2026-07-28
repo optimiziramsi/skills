@@ -154,30 +154,40 @@ cross-cutting — failures cost more than the extra tokens.
 ## Handing off to the user
 
 **You never launch the runner** (it refuses inside a Claude session anyway). Prepare the queue, then
-resolve the runner's absolute path and hand the user a copy-paste command they run in a **separate
-terminal**:
+hand the user a copy-paste command for a **separate terminal**.
 
-```bash
-# Resolve the shipped runner's path (run this to fill in <abs>):
-echo "$CLAUDE_PLUGIN_ROOT/flow/bin/loop"
-```
-
-Then give them, e.g.:
+**If the repo has `bin/loop`** (the committed wrapper — the `scaffold` skill installs it), that
+short form is the whole command; it finds the installed plugin itself:
 
 ```
-<abs>/flow/bin/loop              # run all pending jobs, then exit
-<abs>/flow/bin/loop --watch      # run, then keep polling for new pending jobs
-<abs>/flow/bin/loop --status     # show current job statuses
-<abs>/flow/bin/loop --dry-run    # preview what would run
-<abs>/flow/bin/loop -y           # skip the arm-confirmation (unattended/cron)
+bin/loop              # run all pending jobs, then exit
+bin/loop --watch      # run, then keep polling for new pending jobs
+bin/loop --status     # show current job statuses
+bin/loop --dry-run    # preview what would run
+bin/loop -y           # skip the arm-confirmation (unattended/cron)
 ```
 
-Optional convenience — symlink it to the short `bin/loop` form (re-run after a plugin update to
-refresh the path):
+**No wrapper yet?** Either offer to install it (`scaffold`) or resolve the absolute path once —
+`echo "$CLAUDE_PLUGIN_ROOT/flow/bin/loop"` — and hand them `<abs>/flow/bin/loop …`. Don't suggest a
+symlink: it can't be committed (it encodes a machine path), so it never reaches a fresh worktree.
 
-```bash
-mkdir -p bin && ln -sf "$CLAUDE_PLUGIN_ROOT/flow/bin/loop" bin/loop
+### Worktrees — name one, don't `cd` into it
+
+The runner is **cwd-relative**: the job dir it reads, the repo it commits into, and the confinement
+detection all follow the current directory. So `--worktree` is the entire mechanism — it picks the
+cwd before anything else happens, and it takes a branch, a worktree directory name, a path, a unique
+substring of either, or `root` for the main checkout:
+
 ```
+bin/loop --worktree feature/thing     # run that worktree's queue, launched from the checkout root
+bin/loop --worktree all --status      # survey every worktree's queue
+bin/loop --worktree all               # drain each worktree in turn (one child runner each; arms once)
+```
+
+An ambiguous name is an error listing the candidates — it never guesses. `--worktree all` is refused
+with `--watch` (the first tree would never drain); run one watching runner per worktree instead.
+**Queue the jobs in the worktree they belong to** — `.agent/loop/` is per-worktree, like the rest of
+the tree.
 
 Before handing off, **pre-flight the tools** the jobs rely on — confirm the build/test/lint commands
 actually run in this repo. A runner that fails every job on a broken command wastes a whole batch.

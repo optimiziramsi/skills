@@ -163,21 +163,33 @@ The runner treats every iteration as untrusted and gates progress mechanically:
 
 ## Handing off to the user
 
-Resolve the shipped runner's absolute path and hand the user a command for a **separate terminal**:
+Hand the user a command for a **separate terminal**. **If the repo has `bin/grind`** (the committed
+wrapper — the `scaffold` skill installs it), that short form is the whole command; it finds the
+installed plugin itself. Otherwise resolve the path once with `echo "$CLAUDE_PLUGIN_ROOT/flow/bin/grind"`
+and hand them `<abs>/flow/bin/grind …` (never a symlink — it encodes a machine path, so it can't be
+committed and never reaches a fresh worktree).
 
-```bash
-echo "$CLAUDE_PLUGIN_ROOT/flow/bin/grind"   # resolve <abs>
+```
+bin/grind .agent/grind/{mission}.md            # run until done or max-iterations
+bin/grind .agent/grind/{mission}.md --once      # exactly one fresh iteration
+bin/grind .agent/grind/{mission}.md --count 5    # at most 5 fresh iterations this session
+bin/grind .agent/grind/{mission}.md --dry-run    # preview, run nothing
+bin/grind .agent/grind/{mission}.md --status     # progress, attempt state, log tail
+bin/grind .agent/grind/{mission}.md --reset      # restart from iteration zero (clears retry state)
+bin/grind .agent/grind/{mission}.md -y           # skip the arm-confirmation
 ```
 
+**Worktrees — name one, don't `cd` into it.** The runner is cwd-relative (mission dir, the repo it
+commits into), so `--worktree` is the whole mechanism: it picks the cwd first, and takes a branch, a
+worktree directory name, a path, a unique substring of either, or `root` for the main checkout.
+Launch from the checkout root:
+
 ```
-<abs>/flow/bin/grind .agent/grind/{mission}.md            # run until done or max-iterations
-<abs>/flow/bin/grind .agent/grind/{mission}.md --once      # exactly one fresh iteration
-<abs>/flow/bin/grind .agent/grind/{mission}.md --count 5    # at most 5 fresh iterations this session
-<abs>/flow/bin/grind .agent/grind/{mission}.md --dry-run    # preview, run nothing
-<abs>/flow/bin/grind .agent/grind/{mission}.md --status     # progress, attempt state, log tail
-<abs>/flow/bin/grind .agent/grind/{mission}.md --reset      # restart from iteration zero (clears retry state)
-<abs>/flow/bin/grind .agent/grind/{mission}.md -y           # skip the arm-confirmation
+bin/grind .agent/grind/{mission}.md --worktree feature/thing
 ```
+
+An ambiguous name is an error listing the candidates — it never guesses. The mission path stays
+relative to the worktree, because that is where the mission lives.
 
 **Pre-flight the mission's tools** (its find-candidate commands, build/test) before handing off — a
 bad command makes every iteration thrash. The runner writes `.agent/grind/.gitignore` on first run:

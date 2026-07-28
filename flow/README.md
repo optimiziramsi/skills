@@ -127,11 +127,17 @@ status — the runner never commits.
 
 - **Launched by you, in a separate terminal.** The runners refuse to start from inside a Claude
   session (nested sessions are blocked), so the skills hand you a copy-paste command.
-  `$CLAUDE_PLUGIN_ROOT` isn't set in your shell — resolve the runner's absolute path first (ask a
-  Claude session to `echo "$CLAUDE_PLUGIN_ROOT/flow/bin/loop"`, or locate it under the marketplace
-  cache, e.g. `ls ~/.claude/plugins/cache/optimiziramsi/optimiziramsi-skills/*/flow/bin/loop`),
-  then symlink it once: `ln -sf "<resolved-runner-path>" bin/loop` (machine-local; re-link after
-  plugin updates; don't commit the symlink).
+- **Install the wrappers and the command is just `bin/loop`.** The `scaffold` skill copies
+  [`examples/runner-wrapper.sh`](examples/runner-wrapper.sh) to `bin/loop` + `bin/grind` (identical
+  files — it dispatches on its own name). **Commit them:** the wrapper resolves the installed plugin
+  at run time (`$FLOW_RUNNER_ROOT` → `$CLAUDE_PLUGIN_ROOT` → newest copy in
+  `~/.claude/plugins/cache/*/optimiziramsi-skills/*/`), so it holds no machine path, survives plugin
+  updates, and — being tracked — exists in every worktree. A symlink does none of that.
+- **Worktrees: `--worktree NAME`, launched from the checkout root.** The runners are cwd-relative
+  (job/mission dir, the repo they commit into), so selecting a worktree is just picking the cwd.
+  NAME is a branch, a worktree directory name, a path, a unique substring of either, or `root`;
+  ambiguity is an error listing candidates, never a guess. `loop --worktree all` surveys every
+  worktree, arms once, and runs a child runner per tree with a queue (not with `--watch`).
 - **Full permissions, explicit arm.** Jobs run with `--dangerously-skip-permissions` (a headless
   session can't answer a prompt, so unattended edits/commits need it). The runner requires an
   interactive "yes" — or `-y` for cron/unattended.

@@ -102,13 +102,15 @@ natural triage cycle.
 ## Running the looper
 
 The looper runs in a **separate terminal** — you never launch it (nested Claude sessions are
-blocked, and the runner refuses anyway). Resolve its path and hand the user the command:
+blocked, and the runner refuses anyway). Hand the user the command:
 
 ```bash
-echo "$CLAUDE_PLUGIN_ROOT/flow/bin/loop"   # → <abs>
-# then, in a separate terminal:
-<abs>/flow/bin/loop --watch -y
+bin/loop --watch -y                        # the committed wrapper (installed by `scaffold`)
+bin/loop --watch -y --worktree feature/x   # …targeting a worktree, from the checkout root
 ```
+
+No `bin/loop` in this repo? Resolve the path once — `echo "$CLAUDE_PLUGIN_ROOT/flow/bin/loop"` — and
+hand them `<abs>/flow/bin/loop --watch -y`.
 
 Monitor via the log files and job statuses; create follow-up jobs directly — a watching loop picks
 them up.
