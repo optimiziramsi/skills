@@ -23,6 +23,13 @@ The flow runners can be pointed at a worktree instead of being `cd`-ed into one.
   then runs a child runner per tree (a child rather than a chdir loop: own cwd, own preflight, own
   crash blast radius). Composes with `--status` / `--dry-run`; refused with `--watch`, which would
   park on the first tree forever.
+- **Committed `bin/loop` + `bin/grind` wrappers** — new template
+  [`flow/examples/runner-wrapper.sh`](flow/examples/runner-wrapper.sh), installed by the `scaffold`
+  skill. It resolves the runner at run time (`$FLOW_RUNNER_ROOT` → `$CLAUDE_PLUGIN_ROOT` → newest
+  copy in the plugin cache), so it holds no machine path and can be **tracked** — which means it
+  exists in every worktree by construction and survives plugin updates. The old advice (symlink
+  into the versioned cache) does none of the three. One template, two identical copies: it
+  dispatches on its own filename.
 - `_flowlib.py --test` is new and runs in the repo done-gate (13 cases over a real throwaway repo
   with two worktrees).
 

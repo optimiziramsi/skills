@@ -2,8 +2,9 @@
 name: scaffold
 description: >-
   One-time bootstrap of a project for the opsi toolkit: create the `.agent/` workspace layout with
-  an index (`.agent/README.md`), and add a single pointer to it from the entrypoint (CLAUDE.md /
-  AGENTS.md). Use when setting up a new or existing repo to use these plugins — "set up opsi here",
+  an index (`.agent/README.md`), add a single pointer to it from the entrypoint (CLAUDE.md /
+  AGENTS.md), and optionally install the committed `bin/loop` + `bin/grind` runner wrappers. Use
+  when setting up a new or existing repo to use these plugins — "set up opsi here",
   "scaffold the agent workspace", "wire up the .agent layout", "initialize the toolkit in this
   project". Idempotent; confirms before editing the entrypoint. Does NOT register individual skills
   (they auto-trigger) and does NOT generate anything on an ongoing basis.
@@ -53,7 +54,25 @@ nothing to generate or re-sync afterward.
    notes). Ask which they prefer; if gitignore, add `.agent/` to `.gitignore` (but consider keeping
    durable knowledge like `lessons/` and `patterns/` committed even then).
 
-5. **Stop.** Do not register individual skills, do not create a cron/generator, do not add more than
+5. **Offer the runner wrappers** (`bin/loop` + `bin/grind`) — optional, ask first. They make the
+   flow runners launchable as `bin/loop` from the repo root instead of a pasted absolute path into
+   the plugin cache. Install by copying the shipped template **twice** (it dispatches on its own
+   filename, so the two files are identical):
+
+   ```bash
+   mkdir -p bin
+   cp "$CLAUDE_PLUGIN_ROOT/flow/examples/runner-wrapper.sh" bin/loop
+   cp "$CLAUDE_PLUGIN_ROOT/flow/examples/runner-wrapper.sh" bin/grind
+   chmod +x bin/loop bin/grind
+   ```
+
+   **Tell them to commit these.** That is the point: a tracked wrapper exists in every worktree by
+   construction, carries no machine-specific path (it resolves the installed plugin at run time),
+   and survives plugin version bumps — where a symlink into the versioned plugin cache does none of
+   the three. Existing `bin/loop`? Don't overwrite silently: diff it against the template and offer
+   the refresh. Skip this step entirely if the project doesn't use `looper` / `grind`.
+
+6. **Stop.** Do not register individual skills, do not create a cron/generator, do not add more than
    the one pointer. Setup is done.
 
 ## `.agent/README.md` template
