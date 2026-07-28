@@ -2,6 +2,7 @@
 description: >-
   Architectural review / code audit into .agent/reviews/ — P0/HIGH/MED/LOW findings (runs the review
   skill)
+disable-model-invocation: true
 ---
 
 Invoke the `review` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper

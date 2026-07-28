@@ -58,8 +58,9 @@ settings key — MIGRATION.md step 1.
 1.0.0 is reserved for go-live), repo root = plugin root (user asked explicitly — update pain
 across 11 versions/installs in field-testing). Version rule: any shipped-content change bumps the
 single root `.claude-plugin/plugin.json` (repo-meta exempt). Per-project tailoring = env
-kill-switches (README table), not plugin selection. Built on branch `single-plugin` (2026-07-22);
-consumer migration steps in root MIGRATION.md — delete once all repos migrated.
+kill-switches (README table), not plugin selection. Built on branch `single-plugin` (2026-07-22).
+Consumer migration is DONE — root `MIGRATION.md` deleted 2026-07-28 (0.0.3); the gist survives in
+CHANGELOG.md's 0.0.1 entry.
 
 ## Topic-first layout (2026-07-28, user, → 0.0.2)
 

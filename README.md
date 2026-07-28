@@ -10,7 +10,22 @@ declares the component paths, so the type dirs don't need to sit at the repo roo
 
 ## Install
 
-In your `settings.json` (marketplace global, enablement in the project's `.claude/settings.json`):
+From a `claude` session in the project you want it in:
+
+```bash
+claude plugin marketplace add optimiziramsi/skills
+```
+
+```bash
+claude plugin install optimiziramsi-skills@optimiziramsi
+```
+
+Then **restart** — plugins bind at session start. (`/plugin` does the same from inside a session;
+in CCD use Browse → the plugin page → **"Install for project (shared)"** so the enable travels with
+the repo.)
+
+Declaring it in settings instead — marketplace global, enablement in the project's
+`.claude/settings.json`:
 
 ```json
 {
@@ -32,8 +47,7 @@ That JSON registers and enables the plugin, but it does not by itself **load** i
   mid-session. Floor: CC / CCD **≥ 2.1.195**.
 
 Everything ships enabled; **projects opt out per concern via env** (below) instead of picking
-plugins. Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**. Migrating from the
-old 11-plugin marketplace: **[MIGRATION.md](MIGRATION.md)**.
+plugins. Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 
 ## Concerns
 
@@ -56,29 +70,46 @@ One plugin, eleven concerns. Each concern is a top-level folder with its own `RE
 ## Per-concern opt-out (env kill-switches)
 
 Guards self-gate on project config (patterns fire only with a registry, meta-lint only with
-`.agent/meta-lint.json`, worktree guards only in a linked worktree, session hooks only where
-`.agent/` exists). The opinionated concerns switch off per project in `.claude/settings.json`
-`env`:
+`.agent/meta-lint.json`, worktree guards only in a linked worktree, the `.todo` and handoff nudges
+only where those files exist). **Everything else has a switch** — every shipped hook honors one, so
+no concern is stuck on:
 
 | Switch | Silences |
 |---|---|
-| `GIT_GUARD_OFF=1` | the git safety net (see also `GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`) |
+| `GIT_GUARD_OFF=1` | the git safety net (see also `GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`, `GIT_GUARD_STRICT`, `GIT_GUARD_PROTECTED_BRANCH`) |
 | `COMMIT_FORMAT_OFF=1` | the single-line commit-message guard |
-| `STOP_NUDGE_OFF=1` | the end-of-session commit nudge |
-| `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard) |
-| `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard |
-| `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard |
+| `STOP_NUDGE_OFF=1` | the end-of-session commit nudge (`COMMIT_NUDGE_EXTRA_DIRS` widens it) |
+| `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_PULSE_EVERY`, `REPORT_GUARD_MAX_LINES` tune it |
+| `SESSION_START_OFF=1` | the SessionStart state snapshot + freshness nudges |
+| `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
+| `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard (`FILE_GUARD_EXTRA` adds prefixes) |
 | `CAPS_GUARD_OFF=1` | instruction-surface size caps |
+| `META_LINT_OFF=1` | the meta-lint engine (already inert without `.agent/meta-lint.json`) |
 | `TRIPWIRE_GUARD_OFF=1` | project tripwires (`TRIPWIRE_SKIP=1` = one-shot) |
-| `WORKTREE_GUARD_DISABLE=1` | worktree edit containment |
+| `PATTERN_GUARDS_OFF=1` | the pattern-registry edit gate |
+| `WORKTREE_GUARD_DISABLE=1` | worktree edit containment **and** the SessionStart worktree nudge |
+| `WORKTREE_LEAK_DETECT_DISABLE=1` | the post-edit worktree leak detector |
+
+Opt-**in**, off by default: `WORKTREE_BASH_GUARD_ENABLE=1` (shell-channel worktree containment —
+false-positive-prone). The flow runners take `FLOW_*` env; see [`flow`](flow/README.md).
+
+**No branch name is hardcoded.** `main` is not assumed anywhere: the git guard detects the repo's
+own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `worktree` skill takes
+`<integration>` / `<protected>` from the project, `scaffold-claude-md` reads the branch layout out
+of the repo before writing a rule about it, and the tripwire examples take
+`TRIPWIRE_INTEGRATION_BRANCH`. `develop`-, `trunk`-, and `master`-based projects need no config.
 
 ## Conventions
 
 - **One plugin, topic-first.** Each concern is a folder (`<topic>/skills|commands|agents|hooks/`)
   with its own `README.md` and its own `hooks/hooks.json`; `plugin.json` lists the component paths.
   A **command** (`/x`) is a thin shim that invokes a same-named **skill** which holds the actual
-  logic (single source of truth). Invocation names come from frontmatter/filename, so the folder
-  grouping is organizational only — no `<topic>:` prefix appears in a skill/command/agent name.
+  logic (single source of truth). Commands are `disable-model-invocation: true` — they exist so you
+  can *type* `/x`; the skill's own description is what Claude auto-triggers on, so nothing is
+  duplicated. Invocation names come from frontmatter/filename, so the folder grouping is
+  organizational only — no `<topic>:` prefix appears in a skill/command/agent name. Claude Code
+  namespaces plugin components as `optimiziramsi-skills:<name>` in menus and autocomplete; the bare
+  `/<name>` invokes them too (CC ≥ 2.1.216).
 - **House layout.** Everything the toolkit creates lives under **`.agent/`** — `handoff.md`,
   `lessons/`, `worktrees.md`, `milestones.md`, `plan/`, `milestone/`, `loop/`, `grind/`,
   `patterns/`, `reviews/` — so it never clutters your repo root. Your `.docs/` and root `.todo`
@@ -87,7 +118,11 @@ Guards self-gate on project config (patterns fire only with a registry, meta-lin
 - **Commits:** bare imperative single line; default cadence is commit at **topic close, then pause
   for review** (opt into commit-as-you-go per session).
 - **Versioning:** any consumer-visible change bumps the single `.claude-plugin/plugin.json`
-  `version` in the same commit — CCD only re-materializes on a version change.
+  `version` in the same commit — CCD only re-materializes on a version change. Release notes:
+  [CHANGELOG.md](CHANGELOG.md).
+
+`other/` is not part of the plugin — it holds standalone recipes (currently a machine-agnostic
+guide to anchoring the Claude usage window on a schedule).
 
 ---
 

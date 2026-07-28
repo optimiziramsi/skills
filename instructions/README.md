@@ -67,7 +67,7 @@ system consistent over time — so you fix something once and every future sessi
     guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch
     `FILE_GUARD_OFF=1`; self-test `--test`.
 
-- name: `bin/meta-lint`
+- name: `instructions/bin/meta-lint`
   kind: engine
   purpose:
     Config-driven **instruction-system linter** — 19 mechanical checks (cross-refs, lessons
@@ -102,7 +102,7 @@ The full knowledge system: **define** (`instructions-maintenance`) · **capture*
 
 ## meta-lint — the config-driven instruction-system linter
 
-The ENGINE ships in this plugin (`bin/meta-lint`, python3 stdlib only); each project supplies the
+The ENGINE ships in this plugin (`instructions/bin/meta-lint`, python3 stdlib only); each project supplies the
 POLICY via **`.agent/meta-lint.json`**. No config file → silent no-op (projects opt IN). A minimal
 `{}` config lints the opsi house layout with the default caps; everything is overridable: enabled
 `checks`, cap numbers **and units** (`lines` vs `chars`, most-specific entry wins per unit),

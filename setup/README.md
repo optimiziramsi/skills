@@ -18,7 +18,8 @@ the house style — once, with no ongoing machinery.
   kind: skill + command
   purpose:
     Write a house-style **`CLAUDE.md`** — a slim router of routing + the hard rules that bind
-    every session (never-push/never-main git, commit-as-you-go, verified done-gate, in-repo
+    every session (never-push / never-commit-on-the-protected-branch git — the branch names are
+    read from the repo, not assumed — commit-as-you-go, verified done-gate, in-repo
     memory, lean reporting; optional roles + governance + caps). Never overwrites an existing
     entrypoint — reconciles into it.
 

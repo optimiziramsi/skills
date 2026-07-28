@@ -1,9 +1,9 @@
 # Adopting `opsi` into an existing repo
 
 How to enable the opsi plugin in a project, plus the non-obvious gotchas — distilled from a real
-adoption (2026-07, CCD 2.1.215, then the 11-plugin marketplace; since the 2026-07 consolidation (0.0.1) everything ships as
-the single `optimiziramsi-skills@optimiziramsi` plugin — see [MIGRATION.md](MIGRATION.md)). Goal: the plugin owns the
-generic system, the repo keeps only what is repo-specific, zero overlap.
+adoption (2026-07, CCD 2.1.215, then the 11-plugin marketplace; since the 2026-07 consolidation
+(0.0.1) everything ships as the single `optimiziramsi-skills@optimiziramsi` plugin). Goal: the
+plugin owns the generic system, the repo keeps only what is repo-specific, zero overlap.
 
 ## Enable — marketplace global, plugins per-project
 

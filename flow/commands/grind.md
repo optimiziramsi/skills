@@ -2,6 +2,7 @@
 description: >-
   Prepare a .agent/grind/ incremental mission file and hand off the grind runner command (runs the
   grind skill)
+disable-model-invocation: true
 ---
 
 Invoke the `grind` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper

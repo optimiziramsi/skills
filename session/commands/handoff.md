@@ -1,6 +1,7 @@
 ---
 description: >-
   Update .agent/handoff.md next-session continuity notes at session close (runs the handoff skill)
+disable-model-invocation: true
 ---
 
 Invoke the `handoff` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper

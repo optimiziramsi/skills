@@ -9,8 +9,11 @@ Hard-blocks (exit 2, reason fed back to the model):
                                       never the agent's to make (`--ff-only/--abort/--continue/
                                       --quit` pass)
   - protected-branch ops              `checkout`/`switch` onto the protected branch, and push
-                                      refspecs targeting it (`HEAD:main`, `:main`, `--delete`);
-                                      name(s) from GIT_GUARD_PROTECTED_BRANCH, default `main`
+                                      refspecs targeting it (`HEAD:<protected>`, `:<protected>`,
+                                      `--delete`). Name(s) from GIT_GUARD_PROTECTED_BRANCH; unset,
+                                      the repo's OWN default branch is detected (origin/HEAD →
+                                      init.defaultBranch → first existing of main/master/develop/
+                                      trunk), so `develop`-based projects need no config
   - git reset --soft <moving-ref>     soft-reset squashes only against HEAD~N / a sha — a branch
                                       or remote ref can advance underneath you
   - git filter-branch                 history rewrite
@@ -42,12 +45,17 @@ session. Escape hatches (user-set only — the hook reads its own process env):
   GIT_GUARD_ALLOW_FETCH         comma-separated REMOTE names — permit `git fetch <remote>` for those
                                 remotes only (narrower than the all-or-nothing `fetch` token). Bare
                                 `git fetch`, `--all`, and `--multiple` stay blocked.
-  GIT_GUARD_PROTECTED_BRANCH    comma-separated protected branch name(s); default `main`.
+  GIT_GUARD_PROTECTED_BRANCH    comma-separated protected branch name(s). UNSET → auto-detect the
+                                repo's default branch (see above); set it explicitly when the
+                                protected branch differs from the default (e.g. `main` protected
+                                while day-to-day work lands on `develop`), or to protect several
+                                (`main,release`). Empty string = protect nothing.
 """
 import json
 import os
 import re
 import shlex
+import subprocess
 import sys
 
 
@@ -94,9 +102,54 @@ def env_tokens(name: str):
     return {t.strip() for t in os.environ.get(name, "").split(",") if t.strip()}
 
 
+def detected_default_branch():
+    """The repo's OWN default branch, so `main` is never assumed.
+
+    Order: origin's HEAD symref (what the remote calls default) → the first of
+    main/master/develop/trunk that actually EXISTS as a local branch → a repo-local
+    `init.defaultBranch`. Returns None when nothing resolves (not a repo, no branches yet).
+
+    Deliberately never reads GLOBAL `init.defaultBranch`: that is a property of the user's
+    machine, not of the project, and would make every repo on the box look like `main`.
+    Any git failure returns None; this must never raise inside a PreToolUse hook.
+    """
+    def run(*args):
+        try:
+            return subprocess.run(("git",) + args, capture_output=True, text=True, timeout=2)
+        except Exception:
+            return None
+
+    def out(*args):
+        r = run(*args)
+        return r.stdout.strip() if r is not None and r.returncode == 0 else ""
+
+    def ok(*args):
+        r = run(*args)
+        return r is not None and r.returncode == 0
+
+    if out("rev-parse", "--is-inside-work-tree") != "true":
+        return None
+    ref = out("symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    if ref.startswith("origin/"):
+        return ref[len("origin/"):]
+    for cand in ("main", "master", "develop", "trunk"):
+        if ok("show-ref", "--verify", "--quiet", f"refs/heads/{cand}"):
+            return cand
+    return out("config", "--local", "--get", "init.defaultBranch") or None
+
+
 def protected_branches():
-    return {b.strip() for b in os.environ.get(
-        "GIT_GUARD_PROTECTED_BRANCH", "main").split(",") if b.strip()}
+    """Protected branch names: the explicit env wins; otherwise detect this repo's default.
+
+    Projects that work on `develop`, `trunk`, or anything else get the right answer without
+    configuring anything — a hardcoded `main` would silently protect a branch they don't use
+    while leaving their real integration branch open.
+    """
+    env = os.environ.get("GIT_GUARD_PROTECTED_BRANCH")
+    if env is not None:
+        return {b.strip() for b in env.split(",") if b.strip()}
+    detected = detected_default_branch()
+    return {detected} if detected else {"main", "master"}
 
 
 # safe soft-reset targets: nothing (defaults HEAD), HEAD~N/HEAD^-style, or a sha
@@ -223,16 +276,15 @@ def self_test():
     env_keys = ("GIT_GUARD_ALLOW", "GIT_GUARD_ALLOW_FETCH", "GIT_GUARD_STRICT",
                 "GIT_GUARD_PROTECTED_BRANCH")
 
-    def chk(name, want_blocked, cmd, allow="", strict="", protected="", allow_fetch=""):
+    def chk(name, want_blocked, cmd, allow="", strict="", protected="main", allow_fetch=""):
+        # `protected` defaults to an EXPLICIT "main" so these cases never depend on the branch
+        # layout of whatever repo the self-test runs in (auto-detection is covered separately).
         nonlocal fails
         saved = {k: os.environ.get(k) for k in env_keys}
         os.environ["GIT_GUARD_ALLOW"] = allow
         os.environ["GIT_GUARD_ALLOW_FETCH"] = allow_fetch
         os.environ["GIT_GUARD_STRICT"] = strict
-        if protected:
-            os.environ["GIT_GUARD_PROTECTED_BRANCH"] = protected
-        else:
-            os.environ.pop("GIT_GUARD_PROTECTED_BRANCH", None)
+        os.environ["GIT_GUARD_PROTECTED_BRANCH"] = protected
         try:
             reason = check(cmd)
         finally:
@@ -361,6 +413,72 @@ def self_test():
     chk("restore --staged --worktree blocked", True, "git restore --staged --worktree src/app.ts")
 
     chk("non-git command allowed", False, "ls -la && echo done")
+
+    # --- protected-branch auto-detection (no GIT_GUARD_PROTECTED_BRANCH set) ---
+    import shutil
+    import tempfile
+
+    def det(name, want, setup):
+        """Build a throwaway repo, run detection from inside it, compare to `want`."""
+        nonlocal fails
+        tmp = tempfile.mkdtemp()
+        cwd = os.getcwd()
+        saved = os.environ.get("GIT_GUARD_PROTECTED_BRANCH")
+        os.environ.pop("GIT_GUARD_PROTECTED_BRANCH", None)
+        try:
+            setup(tmp)
+            os.chdir(tmp)
+            got = protected_branches()
+        finally:
+            os.chdir(cwd)
+            if saved is None:
+                os.environ.pop("GIT_GUARD_PROTECTED_BRANCH", None)
+            else:
+                os.environ["GIT_GUARD_PROTECTED_BRANCH"] = saved
+            shutil.rmtree(tmp, ignore_errors=True)
+        if got == want:
+            print(f"PASS  {name}")
+        else:
+            print(f"FAIL  {name}: got {got!r}, want {want!r}")
+            fails += 1
+
+    def g(cwd, *args):
+        subprocess.run(("git", "-C", cwd) + args, capture_output=True, text=True, timeout=5)
+
+    def repo(branch):
+        def setup(tmp):
+            g(tmp, "init", "-q", "-b", branch)
+            g(tmp, "-c", "user.email=t@t", "-c", "user.name=t",
+              "commit", "-q", "--allow-empty", "-m", "init")
+        return setup
+
+    def repo_with_origin_head(branch):
+        def setup(tmp):
+            repo(branch)(tmp)
+            # simulate a clone's origin/HEAD symref without needing a real remote
+            g(tmp, "update-ref", f"refs/remotes/origin/{branch}", "HEAD")
+            g(tmp, "symbolic-ref", "refs/remotes/origin/HEAD", f"refs/remotes/origin/{branch}")
+        return setup
+
+    det("detect: origin/HEAD -> develop", {"develop"}, repo_with_origin_head("develop"))
+    det("detect: origin/HEAD -> main", {"main"}, repo_with_origin_head("main"))
+    det("detect: no origin, local develop only", {"develop"}, repo("develop"))
+    det("detect: no origin, local trunk only", {"trunk"}, repo("trunk"))
+    det("detect: not a repo -> main,master fallback", {"main", "master"}, lambda tmp: None)
+
+    saved = os.environ.get("GIT_GUARD_PROTECTED_BRANCH")
+    os.environ["GIT_GUARD_PROTECTED_BRANCH"] = ""
+    got = protected_branches()
+    if got == set():
+        print("PASS  explicit empty GIT_GUARD_PROTECTED_BRANCH protects nothing")
+    else:
+        print(f"FAIL  explicit empty protects nothing: got {got!r}")
+        fails += 1
+    if saved is None:
+        os.environ.pop("GIT_GUARD_PROTECTED_BRANCH", None)
+    else:
+        os.environ["GIT_GUARD_PROTECTED_BRANCH"] = saved
+
     print("all tests passed" if fails == 0 else f"{fails} FAILED")
     return fails
 

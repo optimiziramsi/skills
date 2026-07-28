@@ -2,6 +2,7 @@
 description: >-
   Commit — bare imperative single line, topic-close + pause-for-review cadence, safe staging (runs
   the commit skill)
+disable-model-invocation: true
 ---
 
 Invoke the `commit` skill via the Skill tool and follow its SKILL.md exactly. This wrapper carries

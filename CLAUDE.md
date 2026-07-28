@@ -29,8 +29,10 @@ not restated.
   `commit` plugin's own house style, dogfooded here. Don't batch into one final commit; don't wait
   to be asked.
 - **"Done" means validated**, not just written: run **`./tests.sh`** (JSON validity, marketplace ↔
-  plugin manifests agree, every hook self-test) and check **no project-specific content leaked
-  in** — the plugin ships the *system*, never any one project's conventions.
+  plugin manifests agree, declared component paths resolve, every `${CLAUDE_PLUGIN_ROOT}` hook
+  target exists, every `/command` has its same-named skill, `claude plugin validate . --strict`,
+  every hook self-test) and check **no project-specific content leaked in** — the plugin ships the
+  *system*, never any one project's conventions.
 - **Lean reporting.** No narration, no tool-output dumps. Report once at the end: outcome → a few
   terse bullets → questions grouped by topic. Assume an expert reader.
 - **Minimum, surgical change.** Every changed line traces to the request; nothing speculative.
@@ -49,7 +51,11 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
   folder **and** its plugin.json path entries (tests.sh checks both). Merged for one-install /
   one-version updates, grouped for legibility — not blended.
 - **`/command` = a thin shim → the same-named `skill`.** The skill's `SKILL.md` is the single
-  source of the logic; the command wrapper carries none. Never duplicate steps into the command.
+  source of the logic; the command wrapper carries none — not steps, and **not a duplicated
+  description**. Every command carries `disable-model-invocation: true`: inside a plugin a command
+  shadows its same-named skill in the model's listing, and that flag keeps the *command* out of
+  context so the *skill's* description (with its trigger phrases) is what drives auto-triggering.
+  The command's own terse description is for the `/` menu only. New command → ship the flag.
 - **Opinionated behavior must be switchable.** Every hook either self-gates on project config or
   honors an env kill-switch (README table); a new hook ships with one or the other.
 - **Bump the version on any consumer-visible change.** Any edit to shipped content (skill,

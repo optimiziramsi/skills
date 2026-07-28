@@ -2,7 +2,29 @@
 # SessionStart — inject a tiny state snapshot + freshness nudges as session context.
 # stdout becomes the context. Everything is CONDITIONAL: absent files/deps never error,
 # so this is safe in any repo. Keep output short — it runs on every start / resume / clear.
+# Escape hatch (user-set): SESSION_START_OFF=1 — the git one-liner fires in ANY git repo,
+# not only opsi-scaffolded ones, so a project that doesn't want it needs a switch.
+# Self-test: bash session-start.sh --test
 set -uo pipefail
+[ "${SESSION_START_OFF:-0}" = "1" ] && exit 0
+
+if [ "${1:-}" = "--test" ]; then
+  T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
+  fails=0
+  git -C "$T" init -q -b main repo && git -C "$T/repo" commit -q --allow-empty -m init
+  out=$(CLAUDE_PROJECT_DIR="$T/repo" bash "$0")
+  grep -q '\[session\] branch=main' <<<"$out" && echo "PASS  git repo → state line" || { echo "FAIL  state line: $out"; fails=$((fails+1)); }
+  out=$(SESSION_START_OFF=1 CLAUDE_PROJECT_DIR="$T/repo" bash "$0")
+  [ -z "$out" ] && echo "PASS  SESSION_START_OFF=1 → silent" || { echo "FAIL  kill-switch: $out"; fails=$((fails+1)); }
+  mkdir -p "$T/plain"
+  out=$(CLAUDE_PROJECT_DIR="$T/plain" bash "$0")
+  [ -z "$out" ] && echo "PASS  non-repo → silent" || { echo "FAIL  non-repo: $out"; fails=$((fails+1)); }
+  mkdir -p "$T/repo/.agent" && : > "$T/repo/.agent/handoff.md"
+  out=$(CLAUDE_PROJECT_DIR="$T/repo" bash "$0")
+  grep -q 'handoff.md last updated' <<<"$out" && echo "PASS  handoff freshness surfaced" || { echo "FAIL  handoff line: $out"; fails=$((fails+1)); }
+  if [ "$fails" -eq 0 ]; then echo "all tests passed"; else echo "$fails FAILED"; fi; exit "$fails"
+fi
+
 cd "${CLAUDE_PROJECT_DIR:-$(pwd)}" 2>/dev/null || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 

@@ -2,6 +2,7 @@
 description: >-
   Rename a file with the full reference cascade — git mv + update every pointer (runs the rename
   skill)
+disable-model-invocation: true
 ---
 
 Invoke the `rename` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper

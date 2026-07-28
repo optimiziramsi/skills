@@ -1,10 +1,14 @@
 {
   "name": "optimiziramsi-skills",
-  "version": "0.0.2",
+  "displayName": "optimiziramsi skills",
+  "version": "0.0.3",
   "description": "optimiziramsi's Claude Code toolkit as ONE plugin, organized topic-first — one folder per concern (git, commit, reporting, session, review, repo, instructions, flow, patterns, worktree, setup), each owning its own skills/commands/agents/hooks. Opinionated concerns carry env kill-switches; guards self-gate on project config.",
   "author": {
-    "name": "optimiziramsi"
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
   },
+  "homepage": "https://github.com/optimiziramsi/skills#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
   "license": "MIT",
   "keywords": [
     "workflow",

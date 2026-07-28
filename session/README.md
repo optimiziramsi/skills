@@ -27,7 +27,9 @@ Write the handoff at session close; boot the next session from it.
   purpose:
     SessionStart — injects a state snapshot (branch · uncommitted · last commit), handoff
     freshness, todo count, an enforcement-health warning (loud if `python3` is missing → guards
-    disarmed), and an audit-staleness nudge. Fully conditional; safe in any repo.
+    disarmed), and an audit-staleness nudge. Every line beyond the state snapshot is conditional on
+    the file existing, so it is safe in any repo. Escape hatch `SESSION_START_OFF=1`; self-test
+    `--test`.
 
 Assumes the **`.agent/` house layout** (`.agent/handoff.md`, `.agent/lessons/`, `.agent/reviews/`,
 `.docs/`).

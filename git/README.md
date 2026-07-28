@@ -13,7 +13,8 @@ it's the separate opt-in [`commit`](../commit) plugin.
   purpose:
     PreToolUse `Bash` — blocks push/pull/fetch (you own remote sync; local `git push .` ref
     updates pass), bulk staging (`add -A`/`--all`/`.`), non-FF `git merge` (`--ff-only` passes),
-    protected-branch ops (`checkout`/`switch`/push-refspec onto `main` by default),
+    protected-branch ops (`checkout`/`switch`/push-refspec onto the protected branch — the repo's
+    detected default branch unless `GIT_GUARD_PROTECTED_BRANCH` says otherwise),
     `reset --soft <moving-ref>`, `filter-branch`, `reset --hard`, `--no-verify`, and discards of
     uncommitted work (`clean -f`, `stash drop`, `checkout --`, `restore`). `rebase`,
     `commit --amend`, and `checkout <ref> -- <path>` are **allowed** by default (rebase + FF
@@ -77,5 +78,10 @@ Enable `git` alone to get the guardrails while keeping your own commit format.
 > - `GIT_GUARD_ALLOW_FETCH=origin,upstream` — comma-separated **remote names**: permit
 >   `git fetch <remote>` for those remotes only, narrower than the all-or-nothing `fetch` token.
 >   Bare `git fetch`, `--all`, and `--multiple` stay blocked.
-> - `GIT_GUARD_PROTECTED_BRANCH=main` — comma-separated protected branch name(s); default `main`
->   (e.g. `main,master`, or your deploy branch).
+> - `GIT_GUARD_PROTECTED_BRANCH=develop` — comma-separated protected branch name(s). **Unset, the
+>   guard detects the repo's own default branch** — origin's `HEAD` symref, else the first of
+>   `main`/`master`/`develop`/`trunk` that exists locally, else a repo-local `init.defaultBranch`
+>   (never the machine-global one). So a `develop`-based or `trunk`-based project protects the
+>   right branch with no configuration. Set it explicitly when the protected branch is **not** the
+>   default — e.g. `main` protected while day-to-day work lands on `develop` — or to protect
+>   several (`main,release`). An empty string protects nothing.

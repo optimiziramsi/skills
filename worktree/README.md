@@ -42,13 +42,14 @@ No-ops entirely when you're not in a linked worktree.
   event: SessionStart
   purpose:
     Flag a session rooted in a linked worktree and nudge toward the `/worktree` protocol. Silent
-    in the main checkout.
+    in the main checkout; honors `WORKTREE_GUARD_DISABLE=1`.
 
 The skill and the guards are complementary: the guards make leaks *mechanically impossible*; the
 skill is the *workflow* on top (who takes what, how slices get reviewed and landed). The skill
 relies on the write-guard for its leak protection.
 
-Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1`, `WORKTREE_LEAK_DETECT_DISABLE=1`,
+Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1` (write-guard **and** the SessionStart nudge),
+`WORKTREE_LEAK_DETECT_DISABLE=1`, `WORKTREE_BASH_GUARD_ENABLE=1` (opt-in),
 `WORKTREE_GUARD_MODE=json|exit2` (default `json`).
 
 ## The integration branch

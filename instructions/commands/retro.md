@@ -2,6 +2,7 @@
 description: >-
   Wrap the session — harvest learnings, route to the right stores, apply-safe/propose-risky, commit
   (runs the retro skill)
+disable-model-invocation: true
 ---
 
 Invoke the `retro` skill via the Skill tool and follow its SKILL.md steps in order. This wrapper

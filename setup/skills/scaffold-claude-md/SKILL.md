@@ -2,9 +2,10 @@
 name: scaffold-claude-md
 description: >-
   Write a house-style `CLAUDE.md` for a project — a slim router carrying only routing + the hard
-  rules that bind every session, in the opsi convention (session bootstrap, never-push/never-main
-  git, commit-as-you-go, verified done-gate, in-repo memory, lean reporting; optional roles +
-  governance + caps). Use when a repo has no entrypoint, or the user asks to "write a CLAUDE.md",
+  rules that bind every session, in the opsi convention (session bootstrap, never-push /
+  never-commit-on-the-protected-branch git, commit-as-you-go, verified done-gate, in-repo memory,
+  lean reporting; optional roles + governance + caps). Branch names are read from the repo, never
+  assumed. Use when a repo has no entrypoint, or the user asks to "write a CLAUDE.md",
   "set up the agent entrypoint", "add house rules / conventions", "opsi CLAUDE.md". Never overwrites
   an existing CLAUDE.md — reconciles into it. Pairs with `scaffold` (the `.agent/` layout).
 ---
@@ -41,14 +42,37 @@ look) and the **hard rules that bind every session**. Everything else has one ca
    the done-gate explicitly**. Leave everything you can't verify as a visible `<!-- PLACEHOLDER
    -->`; never invent product scope, stack, or deploy facts.
 
-3. **Prune to the project's plugins.** The template names the `git` / `commit` / `instructions`
+3. **Resolve this repo's branch names — never assume `main`/`develop`.** The git rule below is
+   written with `<protected>` (the branch the agent must not commit on) and `<integration>` (where
+   day-to-day work lands). Plenty of projects use `develop`, `trunk`, `master`, or a release
+   branch; filling in the wrong names writes a rule that silently doesn't apply. Probe, then
+   substitute both placeholders throughout the file:
+
+   ```bash
+   git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null   # origin's default branch
+   git branch -a --format='%(refname:short)' | head -30            # what actually exists
+   git log --oneline -1 --format='%D' HEAD                         # where work is happening now
+   ```
+
+   - Single long-lived branch (`main` only, GitHub-flow): `<protected>` = that branch,
+     `<integration>` = the same — the rule becomes "never commit on it, always use a branch/worktree".
+   - Two-tier (`main` + `develop`, or `master` + `develop`): `<protected>` = the release branch,
+     `<integration>` = the day-to-day one.
+   - **Confirm your reading with the user** before writing — branch policy is a team convention
+     that the repo's shape can only hint at.
+   - Mirror the answer into the project's `.claude/settings.json` `env` when it differs from what
+     the `git` plugin would detect: `GIT_GUARD_PROTECTED_BRANCH=<protected>` (comma-separated for
+     several). The guard auto-detects the repo's default branch, which is right for the
+     single-branch case but not when the protected and integration branches differ.
+
+4. **Prune to the project's plugins.** The template names the `git` / `commit` / `instructions`
    plugins that back each rule. Drop references to any plugin the project won't enable (ask if
    unsure), and delete the whole OPTIONAL block for a light setup.
 
-4. **Show the full proposed file and confirm before writing.** It's the project's contract — the
+5. **Show the full proposed file and confirm before writing.** It's the project's contract — the
    user approves it once.
 
-5. **Point the way onward.** Mention that `scaffold` creates the `.agent/README.md` workspace index
+6. **Point the way onward.** Mention that `scaffold` creates the `.agent/README.md` workspace index
    and adds the one pointer this file expects, and that `.agent/` can be committed (team-shared) or
    gitignored (private) — their call.
 
@@ -74,9 +98,10 @@ restated* — fix drift at the source, never by copying it here.
 ## Hard rules — every session, no exceptions
 
 - **Git remotes are the user's.** Never `git push` / `pull` (`git fetch` is fine). Don't commit on
-  `main` — work on `develop` or a worktree; if you find yourself on `main`, STOP and ask. On protected
-  branches history is append-only — no `--amend` / `rebase` / `reset` to a commit. Never discard
-  uncommitted work (`clean -f`, `restore`, `checkout -- .`, `stash drop`) — it may hold the user's WIP.
+  `<protected>` — work on `<integration>` or a worktree; if you find yourself on `<protected>`, STOP
+  and ask. On protected branches history is append-only — no `--amend` / `rebase` / `reset` to a
+  commit. Never discard uncommitted work (`clean -f`, `restore`, `checkout -- .`, `stash drop`) — it
+  may hold the user's WIP.
   *(The `git` plugin's guard hook blocks the remote/destructive/history ops mechanically.)*
 - **Commit as you go.** Small, focused commits with a terse imperative subject — don't batch into one
   final commit, don't wait to be asked. Message format: the `commit` plugin.

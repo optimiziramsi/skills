@@ -2,6 +2,7 @@
 description: >-
   Sweep every reference to a feature being cut/deferred and propose delete-or-defer for each (runs
   the scope-cut skill)
+disable-model-invocation: true
 ---
 
 Invoke the `scope-cut` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper
