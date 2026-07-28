@@ -1,61 +1,57 @@
 # Handoff
 
-_Last updated:_ 2026-07-28 — session 10: **0.0.5 (flow runner launch UX) landed on `main`**
-(`95f2968`), `./tests.sh` ALL GREEN (8 checks). **USER: push `main`.**
+_Last updated:_ 2026-07-29 — session 11: **branch `slim`** (cut from `main`@`829c090`), 10 commits,
+`./tests.sh` ALL GREEN (7 checks, 438 tests). Version 0.0.6, **not landed, not pushed**.
 
-Sessions 7–8's `update-ref` / `commit-tree` landing recipe is **obsolete — do not reuse it.** The
-guard permits the land push; `update-ref` desyncs the index of whichever worktree holds the target.
+Session 10's 0.0.5 is on `main` and still unpushed. **Branch `work` is stale** (0.0.4) — ignore it.
 
-## Session 10 (2026-07-28) — how loop/grind get STARTED (0.0.5)
+## Session 11 (2026-07-29) — the slimming pass (0.0.6)
 
-Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.5; plan + progress:
-[.agent/plan/loop-grind-launch.md](plan/loop-grind-launch.md). What a cold session can't re-derive:
+Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.6. What a cold session can't re-derive:
 
-- **The runners were always cwd-relative** — "worktree-aware" needed no new addressing model, only a
-  way to pick the cwd (`--worktree`) and a stable name for the binary (a **committed** wrapper).
-  Symlinks were rejected: a machine path can't be tracked, so it never reaches a fresh worktree.
-- **The wrapper is version-locked** (user's call): it refuses to run against a plugin of a different
-  version, and `tests.sh` check 8 keeps `flow/examples/runner-wrapper.sh`'s `WRAPPER_VERSION` equal
-  to `plugin.json` — **bump both together or every consumer's wrapper hard-stops.**
-- **Confinement reuses `worktree/hooks/*.sh`** instead of a second copy, so `flow/bin/_flowlib.py`
-  now needs the `worktree` topic present (it dies loudly otherwise) — accepted, not overlooked.
-- **`git reset --soft` is classifier-refused here**, and `git push . HEAD:main` intermittently so —
-  hence branch commits landed carrying `<slug> ┃` instead of a prefix-free squash. Retry a refused
-  push later in the session; it does go through.
-
-## Session 9 (2026-07-28) — worktree lands into a pinned integration branch (0.0.4)
-
-[CHANGELOG.md](../CHANGELOG.md) § 0.0.4. Non-re-derivable: `GIT_GUARD_INTEGRATION_BRANCH` matters only
-where the integration branch is ALSO protected (here `main` is both); `<integration>` is pinned in a
-`_integration` worktree nobody edits, because (git 2.50.1) a push is refused whenever the target is
-checked out in ANY worktree, `receive.denyCurrentBranch=updateInstead` lifts that only for a clean tree
-and only at **repo level**, `branch -f` refuses, `update-ref` silently desyncs.
+- **The diagnosis the user was right about.** The scripts felt like accretion, but the edge cases
+  were each legitimate — the bloat was *scaffolding repeated per file*. Four worktree guards were
+  220 lines carrying ~35 lines of actual decision; the rest was one git preamble ×4, a jq-DISARM
+  block ×3, an inline self-test ×4, a header comment ×4. Fix duplication, not edge cases.
+- **Every hook is python3 over [`lib/hookio.py`](../lib/hookio.py); `jq` is gone.** User's call
+  (asked whether to port bash→python or the reverse). `lib/` at the repo root is a deliberate
+  exception to topic-first co-location — the user approved it explicitly.
+- **Tests live in `<topic>/tests/*.py`, never inside a shipped file.** `tests.sh` check 7a runs
+  them; 7b still runs anything with an inline `--test` (`_flowlib`, `meta-lint`, guards.d examples).
+- **The wrapper version lock is deleted** (user reversed the 0.0.5 decision): whatever plugin
+  version is active supplies both the instructions and the runner, so wrapper/runner drift is not a
+  reachable state. `WRAPPER_VERSION`, `FLOW_WRAPPER_ALLOW_DRIFT` and `tests.sh` check 8 are gone —
+  **do not reintroduce them.** Consumers refresh `bin/loop`/`bin/grind` once.
+- **Honest number:** shipped code lines are roughly flat (python is wordier per line than dense
+  bash). The wins are one language, no external dep, no self-disarming guard, and 78 → 438 tests.
 
 ## Machine-local (not repo)
 
-`optimiziramsi-skills@optimiziramsi` **0.0.4** installed and live — so a 0.0.5 wrapper refuses
-against it until the install is updated. Checkout parked on `work`; `main` pinned in
-`.claude/worktrees/_integration`; `receive.denyCurrentBranch=updateInstead`. Tracked
-`.claude/settings.json` sets `GIT_GUARD_{PROTECTED,INTEGRATION}_BRANCH` = `main`;
-`.claude/worktrees/` is gitignored.
+`optimiziramsi-skills@optimiziramsi` **0.0.4** installed and live — so the hooks binding this
+session are the OLD `.sh` paths from the 0.0.1/0.0.4 cache, not this branch. Checkout on `slim`;
+`main` pinned in `.claude/worktrees/_integration`; `receive.denyCurrentBranch=updateInstead`.
+Tracked `.claude/settings.json` sets `GIT_GUARD_{PROTECTED,INTEGRATION}_BRANCH` = `main`.
 
 ## Next up
 
-1. **USER: push `main`** to origin.
-2. **Teardown** (main checkout): `git worktree remove` `worktree-skill-merge-c479b2` +
-   `looper-grinder-worktree-7f4a4f`; delete branches `feature/worktree-land-wiring`,
-   `feature/worktree-skill-merge-c479b2` (`ed82d7b`), `feature/looper-grinder-worktree-7f4a4f`,
-   `feature/worktree-looper-grinder` (`11411cb`, superseded).
-3. **The one live test that matters** (USER, plain terminal — blocked in-session): run `loop` from a
-   worktree and read the leak-probe verdict. `confined` = PreToolUse hooks DO fire under
+1. **Land `slim` → `main`** (`git push . HEAD:main` works; the 0.0.5 `update-ref` recipe is
+   obsolete), then **USER: push `main`**.
+2. Re-dogfood: update the local install to 0.0.6 and restart, so the python hooks actually bind.
+3. Still open from earlier sessions — **the live leak-probe test** (USER, plain terminal): run
+   `loop` from a worktree and read the verdict. `confined` = PreToolUse hooks DO fire under
    `--dangerously-skip-permissions`; `leak` = they don't, and the fallback is the OS sandbox
-   (`sandbox.filesystem.allowWrite` **plus a git-dir carve-out** — a worktree commit writes into the
-   shared main `/.git`). Doubles as the runner's never-done live smoke test (recipe in MEMORY.md).
-4. Unverified from 0.0.3: that skills (not commands) now carry the trigger descriptions.
+   (`sandbox.filesystem.allowWrite` **plus a git-dir carve-out** — a worktree commit writes into
+   the shared main `/.git`). Doubles as the runners' never-done live smoke test.
+4. Teardown (main checkout): `git worktree remove` `worktree-skill-merge-c479b2` +
+   `looper-grinder-worktree-7f4a4f`; delete `feature/worktree-land-wiring`,
+   `feature/worktree-skill-merge-c479b2`, `feature/looper-grinder-worktree-7f4a4f`,
+   `feature/worktree-looper-grinder`, and the stale `work`.
+5. Not yet slimmed: `instructions/bin/meta-lint` is still 1332 lines / 19 checks (user confirmed
+   they use it). `flow/bin/_flowlib.py` (908) and the runners are justified by what they do.
 
 ## Standing context
 
 `init-marketplace`, `single-plugin`, `topic-first`, `publish-readiness` = retained build history.
-Done-gate `./tests.sh` (8 checks). `.todo`: plain bullets, `(done)` prefix, no checkboxes. Commits
+Done-gate `./tests.sh` (7 checks). `.todo`: plain bullets, `(done)` prefix, no checkboxes. Commits
 single-line (guard live). History append-only. Deliberate source-sweep skips still honored.
-Worktree work lands normally now; board is `.agent/worktrees.md`.
+Worktree board is `.agent/worktrees.md`.
