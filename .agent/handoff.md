@@ -1,58 +1,49 @@
 # Handoff
 
-_Last updated:_ 2026-07-22 — session 6: **single-plugin restructure SQUASH-LANDED on `main`**
-(one commit, main exactly 1 ahead of origin/main → user's push is a fast-forward). NOT pushed
-(user owns pushes). Branch `single-plugin` retained as build history (like `init-marketplace`).
+_Last updated:_ 2026-07-28 — session 7: **topic-first restructure on branch `topic-first`**
+(built on main's 0.0.1). NOT merged, NOT pushed (user owns pushes/merges).
 
-## Session 6 (2026-07-22) — 11 plugins → ONE root-sourced plugin (0.0.1), renamed
+## Session 7 (2026-07-28) — topic-first folders inside the single plugin (0.0.2)
 
-User decision (update pain in field-testing): consolidate to as few plugins as possible → single
-plugin, **repo root = plugin root** (mattpocock/skills layout, user-requested explicitly).
-Then renamed (user): **plugin `optimiziramsi-skills`, marketplace `opsi` → `optimiziramsi`** —
-install identity `optimiziramsi-skills@optimiziramsi` (mattpocock-skills@mattpocock pattern).
-Rename consequence: consumers must RE-REGISTER the marketplace (registry knows it as `opsi`;
-remove + add, and rename any `extraKnownMarketplaces.opsi` settings key) — step 1 in MIGRATION.md.
+User: "hard to tell which topic a file belongs to / update a topic as a unit." Verified against
+plugins-reference (agent + WebFetch): a single plugin CAN group topic-first via `plugin.json`
+component-path arrays. Chose topic-first (over domain-under-type / index-only).
 
-- `.claude-plugin/{marketplace,plugin}.json` at root; content in root `skills/ commands/ agents/
-  hooks/ bin/ docs/ examples/`. All moves are 100% `git mv` renames — history preserved.
-- `hooks/hooks.json` = merge of the 8 old per-plugin hook manifests, same commands/timeouts;
-  brevity-reminder inject newly gated behind `REPORT_GUARD_OFF` (was the only ungated opinionated
-  hook — every concern now has a kill-switch or self-gates; inventory table in README).
-- Old per-plugin READMEs → `docs/<concern>.md`. Root README reworked (install = `optimiziramsi-skills@optimiziramsi`,
-  concern table, kill-switch table). New root `MIGRATION.md` = consumer steps 11 → 1 (delete
-  after all repos migrate). ADOPTION.md (user's field doc): only mechanically-stale bits updated
-  (single install, one version, cache path `cache/optimiziramsi/optimiziramsi-skills/<ver>/`), voice untouched.
-- CLAUDE.md conventions rewritten: one plugin / one concern per module; version rule now = bump
-  root `.claude-plugin/plugin.json` on any shipped-content change (repo-meta exempt); lesson file
-  generalized. tests.sh reworked for the layout — ALL GREEN (12 self-testing tools).
-- Version starts at **0.0.1** (user: not live / not production-ready — 1.0.0 reserved for
-  go-live); the whole branch is the 0.0.1 artifact (no per-commit bumps pre-release).
+- One `<topic>/` folder per concern (11), each owning `skills/ commands/ agents/ hooks/` (+ `bin/
+  examples/ README.md`). All moves 100% `git mv`. Old `docs/<t>.md` → `<t>/README.md`.
+- `plugin.json` declares paths (arrays REPLACE default dirs): `skills`/`commands` = per-topic
+  DIRS; `agents` = explicit `.md` FILES (**validator rejects agent dirs** — learned via `claude
+  plugin validate`); `hooks` = 8 per-topic `hooks.json` (they merge). Merged root hooks.json split
+  back into per-topic files, topic-prefixed `${CLAUDE_PLUGIN_ROOT}/<topic>/hooks/…`.
+- **Invocation names unchanged** (frontmatter/filename, never dir) → no consumer-visible rename;
+  grouping is organizational only. Behavior byte-identical to 0.0.1.
+- Runner/bin/examples refs topic-prefixed; loop/grind/_flowlib + pattern-guards/generator stay
+  adjacent so `__file__`-relative imports still resolve. tests.sh reworked (per-topic hooks.json +
+  manifest path-exists). `./tests.sh` ALL GREEN; `claude plugin validate .` passes.
+- Version **0.0.2** (0.0.1 = the consolidation; 1.0.0 still reserved for go-live).
 
-## Live install state discovered (machine-local, not repo)
+## Machine-local install state (not repo)
 
-- `.claude/settings.local.json` is GONE — user re-registered the opsi marketplace **globally from
-  GitHub** (known_marketplaces: `github optimiziramsi/skills`, autoUpdate, updated 2026-07-22).
-  The old directory-marketplace dogfood note in CLAUDE.md was stale; fixed (conditional wording).
-- `installed_plugins.json` still carries per-project rows for the OLD 11 plugins across consumer
-  repos (games, kupimkuham, …), some pinned at versions ahead of origin/main (e.g. instructions
-  0.3.8 vs 0.3.6 in git) — user's field-testing state; not touched.
-- flow@opsi shows disabled everywhere → todo-readonly-guard NOT live this session; `.todo`
-  untouched anyway (deferrals went to `.todo-inbox`).
+- opsi marketplace registered globally from GitHub (`known_marketplaces`: github
+  optimiziramsi/skills). The OLD 11 `<name>@opsi` plugins still have per-project install rows;
+  `optimiziramsi-skills@optimiziramsi` (0.0.1) got installed/loaded this session — its
+  `commit-format` guard is LIVE here now (commits must be single-line; multi-line `-m` blocked).
+- The live guard is the 0.0.1 cache (paths `${CLAUDE_PLUGIN_ROOT}/hooks/…`); this branch's
+  topic-first hooks bind only after the user updates the install to 0.0.2.
 
 ## Next up
 
-1. **USER: push `main`** (fast-forward, 1 ahead of origin).
-2. **After push: migrate consumer repos** per MIGRATION.md — uninstall old `<name>@opsi` rows,
-   rewrite each repo's `enabledPlugins` to `"optimiziramsi-skills@optimiziramsi": true`, install for project, restart.
-   Then delete MIGRATION.md.
-3. **Re-dogfood here**: install `optimiziramsi-skills@optimiziramsi` in this repo (project scope) if wanted — the
-   todo-readonly-guard goes live again ("ALLOW TODO" to arm).
-4. Still open from before: live-test the flow runner from a plain terminal (recipe in MEMORY.md);
-   worktree-aware loop/grind items sit in `.todo`.
+1. **USER: review branch `topic-first`**, merge to `main` (squash, like session 6), push.
+   `main` is currently 1 ahead of origin (session-6 0.0.1 consolidation, still unpushed) — so a
+   push sends both, or squash topic-first onto main first then push once.
+2. After push: consumer migration per MIGRATION.md (re-register renamed marketplace → install
+   `optimiziramsi-skills@optimiziramsi` → restart). Then delete MIGRATION.md.
+3. Re-dogfood 0.0.2 here (project scope) to bind the topic-first hooks.
+4. Older open items: live-test flow runner from a plain terminal (recipe in MEMORY.md);
+   worktree-aware loop/grind sit in `.todo`.
 
 ## Standing context
 
-- `main` == `origin/main` (verified via fetch 2026-07-22). `init-marketplace` = retained build
-  history. Done-gate: `./tests.sh`. `.todo` format: plain bullets, `(done)` prefix, no checkboxes.
-- Deliberate skips from the source sweeps (wakeup, hub-sync, games, release, coding-style,
-  verify-app stay domain-locked) remain honored — don't re-sweep.
+- `init-marketplace`, `single-plugin` = retained build history. Done-gate: `./tests.sh` (+ `claude
+  plugin validate .`). `.todo` format: plain bullets, `(done)` prefix, no checkboxes. Commit style
+  is single-line (guard live). Deliberate source-sweep skips still honored — don't re-sweep.

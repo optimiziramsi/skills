@@ -1,8 +1,9 @@
 # CLAUDE.md — opsi toolkit (this marketplace)
 
 This repo **is** the [`opsi` toolkit](README.md) — the `optimiziramsi` Claude Code plugin
-marketplace, shipping ONE plugin (`optimiziramsi-skills`) whose root is this repo
-(mattpocock/skills layout): reusable skills, commands, agents, and hooks shared across projects.
+marketplace, shipping ONE plugin (`optimiziramsi-skills`) whose root is this repo, organized
+**topic-first** (one `<topic>/` folder per concern): reusable skills, commands, agents, and hooks
+shared across projects.
 It *ships* the house conventions — so it must **exemplify** them. Written in the house
 slim-router style: routing + the hard rules that bind every session; everything else is linked,
 not restated.
@@ -39,11 +40,14 @@ not restated.
 
 Full overview + rationale: [README.md](README.md). The load-bearing rules:
 
-- **One plugin, one concern per module.** The repo root is the plugin: `.claude-plugin/
-  {marketplace,plugin}.json` + root `skills/ commands/ agents/ hooks/ bin/ docs/ examples/`.
-  Concerns stay cleanly separated *inside* it (one skill dir per concern piece, one
-  `docs/<concern>.md`, per-concern env kill-switches — see README) — merged for one-install /
-  one-version updates, not blended.
+- **One plugin, topic-first.** The repo root is the plugin: `.claude-plugin/{marketplace,plugin}.json`
+  + one `<topic>/` folder per concern, each owning its `skills/ commands/ agents/ hooks/` (+ `bin/
+  examples/ README.md` where used). Everything for a topic is co-located — find it, update it,
+  replace it as a unit. `plugin.json` declares every component path: `skills`/`commands` as
+  per-topic directories, `agents` as explicit `.md` files (the validator rejects agent dirs),
+  `hooks` as one `hooks.json` per topic (they merge). Adding/removing a topic = add/remove its
+  folder **and** its plugin.json path entries (tests.sh checks both). Merged for one-install /
+  one-version updates, grouped for legibility — not blended.
 - **`/command` = a thin shim → the same-named `skill`.** The skill's `SKILL.md` is the single
   source of the logic; the command wrapper carries none. Never duplicate steps into the command.
 - **Opinionated behavior must be switchable.** Every hook either self-gates on project config or

@@ -11,3 +11,4 @@
   - maybe make a single looper / grinder script (ran from checkout root), but it scans and handles all worktrees or you pick worktrees if not passed as args already ...
   - all those commands should come from chats already / chat should help you prepare the commands to run
   - just to double check, if I undertand, chat itself can not run long lasting commands ... is there some kind of possible bypass or something to that?
+- would it be possible for worktree to merge into develop (or whatever is preferred branch) even if that branch is currently not the checked out branch?

@@ -1,0 +1,16 @@
+{
+  "description": "session — inject a state snapshot + freshness nudges at session start (handoff age, .todo count). Self-gates: silent outside a git repo / where .agent/ is absent.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/session/hooks/session-start.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

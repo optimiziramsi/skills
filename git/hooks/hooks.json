@@ -1,0 +1,17 @@
+{
+  "description": "git — enforce git safety on Bash git commands (PreToolUse): block push/pull/fetch, bulk adds, non-FF merges, protected-branch ops, soft-reset to moving refs, reset --hard, --no-verify, and discards of uncommitted work (rebase/amend/checkout-file pass by default). Kill-switch: GIT_GUARD_OFF=1 (relax tokens: GIT_GUARD_ALLOW, GIT_GUARD_ALLOW_FETCH).",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/git/hooks/git-guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

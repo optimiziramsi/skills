@@ -3,8 +3,10 @@
 A personal [Claude Code plugin marketplace](https://docs.claude.com/en/docs/claude-code/plugins)
 shipping **one plugin**: reusable **skills, commands, agents, and hooks** shared across all my
 projects — so I solve something once and get it everywhere, and update it in one place. The repo
-root *is* the plugin (mattpocock/skills layout): `.claude-plugin/{marketplace,plugin}.json` +
-root `skills/ commands/ agents/ hooks/ bin/ docs/`.
+root *is* the plugin, organized **topic-first**: `.claude-plugin/{marketplace,plugin}.json` at
+root, then one folder per concern (`git/ commit/ flow/ …`), each owning its own
+`skills/ commands/ agents/ hooks/` — so everything for a topic is in one place. `plugin.json`
+declares the component paths, so the type dirs don't need to sit at the repo root.
 
 ## Install
 
@@ -35,21 +37,21 @@ old 11-plugin marketplace: **[MIGRATION.md](MIGRATION.md)**.
 
 ## Concerns
 
-One plugin, eleven concerns. Each concern's full doc lives in `docs/`.
+One plugin, eleven concerns. Each concern is a top-level folder with its own `README.md`.
 
 | Concern | Provides |
 |---|---|
-| [`git`](docs/git.md) | Git **safety net** — a `git-guard` hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, soft-resets to moving refs, `reset --hard`, `--no-verify`, and discards (rebase/amend/checkout-file pass by default for FF landing flows) — plus the **hotfix** skill (test-first, cherry-pick both ways, remotes handed to you). |
-| [`commit`](docs/commit.md) | The opinionated house **commit** style — bare single-line messages, topic-close + pause-for-review cadence, safe staging, a `commit-format` guard, and a `commit-nudge`. |
-| [`setup`](docs/setup.md) | One-time bootstrap — **scaffold** the `.agent/` workspace index and point CLAUDE.md/AGENTS.md at it, and **scaffold-claude-md** to write a house-style CLAUDE.md (a slim router of the hard rules). |
-| [`reporting`](docs/reporting.md) | The **lean-reporting output contract**, enforced — contract injected per prompt (`brevity-reminder`), re-pulsed every Nth tool call (`contract-pulse`), and a Stop `report-guard` that blocks a narrating/over-long final message. |
-| [`session`](docs/session.md) | Session continuity — **handoff** (write next-session notes, ≤4k), **continue** (boot from them), **session-summary** + a `session-start` hook. |
-| [`instructions`](docs/instructions.md) | Keep the agent-instruction system alive — **retro**, **lessons**, **instructions-audit**, **instructions-maintenance**, **rules-change** skills + `lesson-scout` / `instructions-auditor` agents + `caps` and `file-guard` hooks + two config-driven engines: **meta-lint** (behind `.agent/meta-lint.json`) and **tripwire-guard** (project-owned `.agent/guards.d/*.sh` asserts). |
-| [`review`](docs/review.md) | Structured review — **review** (P0/HIGH/MED/LOW → `.agent/reviews/`) and **qa-gate** skills + `semantic-reviewer`, `spec-cross-checker`, `wireframe-vs-code`, `doc-auditor`, `isolation-reviewer` agents. |
-| [`repo`](docs/repo.md) | **rename** — move a file and cascade every reference across docs/skills/config. |
-| [`flow`](docs/flow.md) | Work management — **plan**, **milestone**, **scope-cut**, **triage-todo**, **feedback**, plus autonomous background execution: **looper** / **grind** / **collab** driven by a shipped Python-3 runner (`bin/loop`, `bin/grind`). Ships the `todo-readonly-guard` — `.todo` stays user-owned (arm with "ALLOW TODO"). |
-| [`patterns`](docs/patterns.md) | A per-topic **pattern registry** (`.agent/patterns/`) — **manage-patterns** + `pattern-compliance`/`pattern-verifier` agents + hooks that gate edits governed only by non-blessed patterns. Ships the system, not any project's conventions. |
-| [`worktree`](docs/worktree.md) | Parallel isolated work — the **worktree** skill (reserve → plan → review-gated slices → land) + guards that keep edits inside the active worktree (mitigates [claude-code #36182](https://github.com/anthropics/claude-code/issues/36182)) + a SessionStart `worktree-detect` nudge. |
+| [`git`](git/README.md) | Git **safety net** — a `git-guard` hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, soft-resets to moving refs, `reset --hard`, `--no-verify`, and discards (rebase/amend/checkout-file pass by default for FF landing flows) — plus the **hotfix** skill (test-first, cherry-pick both ways, remotes handed to you). |
+| [`commit`](commit/README.md) | The opinionated house **commit** style — bare single-line messages, topic-close + pause-for-review cadence, safe staging, a `commit-format` guard, and a `commit-nudge`. |
+| [`setup`](setup/README.md) | One-time bootstrap — **scaffold** the `.agent/` workspace index and point CLAUDE.md/AGENTS.md at it, and **scaffold-claude-md** to write a house-style CLAUDE.md (a slim router of the hard rules). |
+| [`reporting`](reporting/README.md) | The **lean-reporting output contract**, enforced — contract injected per prompt (`brevity-reminder`), re-pulsed every Nth tool call (`contract-pulse`), and a Stop `report-guard` that blocks a narrating/over-long final message. |
+| [`session`](session/README.md) | Session continuity — **handoff** (write next-session notes, ≤4k), **continue** (boot from them), **session-summary** + a `session-start` hook. |
+| [`instructions`](instructions/README.md) | Keep the agent-instruction system alive — **retro**, **lessons**, **instructions-audit**, **instructions-maintenance**, **rules-change** skills + `lesson-scout` / `instructions-auditor` agents + `caps` and `file-guard` hooks + two config-driven engines: **meta-lint** (behind `.agent/meta-lint.json`) and **tripwire-guard** (project-owned `.agent/guards.d/*.sh` asserts). |
+| [`review`](review/README.md) | Structured review — **review** (P0/HIGH/MED/LOW → `.agent/reviews/`) and **qa-gate** skills + `semantic-reviewer`, `spec-cross-checker`, `wireframe-vs-code`, `doc-auditor`, `isolation-reviewer` agents. |
+| [`repo`](repo/README.md) | **rename** — move a file and cascade every reference across docs/skills/config. |
+| [`flow`](flow/README.md) | Work management — **plan**, **milestone**, **scope-cut**, **triage-todo**, **feedback**, plus autonomous background execution: **looper** / **grind** / **collab** driven by a shipped Python-3 runner (`bin/loop`, `bin/grind`). Ships the `todo-readonly-guard` — `.todo` stays user-owned (arm with "ALLOW TODO"). |
+| [`patterns`](patterns/README.md) | A per-topic **pattern registry** (`.agent/patterns/`) — **manage-patterns** + `pattern-compliance`/`pattern-verifier` agents + hooks that gate edits governed only by non-blessed patterns. Ships the system, not any project's conventions. |
+| [`worktree`](worktree/README.md) | Parallel isolated work — the **worktree** skill (reserve → plan → review-gated slices → land) + guards that keep edits inside the active worktree (mitigates [claude-code #36182](https://github.com/anthropics/claude-code/issues/36182)) + a SessionStart `worktree-detect` nudge. |
 
 ## Per-concern opt-out (env kill-switches)
 
@@ -72,9 +74,11 @@ Guards self-gate on project config (patterns fire only with a registry, meta-lin
 
 ## Conventions
 
-- **One plugin, one concern per module.** A **command** (`/x`) is a thin shim that invokes a
-  same-named **skill** which holds the actual logic (single source of truth). Concern docs live in
-  `docs/<concern>.md`.
+- **One plugin, topic-first.** Each concern is a folder (`<topic>/skills|commands|agents|hooks/`)
+  with its own `README.md` and its own `hooks/hooks.json`; `plugin.json` lists the component paths.
+  A **command** (`/x`) is a thin shim that invokes a same-named **skill** which holds the actual
+  logic (single source of truth). Invocation names come from frontmatter/filename, so the folder
+  grouping is organizational only — no `<topic>:` prefix appears in a skill/command/agent name.
 - **House layout.** Everything the toolkit creates lives under **`.agent/`** — `handoff.md`,
   `lessons/`, `worktrees.md`, `milestones.md`, `plan/`, `milestone/`, `loop/`, `grind/`,
   `patterns/`, `reviews/` — so it never clutters your repo root. Your `.docs/` and root `.todo`

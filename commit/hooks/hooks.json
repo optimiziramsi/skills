@@ -1,0 +1,28 @@
+{
+  "description": "commit — enforce the single-line commit message format on Bash git commits (PreToolUse), and nudge to commit uncommitted work at session end (Stop). Kill-switches: COMMIT_FORMAT_OFF=1, STOP_NUDGE_OFF=1.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/commit/hooks/commit-format.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/commit/hooks/commit-nudge.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

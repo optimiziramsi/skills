@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # tests.sh — the marketplace done-gate, mechanized (CLAUDE.md § Hard rules: "Done means validated").
-# The repo root IS the single optimiziramsi-skills plugin (mattpocock/skills layout). Run from the repo root:
-#   1. plugin.json / hooks.json / marketplace.json parse
-#   2. marketplace.json lists exactly the one root-sourced plugin
-#   3. every hook / bin tool that ships a --test self-test passes it
+# The repo root IS the single optimiziramsi-skills plugin, organized TOPIC-FIRST: one <topic>/ folder
+# per concern, each owning its skills/ commands/ agents/ hooks/. Run from the repo root:
+#   1. marketplace.json / plugin.json / every <topic>/hooks/hooks.json parse
+#   2. marketplace.json lists exactly the one root-sourced plugin, name matching plugin.json
+#   3. every path in plugin.json's skills/commands/agents/hooks arrays exists on disk
+#   4. every hook / bin tool that ships a --test self-test passes it
 set -u
 cd "$(dirname "$0")" || exit 1
 fails=0
@@ -11,7 +13,7 @@ note() { echo "$@"; }
 fail() { echo "FAIL  $*"; fails=$((fails + 1)); }
 
 note "=== 1. JSON validity ==="
-for f in .claude-plugin/marketplace.json .claude-plugin/plugin.json hooks/hooks.json; do
+for f in .claude-plugin/marketplace.json .claude-plugin/plugin.json */hooks/hooks.json; do
   if [ ! -f "$f" ]; then
     fail "$f missing"
   elif python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" 2>/dev/null; then
@@ -37,8 +39,28 @@ else
 fi
 
 note ""
-note "=== 3. self-tests (every hook / bin tool that advertises --test) ==="
-for h in hooks/*.py hooks/*.sh bin/*; do
+note "=== 3. plugin.json component paths all exist ==="
+if python3 - <<'EOF'
+import json, os, sys
+pj = json.load(open('.claude-plugin/plugin.json'))
+missing = []
+for key in ('skills', 'commands', 'agents', 'hooks'):
+    for p in pj.get(key, []):
+        if not os.path.exists(p):
+            missing.append(f"{key}: {p}")
+if missing:
+    print('\n'.join(missing)); sys.exit(1)
+sys.exit(0)
+EOF
+then
+  note "ok    every skills/commands/agents/hooks path resolves"
+else
+  fail "plugin.json references a path that does not exist (see above)"
+fi
+
+note ""
+note "=== 4. self-tests (every hook / bin tool that advertises --test) ==="
+for h in */hooks/*.py */hooks/*.sh */bin/*; do
   [ -f "$h" ] || continue
   grep -q -e '--test' "$h" || continue
   case "$h" in

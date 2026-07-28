@@ -1,7 +1,7 @@
 {
   "name": "optimiziramsi-skills",
-  "version": "0.0.1",
-  "description": "optimiziramsi's Claude Code toolkit as ONE plugin — git safety net, house commit style, lean reporting, session continuity, structured review, work-management flow (+ looper/grind runner), instruction-system upkeep (caps/meta-lint/tripwires), pattern registry, worktree protocol, repo utilities, and one-time scaffolds. Opinionated concerns carry env kill-switches; guards self-gate on project config.",
+  "version": "0.0.2",
+  "description": "optimiziramsi's Claude Code toolkit as ONE plugin, organized topic-first — one folder per concern (git, commit, reporting, session, review, repo, instructions, flow, patterns, worktree, setup), each owning its own skills/commands/agents/hooks. Opinionated concerns carry env kill-switches; guards self-gate on project config.",
   "author": {
     "name": "optimiziramsi"
   },
@@ -18,5 +18,50 @@
     "patterns",
     "worktree",
     "claude-code"
+  ],
+  "skills": [
+    "./commit/skills/",
+    "./flow/skills/",
+    "./git/skills/",
+    "./instructions/skills/",
+    "./patterns/skills/",
+    "./repo/skills/",
+    "./review/skills/",
+    "./session/skills/",
+    "./setup/skills/",
+    "./worktree/skills/"
+  ],
+  "commands": [
+    "./commit/commands/",
+    "./flow/commands/",
+    "./git/commands/",
+    "./instructions/commands/",
+    "./patterns/commands/",
+    "./repo/commands/",
+    "./review/commands/",
+    "./session/commands/",
+    "./setup/commands/",
+    "./worktree/commands/"
+  ],
+  "agents": [
+    "./instructions/agents/instructions-auditor.md",
+    "./instructions/agents/lesson-scout.md",
+    "./patterns/agents/pattern-compliance.md",
+    "./patterns/agents/pattern-verifier.md",
+    "./review/agents/doc-auditor.md",
+    "./review/agents/isolation-reviewer.md",
+    "./review/agents/semantic-reviewer.md",
+    "./review/agents/spec-cross-checker.md",
+    "./review/agents/wireframe-vs-code.md"
+  ],
+  "hooks": [
+    "./commit/hooks/hooks.json",
+    "./flow/hooks/hooks.json",
+    "./git/hooks/hooks.json",
+    "./instructions/hooks/hooks.json",
+    "./patterns/hooks/hooks.json",
+    "./reporting/hooks/hooks.json",
+    "./session/hooks/hooks.json",
+    "./worktree/hooks/hooks.json"
   ]
 }

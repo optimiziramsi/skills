@@ -55,14 +55,26 @@ registration, re-add (manifest resolves the new name), rename any `extraKnownMar
 settings key — MIGRATION.md step 1.
 
 11 plugins consolidated into ONE plugin at **0.0.1** (user: not live / not production-ready —
-1.0.0 is reserved for go-live), repo root = plugin root
-(mattpocock/skills layout; user asked for it explicitly — update pain across 11 versions/installs
-in field-testing). `.claude-plugin/{marketplace,plugin}.json` + root `skills/ commands/ agents/
-hooks/ bin/ docs/ examples/`. Version rule now: any shipped-content change bumps the single root
-`.claude-plugin/plugin.json` (repo-meta exempt). Per-project tailoring = env kill-switches
-(README table), not plugin selection. Old-plugin history is in the renames (all moves were 100%
-`git mv`). Built on branch `single-plugin` (2026-07-22); consumer migration steps in root
-MIGRATION.md — delete that file once all repos migrated.
+1.0.0 is reserved for go-live), repo root = plugin root (user asked explicitly — update pain
+across 11 versions/installs in field-testing). Version rule: any shipped-content change bumps the
+single root `.claude-plugin/plugin.json` (repo-meta exempt). Per-project tailoring = env
+kill-switches (README table), not plugin selection. Built on branch `single-plugin` (2026-07-22);
+consumer migration steps in root MIGRATION.md — delete once all repos migrated.
+
+## Topic-first layout (2026-07-28, user, → 0.0.2)
+
+Reorganized the single plugin **topic-first**: one `<topic>/` folder per concern (git, commit,
+flow, …), each owning its own `skills/ commands/ agents/ hooks/` (+ `bin/ examples/ README.md`).
+Motive: legibility — see/update/replace a whole topic in one place. `plugin.json` declares
+component paths (arrays REPLACE the default top-level dirs), so the type dirs need not sit at the
+repo root. **Gotchas proven via `claude plugin validate .` (it works — use it as a second gate):**
+`skills`/`commands` accept per-topic DIRECTORIES; **`agents` needs explicit `.md` FILE paths (dirs
+are rejected)**; `hooks` takes an array of per-topic `hooks.json` that merge. Skill/command/agent
+invocation names come from frontmatter/filename, NOT the folder → grouping is organizational only,
+no `<topic>:` prefix, no consumer-visible rename. Adding/removing a topic = touch its folder AND
+its plugin.json path entries (tests.sh checks both). `bin` scripts that import a sibling (loop/grind
+→ `_flowlib`, pattern-guards → generate-pattern-routes) rely on `__file__`-relative paths, so keep
+importers and their helpers in the SAME topic dir.
 
 ## Dogfood state — settings.local.json REMOVED by user (observed 2026-07-22)
 
