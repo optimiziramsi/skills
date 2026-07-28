@@ -1,5 +1,20 @@
 # .todo-inbox — agent deferrals awaiting user triage (record list, newest on top)
 
+- topic: mark the "make grind and loop worktree aware" .todo item (done)
+  type: chore
+  origin: 2026-07-28 (session 10, worktree loop-grind-launch)
+  why: `.todo` is user-owned and the session was never armed with "ALLOW TODO"
+  context: shipped in 0.0.5 — `--worktree NAME` on both runners, `loop --worktree all`, the
+    committed version-locked `bin/loop`/`bin/grind` wrapper, and worktree confinement. Two
+    sub-bullets of that item are ANSWERED rather than built: "chat should prepare the commands"
+    (yes — the looper/grind/collab skills now hand over `bin/loop --worktree …`), and "can chat run
+    long-lasting commands / is there a bypass?" (chat CAN run background shells, but an unattended
+    nested `claude -p --dangerously-skip-permissions` is refused by BOTH `_flowlib.nested_guard`
+    and the harness permission classifier — deliberate, not to be routed around; terminal handoff
+    stays). The separate item "would it be possible for worktree to merge into develop even if that
+    branch is not checked out" was answered in 0.0.4 (pinned `_integration` worktree) and can also
+    be closed.
+
 - topic: migrate consumer repos to the single optimiziramsi-skills@optimiziramsi plugin
   type: chore
   origin: 2026-07-22 (single-plugin restructure, branch single-plugin)
