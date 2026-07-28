@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/reporting/hooks/contract-pulse.sh\" 2>/dev/null || echo '{\"systemMessage\":\"⚠️ contract-pulse DISARMED — hook failed to execute.\"}'",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/reporting/hooks/contract-pulse.py\" 2>/dev/null || echo '{\"systemMessage\":\"⚠️ contract-pulse DISARMED — hook failed to execute.\"}'",
             "statusMessage": "contract pulse",
             "timeout": 10
           }
