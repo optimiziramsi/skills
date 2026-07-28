@@ -1,9 +1,12 @@
 # Handoff
 
-_Last updated:_ 2026-07-29 — session 11: **branch `slim`** (cut from `main`@`829c090`), 10 commits,
-`./tests.sh` ALL GREEN (7 checks, 438 tests). Version 0.0.6, **not landed, not pushed**.
+_Last updated:_ 2026-07-29 — session 11: **0.0.6 landed on `main` (`4e979d4`) and pushed**;
+`./tests.sh` ALL GREEN (7 checks, 438 tests); local install updated to 0.0.6 and verified from the
+cache. `main` == `origin/main` == `slim`.
 
-Session 10's 0.0.5 is on `main` and still unpushed. **Branch `work` is stale** (0.0.4) — ignore it.
+Repo is now two branches (`main`, `slim`) and two worktrees (checkout on `slim`, `_integration`
+pinning `main`) — every earlier feature branch and its worktree was deleted this session; their
+build history is fully contained in `main`.
 
 ## Session 11 (2026-07-29) — the slimming pass (0.0.6)
 
@@ -27,26 +30,22 @@ Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.6. What a cold session can
 
 ## Machine-local (not repo)
 
-`optimiziramsi-skills@optimiziramsi` **0.0.4** installed and live — so the hooks binding this
-session are the OLD `.sh` paths from the 0.0.1/0.0.4 cache, not this branch. Checkout on `slim`;
+`optimiziramsi-skills@optimiziramsi` **0.0.6** installed; smoke-tested from the cache (16 python
+hooks execute, `lib/` + all 8 `tests/` dirs shipped, gate green, bare wrapper resolves 0.0.6 past
+the legacy `opsi/0.0.1` entry). Stale caches 0.0.1 / 0.0.4 / 0.0.5 still on disk, harmless.
 `main` pinned in `.claude/worktrees/_integration`; `receive.denyCurrentBranch=updateInstead`.
 Tracked `.claude/settings.json` sets `GIT_GUARD_{PROTECTED,INTEGRATION}_BRANCH` = `main`.
+The main checkout deliberately sits on `slim`, not `main` — git-guard blocks checking out the
+protected branch, so a non-`main` working branch is the normal resting state here.
 
 ## Next up
 
-1. **Land `slim` → `main`** (`git push . HEAD:main` works; the 0.0.5 `update-ref` recipe is
-   obsolete), then **USER: push `main`**.
-2. Re-dogfood: update the local install to 0.0.6 and restart, so the python hooks actually bind.
-3. Still open from earlier sessions — **the live leak-probe test** (USER, plain terminal): run
+1. Still open from earlier sessions — **the live leak-probe test** (USER, plain terminal): run
    `loop` from a worktree and read the verdict. `confined` = PreToolUse hooks DO fire under
    `--dangerously-skip-permissions`; `leak` = they don't, and the fallback is the OS sandbox
    (`sandbox.filesystem.allowWrite` **plus a git-dir carve-out** — a worktree commit writes into
    the shared main `/.git`). Doubles as the runners' never-done live smoke test.
-4. Teardown (main checkout): `git worktree remove` `worktree-skill-merge-c479b2` +
-   `looper-grinder-worktree-7f4a4f`; delete `feature/worktree-land-wiring`,
-   `feature/worktree-skill-merge-c479b2`, `feature/looper-grinder-worktree-7f4a4f`,
-   `feature/worktree-looper-grinder`, and the stale `work`.
-5. Not yet slimmed: `instructions/bin/meta-lint` is still 1332 lines / 19 checks (user confirmed
+2. Not yet slimmed: `instructions/bin/meta-lint` is still 1332 lines / 19 checks (user confirmed
    they use it). `flow/bin/_flowlib.py` (908) and the runners are justified by what they do.
 
 ## Standing context
