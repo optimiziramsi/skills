@@ -48,9 +48,29 @@ a gitignored symlink (doesn't travel to a fresh worktree — the exact complaint
 
 ## Progress / next slice
 
-- Slice 1 — **in progress**.
-- Open question for the human, does not block slice 1: does the wrapper scaffolder get its own skill
-  or fold into `setup/skills/scaffold`?
+All five slices are implemented and committed on the branch; only slice 1 has landed on `main`.
+
+- **1 — landed** (`230d57e`, on `main`): `_flowlib` resolver + `loop --worktree`, 0.0.5.
+- **2 — committed** (`77252af`): `grind --worktree`, `loop --worktree all`.
+- **3 — committed** (`3fb81d9` + `ef9fe02`): the wrapper template + the `scaffold` step, then the
+  **version lock** (user's call: a wrapper must refuse to run against a plugin of a different
+  version; `tests.sh` check 8 keeps the template's stamp equal to `plugin.json`).
+- **4 — committed** (`9e00c94` + the docs commit after `d122bd0`): launch docs across
+  `looper`/`grind`/`collab`/`flow/README.md`.
+- **5 — committed** (`d122bd0`): confinement ported onto the `worktree` topic's own guards rather
+  than a second `worktree-confine.sh`. **Accepted coupling:** `flow/bin/_flowlib.py` now reaches
+  across to `worktree/hooks/*.sh` (it dies loudly if they're absent), so the two topics are no
+  longer independently removable.
+
+**Blocked:** the land of slices 2–5. `git push . HEAD:main` was refused twice by the harness
+permission classifier this session (it went through once, for the claim row). The commits are on
+the branch and safe; someone needs to run the push, or re-try it in a session where the classifier
+allows it. `git reset --soft` is likewise blocked, which is why the branch commits keep their
+`<slug> ┃` prefix instead of being squashed prefix-free at land.
+
+**Never verified, and can only be verified by the user from a plain terminal:** whether PreToolUse
+hooks fire under `--dangerously-skip-permissions`. The leak-probe asks exactly that question at
+runtime — a `leak` verdict is the answer, and it aborts instead of risking the main checkout.
 
 ## Notes
 

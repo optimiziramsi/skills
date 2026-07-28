@@ -138,6 +138,11 @@ status — the runner never commits.
   NAME is a branch, a worktree directory name, a path, a unique substring of either, or `root`;
   ambiguity is an error listing candidates, never a guess. `loop --worktree all` surveys every
   worktree, arms once, and runs a child runner per tree with a queue (not with `--watch`).
+- **Worktree runs are confined, and the confinement is proven first.** In a linked worktree the
+  runners inject the `worktree` topic's PreToolUse guards into every child and then run a one-off
+  **leak-probe** session that tries to write into the main checkout by both the Write tool and a
+  bash redirect — refusing to start unless both are blocked. Main-checkout runs are unchanged.
+  `FLOW_WORKTREE_UNSAFE=1` skips it, `FLOW_PROBE_MODEL` picks the probe model.
 - **Full permissions, explicit arm.** Jobs run with `--dangerously-skip-permissions` (a headless
   session can't answer a prompt, so unattended edits/commits need it). The runner requires an
   interactive "yes" — or `-y` for cron/unattended.
