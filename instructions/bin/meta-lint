@@ -1,51 +1,24 @@
 #!/usr/bin/env python3
 """meta-lint — config-driven health check for a project's agent-instruction system.
 
-The ENGINE ships here (the optimiziramsi-skills plugin); each project supplies the POLICY via
-`.agent/meta-lint.json`. No config file → silent no-op, exit 0 (projects opt IN). A minimal
-`{}` config lints the opsi house layout (`.agent/` + `.claude/`) with the default caps; every
-knob — enabled checks, cap numbers AND units (lines vs chars), directory layout, filename
-conventions, dup tripwires, boards, audit stamp, generated files, allow-length marker — is
-overridable in the config. Where a config exists, this engine supersedes the caps.sh hook
-(caps.sh skips itself).
+The ENGINE ships here; each project supplies the POLICY via `.agent/meta-lint.json`. No config
+file → silent no-op, exit 0 (projects opt IN). A minimal `{}` lints the opsi house layout
+(`.agent/` + `.claude/`) with default caps; every knob — enabled checks, cap numbers AND units,
+layout, filename conventions, dup tripwires, boards, audit stamp, generated files, allow markers
+— is overridable there. Where a config exists this engine supersedes the `caps` hook, which
+detects the config and stands down.
 
     meta-lint             # full run, grouped findings, exit 1 on findings (advisory)
-    meta-lint --fast      # one-line summary, exit 0 (SessionStart pulse; the hook wiring's
-                          #   `|| echo` loud-DISARM fallback fires only on real failure)
-    meta-lint --stop      # Stop-hook BLOCK: exit 2 if the session wrote files AND a size/count cap
-                          #   is breached (one-shot per breach-set); mirrors the caps.sh Stop hook,
-                          #   driven by .agent/meta-lint.json — the ONLY mode that can block
+    meta-lint --fast      # one-line summary, exit 0 — the SessionStart pulse
+    meta-lint --stop      # Stop-hook BLOCK: exit 2 when a file-writing session leaves a
+                          #   size/count cap breached (one-shot per breach-set). The ONLY
+                          #   mode that can block.
     meta-lint --test      # self-test against a synthetic tree
     meta-lint --config P  # explicit config path (bypasses the .agent/meta-lint.json gate)
     meta-lint --root D    # lint D (default: $CLAUDE_PROJECT_DIR, else cwd)
 
-Checks (pick per-project via "checks"; all default-on, each no-ops when its dir is absent):
-  [cross-ref]     markdown links in meta files resolve
-  [lessons-index] lessons/ files ⇄ README index in sync
-  [lessons-prio]  every lesson has exactly one High/Mid/Low home; tier caps; High ↑stamps fresh
-  [agents]        agent frontmatter sane + no orphan agents nothing references
-  [skills]        every skill dir mentioned in CLAUDE.md's index
-  [commands]      slash-command wrapper ⇄ skill parity, wrappers thin + delegating
-  [routes]        pattern-routes.tsv matches regeneration from pattern frontmatter
-  [gen]           generated files keep their GENERATED header
-  [filenames]     timestamped naming in plan/loop/grind/reviews/milestone dirs
-  [skill-fm]      SKILL.md frontmatter present, name matches folder
-  [dup]           canonical-rule duplication tripwires (regex → canonical file)
-  [stale]         handoff age
-  [board]         accumulating files keep the live zone lean
-  [reference]     blessed-pattern Reference pointers still exist
-  [size]          per-file caps (lines OR chars per entry) + allow-length marker (capped)
-  [count]         artifact counts (plans, lessons, milestones, skills, agents, rules, hooks, .todo)
-  [audit]         `Last audit:` stamp freshness
-  [wrap]          prose lines hard-wrap at width (default 100); code fences, single-token lines,
-                  GENERATED files exempt — frontmatter is NOT (use folded scalars)
-  [no-tables]     markdown tables banned in governed files (record lists instead); root README.md
-                  excluded by default
-
-Escape hatch: META_LINT_OFF=1. Python3 stdlib only. ADVISORY by default: exit 1 on findings so
-scripts can branch, and nothing consumes it as a blocker — EXCEPT `--stop`, the Stop-hook mode,
-which exits 2 to BLOCK session-end on a size/count cap breach, so the caps the system describes get
-mechanically enforced (mirroring the caps.sh Stop hook this engine supersedes).
+The checks and what each one enforces: the CHECKS table near the bottom of this file, and
+instructions/README.md § meta-lint. Escape hatch META_LINT_OFF=1; python3 stdlib only.
 """
 
 from __future__ import annotations
@@ -98,7 +71,7 @@ DEFAULTS: dict = {
     },
     # size caps — each entry: {"path": exact-or-glob, "cap": N, "unit": "chars"|"lines"}.
     # Most-specific entry wins per unit (exact > longer glob), so a file can carry one line
-    # cap AND one char cap. Defaults mirror the caps.sh hook (chars).
+    # cap AND one char cap. Defaults mirror the caps hook (chars).
     "size": {
         "caps": [
             {"path": "CLAUDE.md", "cap": 6000, "unit": "chars"},
@@ -996,16 +969,16 @@ def fast_summary(findings: list[str]) -> str:
     return f"meta: {len(findings)} finding(s) — {parts}. Run the meta-lint engine (optimiziramsi-skills plugin) for detail."
 
 
-# Stop-hook BLOCK mode — the caps.sh Stop contract, driven by .agent/meta-lint.json instead of the
-# hardcoded house caps. caps.sh self-disables where meta-lint.json exists, so exactly one of the two
+# Stop-hook BLOCK mode — the caps Stop contract, driven by .agent/meta-lint.json instead of the
+# hardcoded house caps. The caps hook self-disables where meta-lint.json exists, so exactly one of the two
 # enforces Stop; this one carries it for opted-in projects.
 WRITE_TOOL_RX = re.compile(r'"name": ?"(Edit|Write|MultiEdit|NotebookEdit)"')
 
 
 def transcript_has_write(path: str) -> bool:
     """True if the session transcript records an Edit/Write/MultiEdit/NotebookEdit tool_use — the
-    same predicate caps.sh greps for, so read-only/chat sessions never block. An unreadable
-    transcript reads as no-writes (fail open, matching caps.sh's `grep … || exit 0`)."""
+    same predicate the caps hook greps for, so read-only/chat sessions never block. An unreadable
+    transcript reads as no-writes (fail open, matching the caps hook)."""
     try:
         with open(path, encoding="utf-8", errors="ignore") as f:
             return any(WRITE_TOOL_RX.search(line) for line in f)
@@ -1207,7 +1180,7 @@ def run_tests() -> int:
         finally:
             shutil.rmtree(empty, ignore_errors=True)
 
-        # ── --stop BLOCK-mode contract (mirrors the caps.sh Stop hook) ─────────────
+        # ── --stop BLOCK-mode contract (mirrors the caps Stop hook) ────────────────
         marker_dir = tempfile.mkdtemp(prefix="meta-lint-marker-")
         stop_root = tempfile.mkdtemp(prefix="meta-lint-stop-")
         clean_root = tempfile.mkdtemp(prefix="meta-lint-stopclean-")

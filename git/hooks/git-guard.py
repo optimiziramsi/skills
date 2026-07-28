@@ -1,65 +1,23 @@
 #!/usr/bin/env python3
-"""PreToolUse[Bash] guard — mechanically enforce git safety (destructive / remote / history ops).
+"""PreToolUse[Bash] — the git safety net: destructive, remote, and history operations.
 
-Hard-blocks (exit 2, reason fed back to the model):
-  - git push / git pull / git fetch   the user owns ALL remote sync (`git push .` is a LOCAL
-                                      ref update — a landing move, not a remote op)
-  - git add -A / --all / .            bulk staging sweeps in strays — stage files by name
-  - plain git merge                   merge means rebase + `merge --ff-only`; a merge commit is
-                                      never the agent's to make (`--ff-only/--abort/--continue/
-                                      --quit` pass)
-  - protected-branch ops              `checkout`/`switch` onto the protected branch, and push
-                                      refspecs targeting it (`HEAD:<protected>`, `:<protected>`,
-                                      `--delete`). Name(s) from GIT_GUARD_PROTECTED_BRANCH; unset,
-                                      the repo's OWN default branch is detected (origin/HEAD →
-                                      first existing of main/master/develop/trunk → repo-local
-                                      init.defaultBranch), so `develop`-based projects need no
-                                      config. EXCEPTION: a fast-forward landing push into the
-                                      declared GIT_GUARD_INTEGRATION_BRANCH passes even when that
-                                      branch is also protected (single-branch repos) — see below
-  - git reset --soft <moving-ref>     soft-reset squashes only against HEAD~N / a sha — a branch
-                                      or remote ref can advance underneath you
-  - git filter-branch                 history rewrite
-  - git reset --hard / --merge / --keep   clobbers the worktree (plain `git reset <file>`
-                                          / `--staged` to unstage is allowed)
-  - git commit --no-verify            never skip hooks
-  - discarding uncommitted work: git clean -f, stash drop|clear, checkout -- / checkout .,
-    git restore (only `restore --staged` / `-S` to unstage is allowed) — the tree may hold WIP
+Blocks (exit 2, reason fed back to the model): remote sync (push/pull/fetch — `git push .` is a
+LOCAL ref update and passes), bulk staging, non-FF merge, protected-branch moves, soft-reset to a
+moving ref, filter-branch, `reset --hard`, `--no-verify`, and every discard of uncommitted work.
+Allowed by default because rebase + FF-only landing needs them: `rebase`, `commit --amend`,
+`checkout <ref> -- <path>`.
 
-Allowed by default (rebase + FF-only landing flows need them):
-  - git rebase (all forms), git commit --amend, git checkout <ref> -- <path> (fix-forward
-    restore of a file from a ref). Re-block via GIT_GUARD_STRICT (below).
+Commit MESSAGE style is deliberately not here — that is the `commit` topic's commit-format hook.
 
-This is the SAFETY net only — it says nothing about commit message style. The house commit format
-(single line, no trailers) lives in the separate `commit` plugin's commit-format hook; enable that
-plugin if you want the format enforced too.
+Fail-open: any unexpected error exits 0, so a broken guard can never brick a session.
 
-Fail-open by design: any unexpected error exits 0 so a broken hook can never brick a
-session. Escape hatches (user-set only — the hook reads its own process env):
-  GIT_GUARD_OFF=1               disable everything.
-  GIT_GUARD_STRICT              comma-separated tokens RE-ENABLING blocks the default leaves off:
-                                `rebase`, `amend`, `checkout-file`, `reset` (block ALL `git reset`,
-                                even unstage / soft-to-HEAD~N — for repos that forbid ANY
-                                index/history manipulation by the agent).
-  GIT_GUARD_ALLOW               comma-separated tokens RELAXING workflow blocks for projects that
-                                need them: `fetch`, `bulk-add`, `merge`, `protected-branch`,
-                                `soft-reset`. (The destructive core — push/pull, reset --hard,
-                                discards, --no-verify — has no allow token; use GIT_GUARD_OFF.)
-  GIT_GUARD_ALLOW_FETCH         comma-separated REMOTE names — permit `git fetch <remote>` for those
-                                remotes only (narrower than the all-or-nothing `fetch` token). Bare
-                                `git fetch`, `--all`, and `--multiple` stay blocked.
-  GIT_GUARD_PROTECTED_BRANCH    comma-separated protected branch name(s). UNSET → auto-detect the
-                                repo's default branch (see above); set it explicitly when the
-                                protected branch differs from the default (e.g. `main` protected
-                                while day-to-day work lands on `develop`), or to protect several
-                                (`main,release`). Empty string = protect nothing.
-  GIT_GUARD_INTEGRATION_BRANCH  ONE branch name — where day-to-day work lands (`develop` in a
-                                two-tier repo, the single branch in a GitHub-flow one). Only
-                                needed when it is ALSO protected: then `git push . HEAD:<it>` —
-                                the worktree protocol's fast-forward land — is permitted, while
-                                `checkout`/`switch`/`merge` onto it and every force (`+`) or
-                                delete (`:<it>`, `--delete`) refspec stay blocked. Leave unset in
-                                a two-tier repo: `develop` isn't protected, so lands already pass.
+Every rule, every env switch, and why each exists: ../README.md. In short —
+GIT_GUARD_OFF=1 disables everything; GIT_GUARD_STRICT re-blocks what the defaults allow;
+GIT_GUARD_ALLOW / GIT_GUARD_ALLOW_FETCH relax individual workflow blocks;
+GIT_GUARD_PROTECTED_BRANCH names the protected branch(es) (unset → the repo's OWN default branch
+is detected, so develop/trunk projects need no config); GIT_GUARD_INTEGRATION_BRANCH permits the
+worktree protocol's fast-forward land when the integration branch is itself protected.
+Tests: python3 git/tests/test_git_guard.py
 """
 import json
 import os
