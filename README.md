@@ -93,6 +93,11 @@ no concern is stuck on:
 Opt-**in**, off by default: `WORKTREE_BASH_GUARD_ENABLE=1` (shell-channel worktree containment —
 false-positive-prone). The flow runners take `FLOW_*` env; see [`flow`](flow/README.md).
 
+**Runtime: python3 (stdlib only), nothing else.** Every hook is python over the shared
+[`lib/hookio.py`](lib/hookio.py); their tests live in `<topic>/tests/`, not inside the guards.
+There is deliberately no `jq` dependency — a guard that disarms itself when a tool is missing is
+worse than no guard, and `python3` is the one interpreter a Claude Code host already needs.
+
 **No branch name is hardcoded.** `main` is not assumed anywhere: the git guard detects the repo's
 own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `worktree` skill takes
 `<integration>` / `<protected>` from the project, `scaffold-claude-md` reads the branch layout out
