@@ -17,6 +17,8 @@ Escape hatches / overrides (env vars):
   FLOW_LONG_BACKOFF_BASE     seconds per step of the long transient-API backoff
                              (default 600 → 10/20/…/60 min; lower it for testing)
   FLOW_ITER_TIMEOUT_SECS     grind wall-clock watchdog per iteration (default 900; 0 = off)
+  FLOW_WORKTREE_UNSAFE=1     skip worktree confinement + its leak-probe (you own the risk)
+  FLOW_PROBE_MODEL           model for the one-off leak-probe session (default sonnet)
 """
 
 import json
@@ -27,6 +29,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from datetime import datetime
@@ -332,8 +335,14 @@ def coerce_int(meta: dict, key: str, default: int) -> int:
 
 
 # ── Claude invocation ───────────────────────────────────────────────────────
-def build_claude_argv(prompt: str, model: str, permission_mode: str, effort=None, max_turns=None):
-    """Construct the claude argv using only flags the installed CLI supports."""
+def build_claude_argv(prompt: str, model: str, permission_mode: str, effort=None, max_turns=None,
+                      settings_json=None):
+    """Construct the claude argv using only flags the installed CLI supports.
+
+    `settings_json` (a JSON string) rides in on `--settings`; the runners use it to inject
+    the worktree-confinement guard into each headless child. Absent, the argv is
+    byte-identical to the pre-confinement behavior.
+    """
     flags = supported_flags()
     # When --help couldn't be probed (empty set, e.g. a stubbed CLAUDE_BIN), don't
     # gate on membership — pass the core flags and let the binary sort it out.
@@ -347,6 +356,8 @@ def build_claude_argv(prompt: str, model: str, permission_mode: str, effort=None
         argv += ["--effort", effort]
     if max_turns and ok("--max-turns"):
         argv += ["--max-turns", str(max_turns)]
+    if settings_json and ok("--settings"):
+        argv += ["--settings", settings_json]
     pm = os.environ.get("FLOW_CLAUDE_PERMISSION_MODE", permission_mode)
     if pm:
         if pm == "bypassPermissions" and "--dangerously-skip-permissions" in flags:
@@ -404,7 +415,7 @@ def _summarize_event(obj: dict):
 
 
 def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_extra=None,
-                   effort=None, max_turns=None, timeout_secs=None):
+                   effort=None, max_turns=None, timeout_secs=None, settings_json=None):
     """Run one headless claude session. Streams events to a readable .log and a raw
     .jsonl. Returns (exit_code, elapsed_secs, saw_transient, timed_out).
 
@@ -412,8 +423,11 @@ def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_ext
     (rate limit / 5xx / overloaded / quota / network) — callers should back off instead
     of burning a retry. `timeout_secs` arms a wall-clock watchdog: past the deadline the
     child gets SIGTERM, then SIGKILL after a 10s grace (`timed_out` reports it fired).
+    `settings_json` (when set) is injected via `--settings` — the runners use it to confine a
+    worktree run's children to the worktree (see `worktree_preflight`).
     """
-    argv = build_claude_argv(prompt, model, permission_mode, effort=effort, max_turns=max_turns)
+    argv = build_claude_argv(prompt, model, permission_mode, effort=effort, max_turns=max_turns,
+                             settings_json=settings_json)
     env = dict(os.environ)
     if env_extra:
         env.update(env_extra)
@@ -557,6 +571,186 @@ def long_backoff_sleep(step: int) -> None:
     time.sleep(delay)
 
 
+# ── Worktree confinement (engages only when cwd is a LINKED git worktree) ───
+# The runners are cwd-relative: a child launched with cwd = a worktree does all its work there.
+# The risk is an autonomous child slipping a write into the MAIN checkout or a sibling worktree
+# (claude-code #36182). So when cwd is a linked worktree the runners (1) inject the `worktree`
+# topic's PreToolUse guards into every child via --settings and (2) PROVE they block a
+# main-checkout write with a live leak-probe before any real work runs — refusing to continue
+# unless confinement is confirmed. In the main checkout (or outside a repo) none of this engages
+# and behavior is byte-identical to a runner that never heard of worktrees.
+#
+# The guards are the `worktree` topic's, deliberately NOT a second copy living here: one
+# implementation, one self-test, one set of edge cases. The cost is a cross-topic path
+# dependency — flow/bin/ → worktree/hooks/ — which `confine_hooks()` fails loudly on.
+def _git_out(cwd, *args):
+    r = subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def worktree_context(cwd=None):
+    """dict(is_linked, wt_root, main_root, branch) when cwd is in a git work tree, else None.
+
+    `is_linked` is True only for a LINKED worktree (git-dir != git-common-dir). `wt_root` is the
+    worktree root; `main_root` is the main checkout (the parent of the shared git-common-dir).
+    All realpath-resolved, so downstream path comparisons are apples-to-apples.
+    """
+    cwd = cwd or os.getcwd()
+    if _git_out(cwd, "rev-parse", "--is-inside-work-tree") != "true":
+        return None
+    wt = _git_out(cwd, "rev-parse", "--show-toplevel")
+    gd = _git_out(cwd, "rev-parse", "--absolute-git-dir")
+    common = _git_out(cwd, "rev-parse", "--git-common-dir")
+    if not (wt and gd and common):
+        return None
+    if not os.path.isabs(common):
+        common = os.path.abspath(os.path.join(cwd, common))
+    return {
+        "is_linked": os.path.realpath(gd) != os.path.realpath(common),
+        "wt_root": os.path.realpath(wt),
+        "main_root": os.path.realpath(os.path.dirname(common)),
+        "branch": _git_out(cwd, "rev-parse", "--abbrev-ref", "HEAD") or "?",
+    }
+
+
+CONFINE_HOOKS = (  # (relative path from the plugin root, tool matcher)
+    ("worktree/hooks/worktree-write-guard.sh", "Edit|Write|MultiEdit|NotebookEdit"),
+    ("worktree/hooks/worktree-bash-guard.sh", "Bash"),
+)
+
+
+def confine_hooks():
+    """[(absolute guard path, matcher)] — dies if the `worktree` topic isn't beside us."""
+    # …/<plugin>/flow/bin/_flowlib.py → …/<plugin>
+    plugin_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    out = []
+    for rel, matcher in CONFINE_HOOKS:
+        path = os.path.join(plugin_root, rel)
+        if not os.path.exists(path):
+            die(f"worktree confinement needs the `worktree` topic's guard, which is missing:\n"
+                f"  {path}\n"
+                "  Reinstall the plugin, or set FLOW_WORKTREE_UNSAFE=1 to run WITHOUT "
+                "confinement (not recommended).")
+        out.append((path, matcher))
+    return out
+
+
+def confine_settings_json(hooks):
+    """`--settings` JSON registering the guards on PreToolUse for this run's children.
+
+    The command carries an ABSOLUTE hook path: a relative command inside injected settings
+    resolves against the child's cwd, not against this file. The guards are self-configuring —
+    each reads the child's cwd from its hook input and derives the worktree/main roots per call,
+    so no paths are baked into the settings blob.
+    """
+    return json.dumps({"hooks": {"PreToolUse": [
+        {"matcher": matcher, "hooks": [{"type": "command", "command": f"bash {shlex.quote(path)}"}]}
+        for path, matcher in hooks
+    ]}})
+
+
+PROBE_MODEL_DEFAULT = "sonnet"  # cheap; the model can't affect WHETHER a hook fires
+_PROBE_PROMPT = """\
+CONFINEMENT SELF-TEST — you are a disposable probe, NOT doing real work. Do EXACTLY these three
+steps in order, then reply DONE. Do nothing else and explain nothing.
+1. Use the Write tool to create the file `{ok}` with the exact content `OK`.
+2. Use the Write tool to create the file `{leak_tool}` with the exact content `LEAK`.
+3. Run this Bash command exactly: printf LEAK > {leak_bash}
+Reply DONE.
+"""
+
+
+def run_leak_probe(ctx, model, settings_json):
+    """One throwaway child (same bypass flags + injected guards) that tries to write into the
+    main checkout by BOTH the Write tool and a bash redirect, plus a positive control inside the
+    worktree. Returns:
+      'confined'     — neither main-checkout write landed AND the control did (guards work),
+      'leak'         — a main-checkout write landed (confinement is NOT effective),
+      'inconclusive' — the control never landed, so cooperation couldn't be confirmed.
+    Every probe file is cleaned up; on a leak the transcript is kept and its path surfaced.
+    """
+    ok = os.path.join(ctx["wt_root"], ".flow_probe_ok")
+    leak_tool = os.path.join(ctx["main_root"], ".flow_probe_tool")
+    leak_bash = os.path.join(ctx["main_root"], ".flow_probe_bash")
+
+    def _clean():
+        for p in (ok, leak_tool, leak_bash):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+
+    _clean()
+    prompt = _PROBE_PROMPT.format(ok=ok, leak_tool=leak_tool, leak_bash=shlex.quote(leak_bash))
+    fd1, plog = tempfile.mkstemp(prefix="flow_probe_", suffix=".log")
+    fd2, pjsonl = tempfile.mkstemp(prefix="flow_probe_", suffix=".jsonl")
+    os.close(fd1)
+    os.close(fd2)
+    try:
+        run_claude_job(prompt, model, DEFAULT_PERMISSION_MODE, plog, pjsonl,
+                       settings_json=settings_json, max_turns=6, timeout_secs=180)
+        leaked = os.path.exists(leak_tool) or os.path.exists(leak_bash)
+        cooperated = os.path.exists(ok)
+    finally:
+        _clean()
+    if leaked:
+        info(red(f"    probe transcript kept for inspection: {plog}"))
+        return "leak"
+    for p in (plog, pjsonl):
+        try:
+            os.unlink(p)
+        except OSError:
+            pass
+    return "confined" if cooperated else "inconclusive"
+
+
+def worktree_preflight():
+    """Call once before arming. Returns the `--settings` JSON to inject into every child, or
+    None for normal (main-checkout / non-repo) mode — where behavior is unchanged.
+
+    In worktree mode it self-tests the guards (fast, no model call), then runs the live
+    leak-probe and die()s unless confinement is proven. FLOW_WORKTREE_UNSAFE=1 skips the whole
+    thing — the escape hatch; you own the risk.
+    """
+    ctx = worktree_context()
+    if not ctx or not ctx["is_linked"]:
+        return None
+    info(bold("\n⚠ WORKTREE MODE — autonomous edits will be confined to this worktree"))
+    info(f"    in scope (worktree):       {ctx['wt_root']}  [{ctx['branch']}]")
+    info(f"    protected (main checkout): {ctx['main_root']}")
+    if os.environ.get("FLOW_WORKTREE_UNSAFE") == "1":
+        info(yellow("    FLOW_WORKTREE_UNSAFE=1 — confinement + leak-probe SKIPPED. You own the risk."))
+        return None
+    flags = supported_flags()
+    if flags and "--settings" not in flags:
+        die("this claude CLI has no --settings flag, so the runner can't inject worktree "
+            "confinement into its children. Update the CLI, run from the main checkout, or set "
+            "FLOW_WORKTREE_UNSAFE=1 to run WITHOUT confinement (not recommended).")
+    hooks = confine_hooks()
+    for path, _ in hooks:
+        st = subprocess.run(["bash", path, "--test"], capture_output=True, text=True)
+        if st.returncode != 0:
+            die(f"guard self-test FAILED ({os.path.basename(path)}) — refusing to run:\n"
+                f"{st.stdout}\n{st.stderr}")
+    info(dim(f"    guard self-tests: ok ({len(hooks)})"))
+    settings = confine_settings_json(hooks)
+    probe_model = os.environ.get("FLOW_PROBE_MODEL", PROBE_MODEL_DEFAULT)
+    info(dim(f"    verifying confinement with a live leak-probe ({probe_model}, one throwaway session)…"))
+    verdict = run_leak_probe(ctx, probe_model, settings)
+    if verdict == "confined":
+        info(green("    ✓ leak-probe: writes into the main checkout are BLOCKED — confinement proven."))
+        return settings
+    if verdict == "leak":
+        die("✘ leak-probe: a test write REACHED the main checkout — confinement is NOT effective "
+            "under --dangerously-skip-permissions on this CLI (PreToolUse hooks likely don't fire "
+            "under bypass here). REFUSING to run — a real job could leak into the main checkout. "
+            "Run jobs from the main checkout instead, or pursue OS-sandbox confinement.")
+    die("✘ leak-probe INCONCLUSIVE — the probe session never wrote its positive-control file, so "
+        "confinement could not be confirmed. REFUSING to run. Re-try; if it persists, check the "
+        "CLI / probe model (FLOW_PROBE_MODEL), or set FLOW_WORKTREE_UNSAFE=1 to override (not "
+        "recommended).")
+
+
 # ── The executing-model protocol (prepended to every job/mission prompt) ────
 EXECUTING_PROTOCOL = """\
 You are an autonomous executor launched by a batch runner. This is a fresh, isolated
@@ -578,8 +772,13 @@ note in its Report/Log section, then committing. {status_contract}
 
 # ── Self-test (`python3 _flowlib.py --test`; run by the repo's tests.sh) ─────
 def _self_test() -> int:
-    import tempfile
+    import contextlib
+    import io
     fails = 0
+
+    def contextlib_redirect_stderr():
+        """Keep the expected banners/errors out of the --test output."""
+        return contextlib.redirect_stderr(io.StringIO())
 
     def check(label, cond):
         nonlocal fails
@@ -632,6 +831,70 @@ def _self_test() -> int:
         check("refuses an unknown name", dies_on("nope", repo))
         # A directory name must not be beaten by a substring hit elsewhere.
         check("exact name wins over substring", resolves_to("alpha", wt_a, repo))
+
+        # ── worktree confinement ────────────────────────────────────────────
+        main_ctx, wt_ctx = worktree_context(repo), worktree_context(wt_a)
+        check("main checkout is not a linked worktree", not main_ctx["is_linked"])
+        check("a worktree is linked", wt_ctx["is_linked"])
+        check("worktree ctx points at the main checkout",
+              wt_ctx["main_root"] == os.path.realpath(repo) and wt_ctx["wt_root"] == os.path.realpath(wt_a))
+        settings = json.loads(confine_settings_json(confine_hooks()))
+        entries = settings["hooks"]["PreToolUse"]
+        check("settings register both guards on PreToolUse", len(entries) == 2)
+        check("guard commands are absolute",
+              all(e["hooks"][0]["command"].split()[-1].startswith("/") for e in entries))
+        check("guards cover writes and Bash",
+              {"Bash"} == {e["matcher"] for e in entries} - {"Edit|Write|MultiEdit|NotebookEdit"})
+        check("--settings rides into the argv",
+              "--settings" in build_claude_argv("p", "m", "", settings_json="{}"))
+        check("no --settings without confinement",
+              "--settings" not in build_claude_argv("p", "m", ""))
+
+        # End-to-end preflight against a stubbed CLI: the stub plays the child session and
+        # decides which probe files appear, so all three verdicts are exercised for real.
+        stub = os.path.join(tmp, "claude_stub.py")
+        with open(stub, "w") as fh:
+            fh.write(
+                "#!/usr/bin/env python3\n"
+                "import os, re, sys\n"
+                "if '--help' in sys.argv:\n"
+                "    print('--print --model --effort --max-turns --settings --permission-mode '\n"
+                "          '--dangerously-skip-permissions --output-format --verbose')\n"
+                "    raise SystemExit(0)\n"
+                "mode = os.environ.get('STUB_MODE', 'confined')\n"
+                "paths = re.findall(r'`([^`]+)`', sys.argv[-1]) + re.findall(r'> (\\S+)', sys.argv[-1])\n"
+                "ok = [p for p in paths if p.endswith('.flow_probe_ok')]\n"
+                "leaks = [p for p in paths if '.flow_probe_' in p and not p.endswith('_ok')]\n"
+                "if mode in ('confined', 'leak'):\n"
+                "    open(ok[0], 'w').write('OK')\n"
+                "if mode == 'leak':\n"
+                "    open(leaks[0], 'w').write('LEAK')\n"
+            )
+        prev_cwd, prev_env = os.getcwd(), dict(os.environ)
+        try:
+            os.chdir(wt_a)
+            os.chmod(stub, 0o755)
+            os.environ["CLAUDE_BIN"] = stub
+            for mode, expect_settings in (("confined", True), ("leak", False), ("silent", False)):
+                os.environ["STUB_MODE"] = mode
+                try:
+                    with contextlib_redirect_stderr():
+                        got = worktree_preflight()
+                    died = False
+                except SystemExit:
+                    got, died = None, True
+                if expect_settings:
+                    check(f"preflight arms on a {mode} probe", got is not None and not died)
+                else:
+                    check(f"preflight REFUSES on a {mode} probe", died and got is None)
+            os.chdir(repo)
+            os.environ["STUB_MODE"] = "leak"  # would leak, but the main checkout never confines
+            with contextlib_redirect_stderr():
+                check("main checkout skips confinement entirely", worktree_preflight() is None)
+        finally:
+            os.chdir(prev_cwd)
+            os.environ.clear()
+            os.environ.update(prev_env)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

@@ -191,7 +191,7 @@ def compose_prompt(job):
     )
 
 
-def run_one(job, opts, runner_log):
+def run_one(job, opts, runner_log, settings_json=None):
     """Run a single job with retries. Returns final status string.
 
     Writes `job-status: running` before every launch (uncommitted bookkeeping) so a
@@ -246,6 +246,7 @@ def run_one(job, opts, runner_log):
         fl.set_frontmatter_field(job["path"], "job-status", "running")
         code, elapsed, rate_limited, _timed_out = fl.run_claude_job(
             prompt, model, fl.DEFAULT_PERMISSION_MODE, log_path, jsonl_path,
+            settings_json=settings_json,
             effort=(job["meta"].get("effort") or "").strip() or None,
             max_turns=fl.coerce_int(job["meta"], "max-turns", 0) or None,
         )
@@ -397,6 +398,9 @@ def main():
     if not queue and not opts["watch"]:
         fl.info(fl.dim("nothing pending. (use --status to inspect, --watch to poll)"))
         return
+    # Worktree confinement: in a linked worktree this injects the leak guard into every
+    # child and proves it works before arming; returns None (unchanged) in the main checkout.
+    settings_json = fl.worktree_preflight()
     if queue:
         arm_or_exit(opts, queue)
 
@@ -428,7 +432,7 @@ def main():
                 meta, _, _ = fl.read_job(job["path"])
                 if (meta.get("job-status") or "").strip().lower() not in ("pending", "running"):
                     continue
-                run_one(job, opts, runner_log)
+                run_one(job, opts, runner_log, settings_json=settings_json)
                 done_count += 1
             except Exception as e:  # noqa: BLE001 — one job's error must not kill the batch
                 fl.info(fl.red(f"  runner error on {job['base']}: {e} — skipping"))

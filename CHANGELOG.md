@@ -33,8 +33,18 @@ The flow runners can be pointed at a worktree instead of being `cd`-ed into one.
   version it came from and refuses to run against a different one, printing the refresh command —
   a stale wrapper passing flags a newer runner renamed is the drift the lock exists to catch
   (`FLOW_WRAPPER_ALLOW_DRIFT=1` overrides). `tests.sh` check 8 keeps the stamp honest.
-- `_flowlib.py --test` is new and runs in the repo done-gate (13 cases over a real throwaway repo
-  with two worktrees).
+- **Worktree runs are confined, and the confinement is proven before anything runs.** In a linked
+  worktree both runners now inject the `worktree` topic's PreToolUse guards into every headless
+  child (`--settings`), then spend one throwaway session on a **leak-probe** that tries to write
+  into the main checkout by both the Write tool and a bash redirect — and **refuse to start**
+  unless both are blocked. Main-checkout runs are byte-identical to before. `FLOW_WORKTREE_UNSAFE=1`
+  skips it; `FLOW_PROBE_MODEL` picks the probe model (default sonnet). The guards are the
+  `worktree` topic's own, not a second copy — one implementation, one self-test.
+  *Still unverified against a real CLI:* whether PreToolUse hooks fire at all under
+  `--dangerously-skip-permissions`. The probe is exactly that question asked at runtime — a `leak`
+  verdict is the answer, and it aborts rather than risking the main checkout.
+- `_flowlib.py --test` is new and runs in the repo done-gate (25 cases over a real throwaway repo
+  with two worktrees, including all three probe verdicts against a stubbed CLI).
 
 ## 0.0.4 — 2026-07-28
 

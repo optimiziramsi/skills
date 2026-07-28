@@ -407,6 +407,9 @@ def main():
     ensure_gitignore(job_dir)
     open(mem_log, "a").close()  # ensure the memory log exists for iteration 1
 
+    # Worktree confinement: in a linked worktree this injects the leak guard into every
+    # child and proves it works before arming; returns None (unchanged) in the main checkout.
+    settings_json = fl.worktree_preflight()
     arm_or_exit(opts, mission_path, meta)
     runner_log = os.path.join(job_dir, f"runner_{fl.stamp()}.log")
     fl.info(fl.dim(f"runner log: {runner_log}"))
@@ -498,6 +501,7 @@ def main():
             effort=(meta.get("effort") or "").strip() or None,
             max_turns=fl.coerce_int(meta, "max-turns", 0) or None,
             timeout_secs=iter_timeout or None,
+            settings_json=settings_json,
         )
         if timed_out:
             fl.info(fl.red(f"  ⏱ watchdog killed iteration #{iteration} after "
