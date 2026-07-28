@@ -23,7 +23,7 @@ Fail-open by design (same posture as the worktree write-guard): unparsable input
 file, any internal error → allow silently. Disable entirely with PATTERN_GUARDS_OFF=1. The registry
 dir is `.agent/patterns/` by default; override with PATTERN_REGISTRY_DIR (repo-relative).
 
-Self-test: python3 <plugin>/patterns/hooks/pattern-guards.py --test
+Tests: python3 patterns/tests/test_pattern_guards.py
 """
 
 from __future__ import annotations
@@ -246,121 +246,12 @@ def handle(payload: dict) -> int:
     return 0
 
 
-def run_tests() -> int:
-    import subprocess
-    import uuid
-
-    s1, s2, s3 = (f"test-{uuid.uuid4().hex[:8]}" for _ in range(3))
-    root = tempfile.mkdtemp(prefix="pattern-guards-test-")
-    reg = os.path.join(root, ".agent", "patterns")
-    os.makedirs(reg)
-    with open(os.path.join(reg, TSV_NAME), "w") as f:
-        f.write("# test\n")
-        f.write("src/server/reactors/**\t.agent/patterns/server-projection.md\tblessed\tedit\n")
-        f.write("packages/*/src/**/*.ts\t.agent/patterns/universal-satisfies.md\tblessed\tland\n")
-        f.write("apps/web/forms/**\t.agent/patterns/apps-web-form-handling.md\tTODO\tedit\n")
-        f.write("src/server/reactors/**\t.agent/patterns/server-stream-fifo.md\tdecided\tedit\n")
-
-    env = {**os.environ, "CLAUDE_PROJECT_DIR": root}
-    me = os.path.abspath(__file__)
-
-    def invoke(event, file_path, session="", extra_env=None):
-        session = session or s1
-        payload = {"hook_event_name": event, "session_id": session, "cwd": root,
-                   "tool_input": {"file_path": os.path.join(root, file_path)}}
-        return subprocess.run([sys.executable, me], input=json.dumps(payload),
-                              capture_output=True, text=True, env={**env, **(extra_env or {})})
-
-    failures = []
-
-    def check(name, cond, detail=""):
-        if not cond:
-            failures.append(f"{name}: {detail}")
-        print(("ok " if cond else "FAIL ") + name)
-
-    r = invoke("PreToolUse", "apps/web/forms/login.tsx")
-    check("block: TODO-only governed path", r.returncode == 2, r.stderr)
-    check("block cites the pattern", "apps-web-form-handling" in r.stderr, r.stderr)
-
-    r = invoke("PreToolUse", "src/server/reactors/update-x.ts")
-    check("allow: blessed coverage beats decided overlap", r.returncode == 0, r.stderr)
-
-    r = invoke("PreToolUse", "README.md")
-    check("allow: unmatched path", r.returncode == 0, r.stderr)
-
-    r = invoke("PostToolUse", "src/server/reactors/update-x.ts", s2)
-    check("remind: first edit emits context", "pattern-route" in r.stdout, r.stdout)
-    check("remind includes scoped pattern", "server-projection" in r.stdout, r.stdout)
-    check("remind excludes land-routed pattern", "universal-satisfies" not in r.stdout, r.stdout)
-    check("remind warns on decided overlap", "STOP-warning" in r.stdout and "stream-fifo" in r.stdout, r.stdout)
-
-    r = invoke("PostToolUse", "src/server/reactors/other.ts", s2)
-    check("remind: second edit same session is silent", r.stdout.strip() == "", r.stdout)
-
-    r = invoke("PostToolUse", "src/server/services/foo.ts", s3)
-    check("remind: land-only match stays silent", r.stdout.strip() == "", r.stdout)
-
-    # auto-regen: a registry-file write regenerates the TSV (generator is this hook's real sibling)
-    with open(os.path.join(reg, "x-new.md"), "w") as f:
-        f.write('---\nstatus: blessed\npaths:\n  - "packages/x/**"\n---\nbody\n')
-    r = invoke("PostToolUse", ".agent/patterns/x-new.md", s3)
-    check("regen: pattern write regenerates TSV", "auto-regenerated" in r.stdout, r.stdout)
-    with open(os.path.join(reg, TSV_NAME)) as f:
-        check("regen: TSV now carries the new glob", "packages/x/**" in f.read(), "")
-    r = invoke("PostToolUse", ".agent/patterns/x-new.md", s3)
-    check("regen: unchanged rewrite stays silent", r.stdout.strip() == "", r.stdout)
-    r = invoke("PreToolUse", ".agent/patterns/x-new.md", s3)
-    check("regen: PreToolUse never regenerates", r.returncode == 0 and r.stdout.strip() == "", r.stdout)
-
-    # trailing-slash PATTERN_REGISTRY_DIR must not break the regen-trigger regex
-    with open(os.path.join(reg, "y-new.md"), "w") as f:
-        f.write('---\nstatus: blessed\npaths:\n  - "packages/y/**"\n---\nbody\n')
-    r = invoke("PostToolUse", ".agent/patterns/y-new.md", s3,
-               extra_env={"PATTERN_REGISTRY_DIR": ".agent/patterns/"})
-    check("regen: trailing-slash registry dir still triggers", "auto-regenerated" in r.stdout, r.stdout)
-
-    # registry-less project: no registry dir at all → SILENT no-op (no DISARMED spam)
-    bare = tempfile.mkdtemp(prefix="pattern-guards-bare-")
-    payload = {"hook_event_name": "PreToolUse", "session_id": s3, "cwd": bare,
-               "tool_input": {"file_path": os.path.join(bare, "src/app.ts")}}
-    r = subprocess.run([sys.executable, me], input=json.dumps(payload), capture_output=True,
-                       text=True, env={**os.environ, "CLAUDE_PROJECT_DIR": bare})
-    check("no registry: silent no-op (no DISARMED)",
-          r.returncode == 0 and r.stdout.strip() == "", r.stdout)
-
-    # registry dir present but TSV missing → one regen attempt restores gating
-    root2 = tempfile.mkdtemp(prefix="pattern-guards-regen-")
-    reg2 = os.path.join(root2, ".agent", "patterns")
-    os.makedirs(reg2)
-    with open(os.path.join(reg2, "z.md"), "w") as f:
-        f.write('---\nstatus: TODO\npaths:\n  - "apps/z/**"\n---\nbody\n')
-    payload = {"hook_event_name": "PreToolUse", "session_id": s3, "cwd": root2,
-               "tool_input": {"file_path": os.path.join(root2, "apps/z/main.ts")}}
-    r = subprocess.run([sys.executable, me], input=json.dumps(payload), capture_output=True,
-                       text=True, env={**os.environ, "CLAUDE_PROJECT_DIR": root2})
-    check("missing TSV: regen attempt restores gating", r.returncode == 2 and "z.md" in r.stderr, r.stderr)
-    check("missing TSV: TSV generated", os.path.isfile(os.path.join(reg2, TSV_NAME)), "")
-
-    r = subprocess.run([sys.executable, me], input="not json", capture_output=True, text=True, env=env)
-    check("fail-open: garbage stdin allows", r.returncode == 0, r.stderr)
-
-    r = subprocess.run([sys.executable, me], input=json.dumps({"hook_event_name": "PreToolUse",
-        "tool_input": {"file_path": os.path.join(root, "apps/web/forms/login.tsx")}}),
-        capture_output=True, text=True, env={**env, "PATTERN_GUARDS_OFF": "1"})
-    check("escape hatch: PATTERN_GUARDS_OFF allows", r.returncode == 0, r.stderr)
-
-    print(f"\n{len(failures)} failure(s)")
-    return 1 if failures else 0
-
-
 def disarmed(reason: str) -> int:
     print(json.dumps({"systemMessage": f"⚠️ pattern-guards DISARMED ({reason}) — gate/reminder not applied to this call."}))
     return 0
 
 
 def main() -> int:
-    if "--test" in sys.argv:
-        return run_tests()
     try:
         payload = json.load(sys.stdin)
     except Exception:

@@ -123,41 +123,7 @@ def check(command: str):
     return None
 
 
-def self_test():
-    fails = 0
-
-    def chk(name, want_blocked, cmd):
-        nonlocal fails
-        reason = check(cmd)
-        got_blocked = reason is not None
-        if got_blocked == want_blocked:
-            print(f"PASS  {name}")
-        else:
-            print(f"FAIL  {name}: reason={reason!r}")
-            fails += 1
-
-    chk("clean single-line commit allowed", False, "git commit -m 'fix(git): allow local pushes'")
-    chk("quoted multi-line -m blocked", True, 'git commit -m "line one\nline two"')
-    chk("quoted multi-line -m (single quotes) blocked", True, "git commit -m 'line one\nline two'")
-    chk("multi-line with unbalanced quote blocked", True, 'git commit -m "line one\nline two')
-    chk("-F blocked", True, "git commit -F msg.txt")
-    chk("-F- (stdin) blocked", True, "git commit -F-")
-    chk("--file blocked", True, "git commit --file msg.txt")
-    chk("--file= blocked", True, "git commit --file=msg.txt")
-    chk("heredoc blocked", True, "git commit <<EOF")
-    chk("quoted << prose allowed", False, "git commit -m 'fix: shift a << 2 overflow'")
-    chk("quoted << prose (double quotes) allowed", False, 'git commit -m "docs: explain a << b"')
-    chk("double -m blocked", True, "git commit -m one -m two")
-    chk("co-authored-by blocked", True, "git commit -m 'x Co-Authored-By: C'")
-    chk("non-commit git allowed", False, "git status && git log --oneline -5")
-    chk("multi-line command with single-line -m allowed", False, "npm test\ngit commit -m 'ok'")
-    print("all tests passed" if fails == 0 else f"{fails} FAILED")
-    return fails
-
-
 def main():
-    if "--test" in sys.argv:
-        sys.exit(self_test())
     if os.environ.get("COMMIT_FORMAT_OFF") == "1":
         return
     data = json.load(sys.stdin)

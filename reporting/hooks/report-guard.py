@@ -7,7 +7,7 @@ violates the contract: process narration, headers, tables, or gross over-length.
 Blocks at most once per turn — stop_hook_active guards the re-entry loop.
 
 Config: REPORT_GUARD_MAX_LINES (default 18) · escape hatch REPORT_GUARD_OFF=1
-Self-test: python3 report-guard.py --test
+Tests: python3 reporting/tests/test_reporting.py
 """
 import json
 import os
@@ -72,36 +72,7 @@ def violations(text):
     return problems
 
 
-def self_test():
-    fails = 0
-
-    def chk(name, want_clean, text):
-        nonlocal fails
-        got_clean = not violations(text)
-        if got_clean == want_clean:
-            print(f"PASS  {name}")
-        else:
-            print(f"FAIL  {name}: violations={violations(text)}")
-            fails += 1
-
-    chk("clean terse report", True,
-        "Guard shipped and self-tests pass.\n- 17 tests green\n- wired into hooks.json\nQ:\n1. enable in CI?")
-    chk("narration blocked", False, "Let me check the config first.")
-    chk("now-ill blocked", False, "Now I'll wire the hook into settings.")
-    chk("going-to blocked", False, "I'm going to refactor the parser next.")
-    chk("headers blocked", False, "## Summary\nAll done.")
-    chk("table blocked", False, "| a | b |\n|---|---|\n| 1 | 2 |")
-    chk("over-length blocked", False, "\n".join(f"line {i}" for i in range(25)))
-    chk("fenced code exempt", True,
-        "Done.\n```\nlet me check inside code is fine\n## header in code fine\n```\n- one fact")
-    chk("18 lines exactly is fine", True, "\n".join(f"- fact {i}" for i in range(18)))
-    print("all tests passed" if fails == 0 else f"{fails} FAILED")
-    return fails
-
-
 def main():
-    if "--test" in sys.argv:
-        sys.exit(self_test())
     if os.environ.get("REPORT_GUARD_OFF") == "1":
         return
     try:

@@ -13,7 +13,7 @@ Config:
   FILE_GUARD_EXTRA  colon-separated extra repo-relative prefixes to guard
                     (e.g. "tools/git-hooks/:.claude/scripts/")
   FILE_GUARD_OFF=1  escape hatch (user-set only)
-Self-test: python3 file-guard.py --test
+Tests: python3 instructions/tests/test_file_guard.py
 """
 import json
 import os
@@ -57,46 +57,7 @@ def decide(data):
     return None
 
 
-def self_test():
-    fails = 0
-    os.environ.pop("CLAUDE_PROJECT_DIR", None)  # cases below control the anchor explicitly
-
-    def chk(name, want_ask, data):
-        nonlocal fails
-        got = decide(data) is not None
-        if got == want_ask:
-            print(f"PASS  {name}")
-        else:
-            print(f"FAIL  {name}")
-            fails += 1
-
-    e = lambda f: {"tool_name": "Edit", "tool_input": {"file_path": f}, "cwd": "/repo"}
-    chk("ask on .claude/settings.json", True, e("/repo/.claude/settings.json"))
-    chk("ask on .claude/settings.local.json", True, e("/repo/.claude/settings.local.json"))
-    chk("ask on .claude/hooks/x.sh", True, e("/repo/.claude/hooks/x.sh"))
-    chk("allow ordinary file", False, e("/repo/src/x.ts"))
-    chk("allow .claude/skills (audit-guarded only)", False, e("/repo/.claude/skills/a/SKILL.md"))
-    chk("allow relative non-guarded", False, {"tool_name": "Edit", "tool_input": {"file_path": "src/x.ts"}})
-    chk("ask on relative guarded", True, {"tool_name": "Write", "tool_input": {"file_path": ".claude/hooks/g.py"}})
-    chk("ignore Bash tool", False, {"tool_name": "Bash", "tool_input": {"command": "echo x > .claude/hooks/g.py"}})
-    os.environ["FILE_GUARD_EXTRA"] = "tools/git-hooks/"
-    chk("ask on FILE_GUARD_EXTRA prefix", True, e("/repo/tools/git-hooks/pre-push"))
-    del os.environ["FILE_GUARD_EXTRA"]
-    chk("notebook_path also guarded", True,
-        {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": ".claude/hooks/x.ipynb"}})
-    os.environ["CLAUDE_PROJECT_DIR"] = "/repo"
-    chk("ask on absolute guarded path from subdir cwd", True,
-        {"tool_name": "Edit", "tool_input": {"file_path": "/repo/.claude/hooks/g.py"}, "cwd": "/repo/sub"})
-    chk("allow ordinary absolute path from subdir cwd", False,
-        {"tool_name": "Edit", "tool_input": {"file_path": "/repo/src/x.ts"}, "cwd": "/repo/sub"})
-    del os.environ["CLAUDE_PROJECT_DIR"]
-    print("all tests passed" if fails == 0 else f"{fails} FAILED")
-    return fails
-
-
 def main():
-    if "--test" in sys.argv:
-        sys.exit(self_test())
     if os.environ.get("FILE_GUARD_OFF") == "1":
         return
     data = json.load(sys.stdin)
