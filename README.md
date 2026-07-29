@@ -1,4 +1,4 @@
-# opsi — Claude Code toolkit
+# optimiziramsi-skills — Claude Code toolkit
 
 A personal [Claude Code plugin marketplace](https://docs.claude.com/en/docs/claude-code/plugins)
 shipping **one plugin**: reusable **skills, commands, agents, and hooks** shared across all my
@@ -63,7 +63,7 @@ One plugin, eleven concerns. Each concern is a top-level folder with its own `RE
 | [`instructions`](instructions/README.md) | Keep the agent-instruction system alive — **retro**, **lessons**, **instructions-audit**, **instructions-maintenance**, **rules-change** skills + `lesson-scout` / `instructions-auditor` agents + `caps` and `file-guard` hooks + two config-driven engines: **meta-lint** (behind `.agent/meta-lint.json`) and **tripwire-guard** (project-owned `.agent/guards.d/*.sh` asserts). |
 | [`review`](review/README.md) | Structured review — **review** (P0/HIGH/MED/LOW → `.agent/reviews/`) and **qa-gate** skills + `semantic-reviewer`, `spec-cross-checker`, `wireframe-vs-code`, `doc-auditor`, `isolation-reviewer` agents. |
 | [`repo`](repo/README.md) | **rename** — move a file and cascade every reference across docs/skills/config. |
-| [`flow`](flow/README.md) | Work management — **plan**, **milestone**, **scope-cut**, **triage-todo**, **feedback**, plus autonomous background execution: **looper** / **grind** / **collab** driven by a shipped Python-3 runner (`bin/loop`, `bin/grind`). Ships the `todo-readonly-guard` — `.todo` stays user-owned (arm with "ALLOW TODO"). |
+| [`flow`](flow/README.md) | Work management — **plan**, **milestone**, **scope-cut**, **triage-todo**, **feedback**, plus autonomous background execution: **looper** / **grind** / **collab** driven by shipped Python-3 runners, launched via gitignored `.agent/bin/{loop,grind}` symlinks. Ships the `todo-readonly-guard` — `.todo` stays user-owned (arm with "ALLOW TODO"). |
 | [`patterns`](patterns/README.md) | A per-topic **pattern registry** (`.agent/patterns/`) — **manage-patterns** + `pattern-compliance`/`pattern-verifier` agents + hooks that gate edits governed only by non-blessed patterns. Ships the system, not any project's conventions. |
 | [`worktree`](worktree/README.md) | Parallel isolated work — the **worktree** skill (reserve → plan → review-gated slices → land) + guards that keep edits inside the active worktree (mitigates [claude-code #36182](https://github.com/anthropics/claude-code/issues/36182)) + a SessionStart `worktree-detect` nudge. |
 
@@ -82,6 +82,7 @@ no concern is stuck on:
 | `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_PULSE_EVERY`, `REPORT_GUARD_MAX_LINES` tune it |
 | `SESSION_START_OFF=1` | the SessionStart state snapshot + freshness nudges |
 | `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
+| `FLOW_LINK_OFF=1` | re-stamping the runner-link pointer (`.agent/bin/{loop,grind}` then keep their current target) |
 | `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard (`FILE_GUARD_EXTRA` adds prefixes) |
 | `CAPS_GUARD_OFF=1` | instruction-surface size caps |
 | `META_LINT_OFF=1` | the meta-lint engine (already inert without `.agent/meta-lint.json`) |

@@ -2,17 +2,17 @@
 name: scaffold-claude-md
 description: >-
   Write a house-style `CLAUDE.md` for a project — a slim router carrying only routing + the hard
-  rules that bind every session, in the opsi convention (session bootstrap, never-push /
+  rules that bind every session, in the optimiziramsi-skills convention (session bootstrap, never-push /
   never-commit-on-the-protected-branch git, commit-as-you-go, verified done-gate, in-repo memory,
   lean reporting; optional roles + governance + caps). Branch names are read from the repo, never
   assumed. Use when a repo has no entrypoint, or the user asks to "write a CLAUDE.md",
-  "set up the agent entrypoint", "add house rules / conventions", "opsi CLAUDE.md". Never overwrites
+  "set up the agent entrypoint", "add house rules / conventions", "optimiziramsi-skills CLAUDE.md". Never overwrites
   an existing CLAUDE.md — reconciles into it. Pairs with `scaffold` (the `.agent/` layout).
 ---
 
 # Scaffold a house-style `CLAUDE.md`
 
-Writes the opsi **slim-router** entrypoint: the only two things in it are **routing** (where to
+Writes the **slim-router** entrypoint: the only two things in it are **routing** (where to
 look) and the **hard rules that bind every session**. Everything else has one canonical home and is
 *linked, not restated* — so the file stays small and never drifts. This is the entrypoint the
 `scaffold` skill points at; run both to set a project up (this one for the rules, `scaffold` for the
@@ -118,7 +118,7 @@ restated* — fix drift at the source, never by copying it here.
   the parking lot) — never a silent shim (`as` cast, `?? fallback`) that hides a real mismatch.
 
 ## Agent workspace
-This repo uses the opsi toolkit's `.agent/` layout — see [`.agent/README.md`](.agent/README.md) for
+This repo uses the optimiziramsi-skills `.agent/` layout — see [`.agent/README.md`](.agent/README.md) for
 what lives where. `.todo` at the repo root is the **user's** inbox: read it, don't edit it.
 
 ## Sources of truth (linked, not duplicated)

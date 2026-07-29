@@ -1,6 +1,6 @@
 # instructions — keep the agent instruction system alive
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 The meta-system: capture what you learn, route it to the right store, and keep the instruction
 system consistent over time — so you fix something once and every future session inherits it.
@@ -104,7 +104,7 @@ The full knowledge system: **define** (`instructions-maintenance`) · **capture*
 
 The ENGINE ships in this plugin (`instructions/bin/meta-lint`, python3 stdlib only); each project supplies the
 POLICY via **`.agent/meta-lint.json`**. No config file → silent no-op (projects opt IN). A minimal
-`{}` config lints the opsi house layout with the default caps; everything is overridable: enabled
+`{}` config lints the house layout with the default caps; everything is overridable: enabled
 `checks`, cap numbers **and units** (`lines` vs `chars`, most-specific entry wins per unit),
 directory `layout`, `filenames` conventions, `dup` tripwire pairs, `boards`, the `audit` stamp
 file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide allows capped).

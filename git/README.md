@@ -1,6 +1,6 @@
 # git — Claude Code git safety net
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 A single PreToolUse guard that stops Claude from doing the git things you almost never want an agent
 to do on its own — regardless of how you write commits. Commit *style* is deliberately **not** here;

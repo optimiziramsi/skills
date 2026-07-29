@@ -1,10 +1,11 @@
 ---
 name: scaffold
 description: >-
-  One-time bootstrap of a project for the opsi toolkit: create the `.agent/` workspace layout with
-  an index (`.agent/README.md`), add a single pointer to it from the entrypoint (CLAUDE.md /
-  AGENTS.md), and optionally install the committed `bin/loop` + `bin/grind` runner wrappers. Use
-  when setting up a new or existing repo to use these plugins — "set up opsi here",
+  One-time bootstrap of a project for the optimiziramsi-skills toolkit: create the `.agent/`
+  workspace layout with an index (`.agent/README.md`), add a single pointer to it from the
+  entrypoint (CLAUDE.md / AGENTS.md), and optionally link the machine-local `.agent/bin/loop` +
+  `.agent/bin/grind` runners. Use when setting up a new or existing repo to use these plugins —
+  "set up optimiziramsi-skills here",
   "scaffold the agent workspace", "wire up the .agent layout", "initialize the toolkit in this
   project". Idempotent; confirms before editing the entrypoint. Does NOT register individual skills
   (they auto-trigger) and does NOT generate anything on an ongoing basis.
@@ -12,7 +13,7 @@ description: >-
 
 # Scaffold — bootstrap the `.agent/` workspace
 
-A **one-time** setup. The opsi plugins keep everything they create under `.agent/` (so they don't
+A **one-time** setup. The plugin keeps everything it creates under `.agent/` (so they don't
 clutter the repo root). This skill makes that layout legible: it writes a static `.agent/README.md`
 index and adds **one** pointer to it from the project's entrypoint. That's all — skills discover
 themselves via their descriptions, and the `session-start` hook keeps live state fresh, so there's
@@ -43,7 +44,7 @@ nothing to generate or re-sync afterward.
    already there). Insert near the top or in a "Conventions"/"Layout" section:
 
    ```markdown
-   **Agent workspace:** this project uses the opsi toolkit's `.agent/` layout — see
+   **Agent workspace:** this project uses the optimiziramsi-skills `.agent/` layout — see
    [`.agent/README.md`](.agent/README.md) for what lives where.
    ```
 
@@ -54,26 +55,26 @@ nothing to generate or re-sync afterward.
    notes). Ask which they prefer; if gitignore, add `.agent/` to `.gitignore` (but consider keeping
    durable knowledge like `lessons/` and `patterns/` committed even then).
 
-5. **Offer the runner wrappers** (`bin/loop` + `bin/grind`) — optional, ask first. They make the
-   flow runners launchable as `bin/loop` from the repo root instead of a pasted absolute path into
-   the plugin cache. Install by copying the shipped template **twice** (it dispatches on its own
-   filename, so the two files are identical):
+5. **Offer the runner links** (`.agent/bin/loop` + `.agent/bin/grind`) — optional, ask first. They
+   make the flow runners launchable as `.agent/bin/loop` from the repo root instead of a pasted
+   absolute path into the plugin cache. They are **symlinks, machine-local, never committed** —
+   each person working in the repo makes their own:
 
    ```bash
-   mkdir -p bin
-   cp "$CLAUDE_PLUGIN_ROOT/flow/examples/runner-wrapper.sh" bin/loop
-   cp "$CLAUDE_PLUGIN_ROOT/flow/examples/runner-wrapper.sh" bin/grind
-   chmod +x bin/loop bin/grind
+   mkdir -p .agent/bin
+   ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
+   ln -sfn "$ptr/flow/bin/loop"  .agent/bin/loop
+   ln -sfn "$ptr/flow/bin/grind" .agent/bin/grind
    ```
 
-   **Tell them to commit these.** That is the point: a tracked wrapper exists in every worktree by
-   construction and carries no machine-specific path (it resolves the installed plugin at run
-   time) — where a symlink into the versioned plugin cache does neither. Existing `bin/loop`?
-   Don't overwrite silently: diff it against the template and offer the refresh. Skip this step
-   entirely if the project doesn't use `looper` / `grind`.
+   Then **gitignore them**: add `.agent/bin/` (skip if `.agent/` is ignored wholesale). Skip this
+   step entirely if the project doesn't use `looper` / `grind`.
 
-   The wrapper carries no version of its own: it resolves whatever plugin version is installed
-   and execs it, so a plugin update needs no re-copy.
+   **Why the pointer and not a direct link into the cache:** `…/data/optimiziramsi-skills/current`
+   is one stable path per machine that this plugin's SessionStart hook re-stamps at whatever version
+   is actually loaded, so the links survive plugin updates and encode no version. Committing them
+   instead would publish one person's `$HOME` to everyone. A pre-existing `bin/loop` from the old
+   committed-wrapper era can be deleted once these exist.
 
 6. **Stop.** Do not register individual skills, do not create a cron/generator, do not add more than
    the one pointer. Setup is done.
@@ -83,12 +84,13 @@ nothing to generate or re-sync afterward.
 ```markdown
 # `.agent/` — the agent workspace
 
-Everything the [opsi](https://github.com/optimiziramsi/skills) toolkit's plugins create lives here, so
-it stays out of your repo root. Files/dirs appear as you use the matching skill — not all will exist.
+Everything [optimiziramsi-skills](https://github.com/optimiziramsi/skills) creates lives here, so it
+stays out of your repo root. Files/dirs appear as you use the matching skill — not all will exist.
 
 | Path | What it holds | Owned by (skill/plugin) |
 |---|---|---|
 | `handoff.md` | next-session continuity notes (≤4k) | `handoff` / session |
+| `bin/` | your own symlinks to the flow runners — machine-local, gitignored | `scaffold` / flow |
 | `FEEDBACK.md` | agent-owned ledger of processed `.todo` items | `feedback` / flow |
 | `lessons/` | durable, hard-won lessons + a README index | `lessons` / instructions |
 | `instructions-changelog.md` | tier-tagged log of instruction changes | `retro` / instructions |

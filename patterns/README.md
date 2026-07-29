@@ -1,6 +1,6 @@
 # patterns — a pattern registry for Claude
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 A **per-topic pattern registry**: capture each blessed code shape once, as a full body with GOOD /
 BAD / anti-patterns / edge cases, and make the agent *consult it at the moment of editing* — so new

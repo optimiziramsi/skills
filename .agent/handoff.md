@@ -32,7 +32,7 @@ Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.6. What a cold session can
 
 `optimiziramsi-skills@optimiziramsi` **0.0.6** installed; smoke-tested from the cache (16 python
 hooks execute, `lib/` + all 8 `tests/` dirs shipped, gate green, bare wrapper resolves 0.0.6 past
-the legacy `opsi/0.0.1` entry). Stale caches 0.0.1 / 0.0.4 / 0.0.5 still on disk, harmless.
+the legacy 0.0.1 entry under the old marketplace name). Stale caches 0.0.1 / 0.0.4 / 0.0.5 still on disk, harmless.
 `main` pinned in `.claude/worktrees/_integration`; `receive.denyCurrentBranch=updateInstead`.
 Tracked `.claude/settings.json` sets `GIT_GUARD_{PROTECTED,INTEGRATION}_BRANCH` = `main`.
 The main checkout deliberately sits on `slim`, not `main` — git-guard blocks checking out the

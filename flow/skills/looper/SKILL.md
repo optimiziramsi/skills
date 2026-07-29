@@ -2,7 +2,7 @@
 name: looper
 description: >-
   Prepare and manage loop jobs — background tasks executed sequentially by the flow loop runner
-  (bin/loop) using the Claude CLI. Use whenever the user mentions: loop jobs, looper, background
+  (.agent/bin/loop) using the Claude CLI. Use whenever the user mentions: loop jobs, looper, background
   jobs, overnight tasks, batch tasks, job queue, breaking work into pieces for automated sequential
   execution, or triaging/checking loop job status. This skill PREPARES `.agent/loop/` job files and
   hands the runner command to the user — it never launches the runner itself.
@@ -10,10 +10,10 @@ description: >-
 
 # Looper — preparing loop jobs
 
-The loop runner (`bin/loop`, shipped with this plugin) executes a queue of `.agent/loop/*.md` job
-files. Each job runs as a **fresh, isolated headless Claude session** that reads the job, does the
-work, commits, and updates the job's own status. This skill is about **writing good job files and
-handing off** — the runner mechanics live in the shipped script.
+The loop runner (shipped with this plugin, launched as `.agent/bin/loop`) executes a queue of
+`.agent/loop/*.md` job files. Each job runs as a **fresh, isolated headless Claude session** that
+reads the job, does the work, commits, and updates the job's own status. This skill is about
+**writing good job files and handing off** — the runner mechanics live in the shipped script.
 
 You do **not** run the loop yourself. The runner refuses to launch from inside a Claude session
 (nested sessions are blocked), so your role is to prepare the queue and give the user the command.
@@ -134,8 +134,8 @@ A single job that implements *and* verifies its own work is unreliable. For an a
 cross-cutting batch (refactor, sweep, "convert all", multi-file service change), append a **review
 job** after the implementation job(s):
 
-- Its Task instructs the executing model to invoke the project's review tooling — e.g. the opsi
-  `review` plugin's `semantic-reviewer` agent, a `code-reviewer` agent, or the project's own checks
+- Its Task instructs the executing model to invoke the project's review tooling — e.g. this plugin's
+  `semantic-reviewer` agent, a `code-reviewer` agent, or the project's own checks
   — and write findings to its Report. It does NOT fix.
 - Then a **fix-pass job** reads the review job's Report and fixes the listed issues.
 
@@ -156,20 +156,29 @@ cross-cutting — failures cost more than the extra tokens.
 **You never launch the runner** (it refuses inside a Claude session anyway). Prepare the queue, then
 hand the user a copy-paste command for a **separate terminal**.
 
-**If the repo has `bin/loop`** (the committed wrapper — the `scaffold` skill installs it), that
-short form is the whole command; it finds the installed plugin itself:
+The command is `.agent/bin/loop` — a machine-local symlink, **not** a committed file. Make sure it
+exists before handing anything over (idempotent, no harm if it already does):
 
-```
-bin/loop              # run all pending jobs, then exit
-bin/loop --watch      # run, then keep polling for new pending jobs
-bin/loop --status     # show current job statuses
-bin/loop --dry-run    # preview what would run
-bin/loop -y           # skip the arm-confirmation (unattended/cron)
+```bash
+mkdir -p .agent/bin
+ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
+ln -sfn "$ptr/flow/bin/loop" .agent/bin/loop
 ```
 
-**No wrapper yet?** Either offer to install it (`scaffold`) or resolve the absolute path once —
-`echo "$CLAUDE_PLUGIN_ROOT/flow/bin/loop"` — and hand them `<abs>/flow/bin/loop …`. Don't suggest a
-symlink: it can't be committed (it encodes a machine path), so it never reaches a fresh worktree.
+Then hand them:
+
+```
+.agent/bin/loop              # run all pending jobs, then exit
+.agent/bin/loop --watch      # run, then keep polling for new pending jobs
+.agent/bin/loop --status     # show current job statuses
+.agent/bin/loop --dry-run    # preview what would run
+.agent/bin/loop -y           # skip the arm-confirmation (unattended/cron)
+```
+
+`…/data/optimiziramsi-skills/current` is a per-machine pointer this plugin's SessionStart hook
+re-stamps at the version actually loaded, so the link never goes stale and never needs a version in
+it. **Never commit it** — it holds an absolute `$HOME` path; `.agent/bin/` belongs in `.gitignore`
+(say so if it isn't).
 
 ### Worktrees — name one, don't `cd` into it
 
@@ -179,9 +188,9 @@ cwd before anything else happens, and it takes a branch, a worktree directory na
 substring of either, or `root` for the main checkout:
 
 ```
-bin/loop --worktree feature/thing     # run that worktree's queue, launched from the checkout root
-bin/loop --worktree all --status      # survey every worktree's queue
-bin/loop --worktree all               # drain each worktree in turn (one child runner each; arms once)
+.agent/bin/loop --worktree feature/thing     # run that worktree's queue, launched from the checkout root
+.agent/bin/loop --worktree all --status      # survey every worktree's queue
+.agent/bin/loop --worktree all               # drain each worktree in turn (one child runner each; arms once)
 ```
 
 An ambiguous name is an error listing the candidates — it never guesses. `--worktree all` is refused
@@ -227,7 +236,7 @@ Create a file `SMOKE.txt` containing the word "ok", then commit it with a one-li
 ```
 
 Then, from a **separate terminal** (not inside a Claude session — the runner refuses that):
-`"$CLAUDE_PLUGIN_ROOT/flow/bin/loop"` (resolve the path first with `echo`). It should ask you to confirm,
+`.agent/bin/loop` (link it first — see "Handing off"). It should ask you to confirm,
 then run one session. **Confirm all four:** `SMOKE.txt` exists with "ok", the job's `job-status`
 flipped to `done`, its `## Report` is filled in, and `git log` shows a new commit. Inspect the
 transcript at `.agent/loop/000000_000000_smoke.log`.
@@ -235,7 +244,7 @@ transcript at `.agent/loop/000000_000000_smoke.log`.
 - `--dry-run` and `--status` never call the model — safe to run anytime to sanity-check
   parsing/queueing.
 - If a session **hangs or every job fails on a denied tool**, this CLI's permission flags differ
-  from what the runner assumes — check `bin/loop --help` and set `FLOW_CLAUDE_PERMISSION_MODE` (e.g.
+  from what the runner assumes — check `.agent/bin/loop --help` and set `FLOW_CLAUDE_PERMISSION_MODE` (e.g.
   `acceptEdits`, or `dontAsk` with an `--allowed-tools` allowlist via `FLOW_EXTRA_CLAUDE_ARGS`).
 - If it refuses with "inside a Claude Code session", you launched it from within Claude — open a
   plain terminal (or, only for testing with a stub, `FLOW_ALLOW_NESTED=1`).
@@ -243,7 +252,7 @@ transcript at `.agent/loop/000000_000000_smoke.log`.
 ## Triaging failed jobs
 
 A job stuck in `running` needs no triage — the runner marks jobs `running` when it launches them, so
-a leftover `running` means the runner session died mid-job; the next `bin/loop` run resumes it
+a leftover `running` means the runner session died mid-job; the next `.agent/bin/loop` run resumes it
 automatically (distinct resume prompt referencing its Report).
 
 When a job is `failed`, read its Report — the executing model records what went wrong before

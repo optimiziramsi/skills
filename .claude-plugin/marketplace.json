@@ -11,7 +11,7 @@
       "name": "optimiziramsi-skills",
       "displayName": "optimiziramsi skills",
       "source": "./",
-      "description": "The whole opsi toolkit in one plugin — git safety net, house commit style, lean reporting, session continuity, structured review, work-management flow (+ looper/grind runner), instruction-system upkeep, pattern registry, worktree protocol, repo utilities, and one-time scaffolds. Per-concern env kill-switches; self-gating guards.",
+      "description": "The whole toolkit in one plugin — git safety net, house commit style, lean reporting, session continuity, structured review, work-management flow (+ looper/grind runner), instruction-system upkeep, pattern registry, worktree protocol, repo utilities, and one-time scaffolds. Per-concern env kill-switches; self-gating guards.",
       "category": "workflow",
       "author": {
         "name": "optimiziramsi",

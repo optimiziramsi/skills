@@ -4,7 +4,7 @@
 stdout becomes the context. Every line is CONDITIONAL: absent files never error, so this is
 safe in any repo. Keep it short — it runs on every start / resume / clear.
 
-Off: SESSION_START_OFF=1 (the git line fires in ANY git repo, not just opsi-scaffolded ones,
+Off: SESSION_START_OFF=1 (the git line fires in ANY git repo, not just scaffolded ones,
 so a project that doesn't want it needs a switch)
 """
 import datetime

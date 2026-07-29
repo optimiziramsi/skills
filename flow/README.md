@@ -1,6 +1,6 @@
 # flow — work-management for Claude
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 How work gets shaped, tracked, and executed across a project — one topic at a time (**plan**), one
 strategic initiative across many sessions (**milestone**), removing something cleanly
@@ -67,6 +67,14 @@ runs on a shared directory convention any project can adopt.
     The playbook for long "chat drives decisions, looper executes" sessions that keep the main
     context lean.
 
+- name: `runner-link`
+  kind: hook
+  purpose:
+    SessionStart: re-stamps `<claude-config>/plugins/data/optimiziramsi-skills/current` at the
+    plugin version actually loaded, so every repo's `.agent/bin/{loop,grind}` links follow an
+    update.
+    Refreshes existing links only — never creates one. Off: `FLOW_LINK_OFF=1`.
+
 - name: `bin/loop`
   kind: runner
   purpose:
@@ -108,6 +116,10 @@ a dir is absent.
   holds: grind missions + memory logs
   naming: `YYMMDD_HHMMSS_{topic}.md`
 
+- dir: `.agent/bin/`
+  holds: your own symlinks to the runners — machine-local, **gitignored**
+  naming: `loop`, `grind`
+
 - dir: `.todo`, `.todo-inbox`
   holds: parking lot + agent deferrals (yours, at the repo root)
   naming: free-form
@@ -119,7 +131,7 @@ a dir is absent.
 Timestamps come from `date '+%y%m%d_%H%M%S'` (or `+%y%m%d` for milestones). Closed plans/milestones
 move to an `archive/` subdir — never edited again, never referenced by a live file.
 
-## The runner (`bin/loop`, `bin/grind`)
+## The runners (`loop`, `grind`)
 
 The looper and grind skills PREPARE files; the shipped runners EXECUTE them. Each unit of work runs
 as a **fresh, isolated headless `claude` session** that does the work, commits, and updates its own
@@ -127,12 +139,23 @@ status — the runner never commits.
 
 - **Launched by you, in a separate terminal.** The runners refuse to start from inside a Claude
   session (nested sessions are blocked), so the skills hand you a copy-paste command.
-- **Install the wrappers and the command is just `bin/loop`.** The `scaffold` skill copies
-  [`examples/runner-wrapper.sh`](examples/runner-wrapper.sh) to `bin/loop` + `bin/grind` (identical
-  files — it dispatches on its own name). **Commit them:** the wrapper resolves the installed plugin
-  at run time (`$FLOW_RUNNER_ROOT` → `$CLAUDE_PLUGIN_ROOT` → newest copy in
-  `~/.claude/plugins/cache/*/optimiziramsi-skills/*/`), so it holds no machine path, survives plugin
-  updates, and — being tracked — exists in every worktree. A symlink does none of that.
+- **Link them once and the command is just `.agent/bin/loop`.** Two symlinks, made by you (the
+  `scaffold` / `looper` / `grind` skills do it on request), **gitignored, never committed** — they
+  hold your `$HOME`, so they are yours, not the repo's:
+
+  ```bash
+  mkdir -p .agent/bin
+  ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
+  ln -sfn "$ptr/flow/bin/loop"  .agent/bin/loop
+  ln -sfn "$ptr/flow/bin/grind" .agent/bin/grind
+  echo '.agent/bin/' >> .gitignore
+  ```
+
+  They point through `…/data/optimiziramsi-skills/current`, a single per-machine pointer the
+  `runner-link` hook re-stamps at every session start to the plugin version actually loaded. So one
+  link survives every plugin update, no path anywhere encodes a version, and a stale copy of the
+  launcher cannot exist. Each worktree that wants the short command links its own (or launch from
+  the checkout root with `--worktree`, which is the normal way).
 - **Worktrees: `--worktree NAME`, launched from the checkout root.** The runners are cwd-relative
   (job/mission dir, the repo they commit into), so selecting a worktree is just picking the cwd.
   NAME is a branch, a worktree directory name, a path, a unique substring of either, or `root`;
@@ -152,13 +175,13 @@ status — the runner never commits.
   `git` plugin's hook.) Escape hatches via env: `CLAUDE_BIN`, `FLOW_ALLOW_NESTED`,
   `FLOW_CLAUDE_PERMISSION_MODE`, `FLOW_EXTRA_CLAUDE_ARGS`, `FLOW_BACKOFF_BASE`,
   `FLOW_LONG_BACKOFF_BASE`, `FLOW_ITER_TIMEOUT_SECS`, `FLOW_ITER_PAUSE_SECS`. Run
-  `bin/loop --help` / `bin/grind --help` for the full flag list.
-- **Resilient by default.** `bin/grind` guards every iteration: a wall-clock watchdog
+  `.agent/bin/loop --help` / `.agent/bin/grind --help` for the full flag list.
+- **Resilient by default.** `grind` guards every iteration: a wall-clock watchdog
   (900s default) kills hung sessions; a dirty-tree guard refuses to start on uncommitted changes
   (auto-resuming a previously interrupted iteration); a productivity gate only advances on a clean
   tree with a tagged commit or status flip; unproductive iterations retry up to 4 attempts with a
   continuation prompt (finish / revert / skip the in-flight item); transient API errors get long
-  10–60 min backoffs that don't burn the attempt budget. `bin/loop` marks each job `running` at
+  10–60 min backoffs that don't burn the attempt budget. `loop` marks each job `running` at
   launch — a crashed runner leaves that marker, and the next run resumes the job with a prompt
   pointing at its Report.
 

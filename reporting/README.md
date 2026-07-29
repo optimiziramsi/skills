@@ -1,6 +1,6 @@
 # reporting — the lean-reporting output contract, enforced
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 The house **output contract**: total silence while working (zero text between tool calls), then
 exactly one report — **1 outcome line + ≤5 terse fact bullets + a numbered `Q:` list** (omitted if

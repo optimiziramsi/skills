@@ -7,6 +7,9 @@ _review/
 .agent/loop/
 .agent/grind/
 
+# your own symlinks to the flow runners — machine-local by construction (they hold $HOME)
+.agent/bin/
+
 # machine-local Claude settings (registers this checkout as a directory marketplace to dogfood it)
 .claude/settings.local.json
 

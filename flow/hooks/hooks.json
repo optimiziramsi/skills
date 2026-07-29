@@ -1,6 +1,17 @@
 {
-  "description": "flow — .todo is the user's parking lot: deny agent writes to it (PreToolUse), with per-session arming when the user says ALLOW TODO (UserPromptSubmit). Deferrals go to .todo-inbox. Kill-switch: TODO_GUARD_DISABLE=1 (one-shot TODO_GUARD_SKIP=1).",
+  "description": "flow — (1) .todo is the user's parking lot: deny agent writes to it (PreToolUse), with per-session arming when the user says ALLOW TODO (UserPromptSubmit); deferrals go to .todo-inbox; kill-switch TODO_GUARD_DISABLE=1 (one-shot TODO_GUARD_SKIP=1). (2) SessionStart re-stamps <claude-config>/plugins/data/optimiziramsi-skills/current at the running plugin so every repo's .agent/bin/{loop,grind} symlinks follow a plugin update; creates nothing; kill-switch FLOW_LINK_OFF=1.",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/flow/hooks/runner-link.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",

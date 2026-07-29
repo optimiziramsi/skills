@@ -7,6 +7,14 @@ it never travels to a fresh worktree.
 
 **Branch:** `feature/looper-grinder-worktree-7f4a4f` · **worktree:** `.claude/worktrees/looper-grinder-worktree-7f4a4f`
 
+> **Decision 1 was reversed on 2026-07-29 (0.0.7).** The launcher is now a **gitignored symlink**,
+> `.agent/bin/{loop,grind}` → `<claude-config>/plugins/data/optimiziramsi-skills/current/flow/bin/*`,
+> made by the user (via `scaffold` / `looper` / `grind`) and never committed. The "doesn't survive updates"
+> objection is answered by the pointer, which the `runner-link` SessionStart hook re-stamps at the
+> loaded version; the "doesn't reach a fresh worktree" objection turned out not to matter — runs are
+> launched from the checkout root with `--worktree`. Everything below is the record of the old
+> shape.
+
 ## Decisions (user, this session)
 
 1. **Committed wrapper**, not a symlink. A tracked `bin/loop` / `bin/grind` in the *consumer* repo

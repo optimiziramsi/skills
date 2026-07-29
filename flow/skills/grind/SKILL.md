@@ -1,7 +1,7 @@
 ---
 name: grind
 description: >-
-  Prepare a grind mission file and hand off to the flow grind runner (bin/grind). Grind runs the
+  Prepare a grind mission file and hand off to the flow grind runner (.agent/bin/grind). Grind runs the
   SAME mission N times — each iteration a fresh Claude session that picks 1–3 new items per the
   mission's picking rules, commits them, and appends to a log. Use grind for large incremental
   backlogs the user can't enumerate upfront: "add tests across the app", "implement missing
@@ -14,7 +14,7 @@ description: >-
 
 Grind is for **long incremental work the human can't enumerate upfront** and each iteration
 discovers. One mission file (`.agent/grind/<topic>.md`) runs N times via the shipped runner
-(`bin/grind`); the model picks what to do each run and remembers via a log.
+(`.agent/bin/grind`); the model picks what to do each run and remembers via a log.
 
 You do **not** run the grind yourself — the runner refuses to launch inside a Claude session.
 Prepare the mission file and hand off the command.
@@ -163,21 +163,28 @@ The runner treats every iteration as untrusted and gates progress mechanically:
 
 ## Handing off to the user
 
-Hand the user a command for a **separate terminal**. **If the repo has `bin/grind`** (the committed
-wrapper — the `scaffold` skill installs it), that short form is the whole command; it finds the
-installed plugin itself. Otherwise resolve the path once with `echo "$CLAUDE_PLUGIN_ROOT/flow/bin/grind"`
-and hand them `<abs>/flow/bin/grind …` (never a symlink — it encodes a machine path, so it can't be
-committed and never reaches a fresh worktree).
+Hand the user a command for a **separate terminal**. The command is `.agent/bin/grind` — a
+machine-local symlink, **not** a committed file. Make sure it exists first (idempotent):
+
+```bash
+mkdir -p .agent/bin
+ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
+ln -sfn "$ptr/flow/bin/grind" .agent/bin/grind
+```
 
 ```
-bin/grind .agent/grind/{mission}.md            # run until done or max-iterations
-bin/grind .agent/grind/{mission}.md --once      # exactly one fresh iteration
-bin/grind .agent/grind/{mission}.md --count 5    # at most 5 fresh iterations this session
-bin/grind .agent/grind/{mission}.md --dry-run    # preview, run nothing
-bin/grind .agent/grind/{mission}.md --status     # progress, attempt state, log tail
-bin/grind .agent/grind/{mission}.md --reset      # restart from iteration zero (clears retry state)
-bin/grind .agent/grind/{mission}.md -y           # skip the arm-confirmation
+.agent/bin/grind .agent/grind/{mission}.md            # run until done or max-iterations
+.agent/bin/grind .agent/grind/{mission}.md --once     # exactly one fresh iteration
+.agent/bin/grind .agent/grind/{mission}.md --count 5  # at most 5 fresh iterations this session
+.agent/bin/grind .agent/grind/{mission}.md --dry-run  # preview, run nothing
+.agent/bin/grind .agent/grind/{mission}.md --status   # progress, attempt state, log tail
+.agent/bin/grind .agent/grind/{mission}.md --reset    # restart from iteration zero (clears retry state)
+.agent/bin/grind .agent/grind/{mission}.md -y         # skip the arm-confirmation
 ```
+
+`…/data/optimiziramsi-skills/current` is a per-machine pointer this plugin's SessionStart hook
+re-stamps at the version actually loaded, so the link survives plugin updates. **Never commit it**
+— it holds an absolute `$HOME` path; `.agent/bin/` belongs in `.gitignore`.
 
 **Worktrees — name one, don't `cd` into it.** The runner is cwd-relative (mission dir, the repo it
 commits into), so `--worktree` is the whole mechanism: it picks the cwd first, and takes a branch, a
@@ -185,7 +192,7 @@ worktree directory name, a path, a unique substring of either, or `root` for the
 Launch from the checkout root:
 
 ```
-bin/grind .agent/grind/{mission}.md --worktree feature/thing
+.agent/bin/grind .agent/grind/{mission}.md --worktree feature/thing
 ```
 
 An ambiguous name is an error listing the candidates — it never guesses. The mission path stays
@@ -227,12 +234,13 @@ Read the log first. Add exactly one line, then log what you did.
 Anything other than SMOKE.txt.
 ```
 
-From a **separate terminal**: `"$CLAUDE_PLUGIN_ROOT/flow/bin/grind" .agent/grind/000000_000000_smoke.md
---once`. **Confirm:** `SMOKE.txt` grew by a line, a commit landed tagged `(grind: smoke #1)`, the
-memory log `.agent/grind/000000_000000_smoke.log` has an iteration block, and the iteration counter
+From a **separate terminal**: `.agent/bin/grind .agent/grind/000000_000000_smoke.md --once`
+(link it first — see "Handing off"). **Confirm:** `SMOKE.txt` grew by a line, a commit landed
+tagged `(grind: smoke #1)`, the memory log `.agent/grind/000000_000000_smoke.log` has an
+iteration block, and the iteration counter
 advanced (`--status`). Then let it run unbounded to see it stop at `max-iterations`.
 `--dry-run`/`--status`/`--reset` never call the model. If sessions hang on permission prompts or it
-refuses as "nested", see the same notes as the `looper` skill (check `bin/grind --help`,
+refuses as "nested", see the same notes as the `looper` skill (check `.agent/bin/grind --help`,
 `FLOW_CLAUDE_PERMISSION_MODE`, separate terminal).
 
 ## Quality defaults

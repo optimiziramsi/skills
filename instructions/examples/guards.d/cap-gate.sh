@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # cap-gate — tripwire-guard project guard, BLOCKING: refuse a `git commit` while the instruction
-# surface is over cap. The ENFORCEMENT complement to the caps.sh hook (opsi), which
+# surface is over cap. The ENFORCEMENT complement to the shipped caps hook, which
 # only NUDGES at SessionStart/Stop — copy this into `.agent/guards.d/` when a repo wants bloat kept
 # out of history outright. Opt-in example; not wired by default.
 #

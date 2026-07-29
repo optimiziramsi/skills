@@ -1,6 +1,6 @@
-# commit — the opsi house commit style
+# commit — the house commit style
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 An **opinionated** commit convention: bare imperative single-line messages, topic-close +
 pause-for-review cadence, and stage-by-name discipline. Split out from the `git` plugin on purpose —

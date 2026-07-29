@@ -1,6 +1,6 @@
 # worktree — Claude Code git-worktree safety
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 Guards that keep file edits inside the **active git worktree** so they don't silently leak into the
 main checkout or a sibling worktree — mitigating [claude-code

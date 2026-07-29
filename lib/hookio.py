@@ -107,7 +107,7 @@ def first_time(tag, session_id, state):
     a temp file keyed by session, so it dies with the machine's temp dir and never leaks
     between sessions.
     """
-    marker = os.path.join(tempfile.gettempdir(), f"opsi-{tag}-{session_id or 'unknown'}")
+    marker = os.path.join(tempfile.gettempdir(), f"optimiziramsi-{tag}-{session_id or 'unknown'}")
     digest = hashlib.sha1(state.encode()).hexdigest()
     try:
         if os.path.exists(marker):

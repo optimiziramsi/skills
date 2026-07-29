@@ -32,7 +32,7 @@ They describe something they noticed or want changed — often a brief observati
 
 Never read large files in the main chat — dispatch a read-only agent and get back a summary. Use
 `Explore` for codebase research; if the project (or an installed plugin) offers specialized agents,
-use them — e.g. the opsi `review` plugin's `semantic-reviewer` (lifecycle/error/cleanup review),
+use them — e.g. this plugin's `semantic-reviewer` (lifecycle/error/cleanup review),
 `spec-cross-checker` (one feature's docs↔code drift), or `wireframe-vs-code` (UI vs spec). A
 code-architect style agent is good for design exploration.
 
@@ -105,12 +105,17 @@ The looper runs in a **separate terminal** — you never launch it (nested Claud
 blocked, and the runner refuses anyway). Hand the user the command:
 
 ```bash
-bin/loop --watch -y                        # the committed wrapper (installed by `scaffold`)
-bin/loop --watch -y --worktree feature/x   # …targeting a worktree, from the checkout root
+.agent/bin/loop --watch -y                        # the machine-local runner link
+.agent/bin/loop --watch -y --worktree feature/x   # …targeting a worktree, from the checkout root
 ```
 
-No `bin/loop` in this repo? Resolve the path once — `echo "$CLAUDE_PLUGIN_ROOT/flow/bin/loop"` — and
-hand them `<abs>/flow/bin/loop --watch -y`.
+No `.agent/bin/loop` yet? Make it first — it is a gitignored symlink, never committed:
+
+```bash
+mkdir -p .agent/bin
+ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
+ln -sfn "$ptr/flow/bin/loop" .agent/bin/loop
+```
 
 Monitor via the log files and job statuses; create follow-up jobs directly — a watching loop picks
 them up.

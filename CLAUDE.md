@@ -1,6 +1,6 @@
-# CLAUDE.md — opsi toolkit (this marketplace)
+# CLAUDE.md — optimiziramsi-skills (this marketplace)
 
-This repo **is** the [`opsi` toolkit](README.md) — the `optimiziramsi` Claude Code plugin
+This repo **is** [`optimiziramsi-skills`](README.md) — the `optimiziramsi` Claude Code plugin
 marketplace, shipping ONE plugin (`optimiziramsi-skills`) whose root is this repo, organized
 **topic-first** (one `<topic>/` folder per concern): reusable skills, commands, agents, and hooks
 shared across projects.

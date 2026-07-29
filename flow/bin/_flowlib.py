@@ -193,7 +193,7 @@ def select_worktree(name: str) -> None:
     """Resolve `--worktree NAME` and chdir into it, announcing the move.
 
     Everything after this point is cwd-relative, so this is the whole mechanism: run
-    the wrapper from the checkout root, name a worktree, work happens over there.
+    the runner from the checkout root, name a worktree, work happens over there.
     """
     t = resolve_worktree(name)
     if t is None:

@@ -1,6 +1,6 @@
 # repo — Claude Code repo-maintenance utilities
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 ## Contents
 

@@ -1,6 +1,6 @@
 # session — Claude Code session continuity
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 Write the handoff at session close; boot the next session from it.
 

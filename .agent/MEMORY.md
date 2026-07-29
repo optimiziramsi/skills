@@ -1,4 +1,4 @@
-# Agent memory — opsi skills marketplace
+# Agent memory — optimiziramsi-skills marketplace
 
 Durable facts, decisions, and gotchas for this repo. **This repo's own working memory**, not the
 account/plugin memory store. One dated section per fact; delete what turns out wrong; keep volatile
@@ -43,16 +43,23 @@ git diffs and LLMs mangle them.
   user confirms cleanup. (This repo opts into an agent-maintained `.todo`; consumer projects keep
   `.todo` user-owned per the shipped skills.)
 - **Other status** (plans, milestones, job files): prose ("Step 1 — done (commit abc)") or a `status:`
-  field — never brackets. The opsi toolkit already complies.
+  field — never brackets. This toolkit already complies.
 
 ## Single-plugin restructure — repo root IS the plugin (2026-07-22, user)
 
-Naming (user, same session): plugin **`optimiziramsi-skills`**, marketplace renamed **`opsi` →
-`optimiziramsi`** → install identity `optimiziramsi-skills@optimiziramsi` (the
-mattpocock-skills@mattpocock pattern). "opsi" survives only as the informal toolkit/brand name in
-prose. Because the MARKETPLACE name changed, consumers can't just update: remove the `opsi`
-registration, re-add (manifest resolves the new name), rename any `extraKnownMarketplaces.opsi`
-settings key — MIGRATION.md step 1.
+Naming (user, same session): plugin **`optimiziramsi-skills`**, marketplace renamed to
+**`optimiziramsi`** → install identity `optimiziramsi-skills@optimiziramsi` (the
+mattpocock-skills@mattpocock pattern).
+
+**The old four-letter brand name is retired everywhere (2026-07-29, user)** — reversing the
+earlier "keep it as the informal brand" call. Reason: an unrelated GitHub account holds that name,
+so it reads as someone else's. Prose, paths, identifiers and history all say `optimiziramsi-skills`
+/ `optimiziramsi` (after the domain optimiziram.si). The only surviving spellings are external
+facts we don't own: the `opsi-infra` GitLab group and stale on-disk cache dirs.
+
+Because the MARKETPLACE name changed, consumers can't just update: remove the old registration,
+re-add (manifest resolves the new name), rename the `extraKnownMarketplaces` settings key —
+MIGRATION.md step 1.
 
 11 plugins consolidated into ONE plugin at **0.0.1** (user: not live / not production-ready —
 1.0.0 is reserved for go-live), repo root = plugin root (user asked explicitly — update pain
@@ -80,7 +87,7 @@ importers and their helpers in the SAME topic dir.
 ## Dogfood state — settings.local.json REMOVED by user (observed 2026-07-22)
 
 The 2026-07-18 directory-marketplace dogfood (`.claude/settings.local.json` + `claude plugin
-install --scope local flow@opsi`) is **gone**: the file no longer exists; the opsi marketplace is
+install --scope local flow@<old-marketplace>`) is **gone**: the file no longer exists; the marketplace is
 now registered **globally from GitHub** (`known_marketplaces.json`: github optimiziramsi/skills,
 autoUpdate). `claude plugin list` shows the old per-plugin installs as project-scoped rows across
 consumer repos, all disabled for this checkout → **todo-readonly-guard is NOT live here right
@@ -97,6 +104,6 @@ permission classifier** — spawning an unattended nested `claude -p` is not som
 detection verified live and work. A scratch repo + smoke job can be prepared under the session
 scratchpad (any empty git repo works; the smoke-job recipe is in the looper skill's "First run"
 section).
-Run: `cd <scratch> && python3 <repo>/bin/loop --model sonnet` → type `yes`. Confirm:
+Run: `cd <scratch> && python3 <repo>/flow/bin/loop --model sonnet` → type `yes`. Confirm:
 SMOKE.txt says "ok", job-status flipped to done, ## Report filled, new commit in `git log`.
 Remove this note once the live test passes.

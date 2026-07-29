@@ -1,6 +1,6 @@
 # review — Claude Code review & quality gates
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
 ## Contents
 

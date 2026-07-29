@@ -1,6 +1,6 @@
-# Adopting `opsi` into an existing repo
+# Adopting `optimiziramsi-skills` into an existing repo
 
-How to enable the opsi plugin in a project, plus the non-obvious gotchas — distilled from a real
+How to enable the plugin in a project, plus the non-obvious gotchas — distilled from a real
 adoption (2026-07, CCD 2.1.215, then the 11-plugin marketplace; since the 2026-07 consolidation
 (0.0.1) everything ships as the single `optimiziramsi-skills@optimiziramsi` plugin). Goal: the
 plugin owns the generic system, the repo keeps only what is repo-specific, zero overlap.
@@ -29,9 +29,9 @@ plugin owns the generic system, the repo keeps only what is repo-specific, zero 
   - The `+` beside a plugin in Browse and the plain Install button are "install for me": a global
     `user` row + a global-settings enable.
   - "Install for project (local)" installs into the project itself rather than the shared
-    per-project record — not what opsi adoption wants.
+    per-project record — not what adoption wants.
 - Pick ONE scope per plugin, never both:
-  - **Per-project (opsi's default):** install-for-project-shared in each repo; toggle via the UI
+  - **Per-project (the recommended default):** install-for-project-shared in each repo; toggle via the UI
     switch or the repo settings file. Zero global traces; enables travel with the code.
   - **Global:** install-for-me once (`user` row + global enable), then hand-add
     `"optimiziramsi-skills@optimiziramsi": false` in each repo that must NOT run it — settings
@@ -57,10 +57,10 @@ plugin owns the generic system, the repo keeps only what is repo-specific, zero 
   (an install-gate, not a settings error).
 - Plugins bind at session start — restart CCD after any enable/install/marketplace change; a
   running or resumed session won't pick them up.
-- Verify, don't trust the settings file: confirm opsi `bin/` dirs on `$PATH`, opsi hooks fire, and
+- Verify, don't trust the settings file: confirm the plugin's `bin/` dirs on `$PATH`, its hooks fire, and
   `/plugin` lists them enabled.
 
-## Updating an opsi plugin (a marketplace update ≠ an install update)
+## Updating the plugin (a marketplace update ≠ an install update)
 
 Getting a new plugin *version* to actually bind in a consumer repo takes more than re-fetching the
 marketplace — two independent things must move, then a restart:
@@ -69,7 +69,7 @@ marketplace — two independent things must move, then a restart:
   re-materializes its install cache when that version *changes*. A same-version code change never
   reaches you, however many times you restart — re-fetching the marketplace clone updates the clone,
   not your installed cache. (Field case: a `git-guard` `reset` block sat dead across three restarts
-  because the fix shipped without a version bump. opsi now treats "any consumer-visible change →
+  because the fix shipped without a version bump. the plugin now treats "any consumer-visible change →
   bump `.claude-plugin/plugin.json`" as an authoring rule, so this should not recur — but verify
   the version moved.)
 - **You must update the install, not just the marketplace.** Even once the marketplace advances
@@ -109,7 +109,7 @@ selected), and any other repos' rows stay pinned where they were.
   bulk-add, non-FF merge, protected-branch move, reset --hard, discards); it deliberately allows
   amend/rebase for FF-landing flows. If your repo enforces append-only history on protected branches
   ONLY (amend/rebase fine in worktrees), a branch-aware project tripwire in `.agent/guards.d/*.sh`
-  (via opsi's tripwire-guard) is the precise fit — `GIT_GUARD_STRICT` re-blocks globally,
+  (via the tripwire-guard) is the precise fit — `GIT_GUARD_STRICT` re-blocks globally,
   not per-branch.
 - `git fetch` is BLOCKED by default. If your repo treats read-only fetch as fine, set
   `GIT_GUARD_ALLOW=fetch` in `.claude/settings.json` `env`. (`GIT_GUARD_ALLOW` takes comma-separated
@@ -125,7 +125,7 @@ selected), and any other repos' rows stay pinned where they were.
 - Domain skills with no generic equivalent (e.g. a deploy-contract sync).
 - Enforcement the plugins do not cover: project tripwires (`.agent/guards.d/`); a commit-guard for
   repo-specific post-commit checks (version bump, deploy-contract); the cap NUMBERS in
-  `.agent/meta-lint.json` (the engine is opsi's meta-lint — only the policy is yours).
+  `.agent/meta-lint.json` (the engine is the plugin's meta-lint — only the policy is yours).
 - Project-specific session / commit signals. The shipped `session-start` and `commit-nudge` hooks
   are deliberately **current-repo-scoped**. For a dirty *sibling* worktree, set
   `COMMIT_NUDGE_EXTRA_DIRS=../gitops`; for anything else they don't cover (e.g. extra start-up

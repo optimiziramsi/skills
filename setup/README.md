@@ -1,8 +1,8 @@
-# setup — bootstrap a project for the opsi toolkit
+# setup — bootstrap a project for optimiziramsi-skills
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin (the opsi toolkit).
+Part of the [`optimiziramsi-skills`](../README.md) plugin.
 
-A **one-time** scaffold. The opsi plugins keep everything they create under `.agent/`; this makes
+A **one-time** scaffold. The plugin keeps everything it creates under `.agent/`; this makes
 that layout legible in a project, wires the entrypoint to it, and can write the entrypoint itself in
 the house style — once, with no ongoing machinery.
 

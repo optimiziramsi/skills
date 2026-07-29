@@ -9,6 +9,37 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.7 — 2026-07-29
+
+The launcher stops being a file in your repo. It is now your own symlink, and the old short brand
+name is retired in favour of `optimiziramsi`.
+
+- **`bin/loop` + `bin/grind` (committed wrappers) → `.agent/bin/loop` + `.agent/bin/grind`
+  (gitignored symlinks).** The committed wrapper put a launcher for *your* machine into *everyone's*
+  repo and made every consumer carry a 29-line script whose only job was to find the plugin. The
+  links are machine-local, made on request by `scaffold` / `looper` / `grind`, and live under
+  `.agent/` with everything else the toolkit creates. **Migration:** delete `bin/loop` +
+  `bin/grind`, add `.agent/bin/` to `.gitignore`, and let a skill (or the recipe in
+  [`flow/README.md`](flow/README.md)) make the links.
+- **New hook `runner-link` (SessionStart) answers "which version do the links run?"** They point
+  through one stable per-machine path — `<claude-config>/plugins/data/optimiziramsi-skills/current`
+  — that the hook re-stamps at every session start to the plugin version *actually loaded* (it reads
+  its own location, the one answer that cannot be stale). It deliberately does **not** use
+  `${CLAUDE_PLUGIN_DATA}`: that dir's name carries the install identity
+  (`optimiziramsi-skills-<marketplace>`), and a pointer every repo hardcodes must be one address for
+  all install shapes. So a plugin update moves every repo's links at
+  once, nothing on disk encodes a version, and there is no launcher copy left to go stale. The hook
+  **creates nothing** and refuses to touch a real file; it only re-aims existing symlinks. Off:
+  `FLOW_LINK_OFF=1`.
+- **`flow/examples/runner-wrapper.sh` is deleted**, its test replaced by
+  `flow/tests/test_runner_link.py` — which executes a runner through the full two-hop link, pinning
+  the assumption the design rests on (CPython resolves `sys.path[0]` through symlinks, so the
+  sibling `_flowlib` import survives).
+- **The old four-letter brand name is gone from the repo.** It collides with an unrelated GitHub
+  account, so the only names used anywhere are `optimiziramsi-skills` (plugin) and `optimiziramsi`
+  (marketplace, after the domain optimiziram.si) — in prose, paths, identifiers, the scaffold
+  trigger phrase, the topic-README bylines, and the temp-marker prefix in `lib/hookio.py`.
+
 ## 0.0.6 — 2026-07-28
 
 A slimming pass over the shipped scripts. No behavior removed except one guard-of-a-guard that
@@ -167,11 +198,11 @@ no `<topic>:` prefix, behavior byte-identical to 0.0.1. Per-topic `docs/<t>.md` 
 ## 0.0.1 — 2026-07-22
 
 **Eleven plugins consolidated into one.** The repo root *is* the plugin
-(`optimiziramsi-skills`), and the marketplace was renamed `opsi` → `optimiziramsi` — so the install
+(`optimiziramsi-skills`), and the marketplace was renamed to `optimiziramsi` — so the install
 identity is `optimiziramsi-skills@optimiziramsi`.
 
 Because the *marketplace* name changed, consumers of the old 11-plugin layout could not simply
-update — they had to re-register the marketplace under its new name, drop the `<name>@opsi`
+update — they had to re-register the marketplace under its new name, drop the old per-topic
 installs, and install the single plugin. (The step-by-step `MIGRATION.md` was removed in 0.0.3,
 once every repo had migrated.) Per-project tailoring moved from plugin selection to env
 kill-switches.
