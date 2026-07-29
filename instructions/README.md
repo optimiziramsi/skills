@@ -81,9 +81,10 @@ system consistent over time — so you fix something once and every future sessi
 - name: `tripwire-guard`
   kind: hook, engine
   purpose:
-    PreToolUse `Bash` — runs **project-owned command tripwires** from `.agent/guards.d/*.sh`
+    PreToolUse `Bash` — runs **project-owned command tripwires** from `.agent/guards.d/`
     against every Bash command: a guard exits 2 to block (first block wins, reason fed to the
-    agent), 0 to allow, anything else becomes a loud non-blocking warning. No dir/guards → silent
+    agent), 0 to allow, anything else becomes a loud non-blocking warning. Guards are written in
+    any language (`*.sh`, `*.py`, or any `+x` file with a shebang). No dir/guards → silent
     no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch `TRIPWIRE_GUARD_OFF=1`.
     Engine tests: `python3 instructions/tests/test_tripwire.py`.
 
@@ -134,15 +135,22 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
 ## tripwire-guard — project-owned command tripwires
 
 The ENGINE is a PreToolUse `Bash` hook (`hooks/tripwire-guard.py`); the PROJECT supplies the
-guards as **`.agent/guards.d/*.sh`** scripts (no dir → silent no-op). Each guard is executed in
-sorted order with the Bash command in `$TRIPWIRE_COMMAND` and the full tool-input JSON in
-`$TRIPWIRE_INPUT` + on stdin: **exit 2 + printed reason = block** (first block wins), exit 0 =
-allow, anything else = loud non-blocking warning. A guard that also defines `tripwire_test` (and
-gates its dispatch with `[ "${BASH_SOURCE[0]}" = "$0" ]`) gets its self-test run by the engine's
-`--test`.
+guards in **`.agent/guards.d/`** (no dir → silent no-op). Each guard is executed in sorted order
+with the Bash command in `$TRIPWIRE_COMMAND` and the full tool-input JSON in `$TRIPWIRE_INPUT` +
+on stdin: **exit 2 + printed reason = block** (first block wins), exit 0 = allow, anything else =
+loud non-blocking warning.
 
-Shipped, ready-to-copy examples in [`examples/guards.d/`](examples/guards.d/) (integration branch
-via `TRIPWIRE_INTEGRATION_BRANCH`, default `develop`):
+**Your guards, your language.** `*.sh` runs under `bash` and `*.py` under `python3` (no executable
+bit needed); anything else in the dir runs directly when it is `+x`, so its own shebang picks the
+interpreter — node, ruby, a compiled binary. Non-runnable files (a README, a config, a guard you
+disabled by dropping its `+x`) are ignored. The engine is python because *this plugin* is python;
+that is not a contract on the projects that install it. Self-tests are the guard's business too —
+the bash examples below define a `tripwire_test` function and gate their dispatch with
+`[ "${BASH_SOURCE[0]}" = "$0" ]` so they can be sourced and tested.
+
+Shipped, ready-to-copy examples in [`examples/guards.d/`](examples/guards.d/) — bash because
+these three are mostly `git` plumbing, not because guards must be (integration branch via
+`TRIPWIRE_INTEGRATION_BRANCH`, default `develop`):
 
 - **`land-check.sh`** — blocks a landing push (`git push . HEAD:<integration>`) when HEAD isn't
   rebased onto the branch's *current* tip, and when the land would resurrect a board-file line
@@ -155,8 +163,7 @@ via `TRIPWIRE_INTEGRATION_BRANCH`, default `develop`):
 
 Escape hatches: prefix the ONE false-positiving command with `TRIPWIRE_SKIP=1` (one-shot, visible
 in the transcript); `TRIPWIRE_GUARD_OFF=1` kill switch; `TRIPWIRE_GUARDS_DIR` overrides the
-discovery dir. The engine is python3 (stdlib only) — no `jq`, so it has no way to disarm itself;
-the guards it runs stay ordinary bash scripts.
+discovery dir. The engine is python3 (stdlib only) — no `jq`, so it has no way to disarm itself.
 
 ## Enable
 

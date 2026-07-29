@@ -137,9 +137,10 @@ done
 
 note ""
 note "=== 7b. inline self-tests (anything shipping --test) ==="
-# Deliberately wider than the component dirs: examples/guards.d/*.sh ship self-tests too, and
-# a narrower glob left them silently unrun for their whole life.
-for h in */hooks/* */bin/* */examples/*.sh */examples/*/*.sh; do
+# Deliberately wider than the component dirs: examples/guards.d/ scripts ship self-tests too, and
+# a narrower glob left them silently unrun for their whole life. Extension-blind on purpose —
+# guards may be any language, so a `.sh` glob would repeat that bug the first time one isn't.
+for h in */hooks/* */bin/* */examples/* */examples/*/*; do
   [ -f "$h" ] || continue
   grep -q -e '--test' "$h" || continue
   case "$h" in

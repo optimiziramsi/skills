@@ -9,6 +9,23 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.8 — 2026-07-29
+
+**Project tripwires are no longer bash-only.** `tripwire-guard` discovered `.agent/guards.d/*.sh`
+and ran each under `bash` — so a repo that speaks python (or node, or ruby) still had to write its
+guards in shell. This plugin's own hooks being python3 is *its* implementation choice; it was
+never meant to reach into consumer repos, and neither is bash.
+
+- **Discovery + launch are now language-agnostic.** `*.sh` → `bash`, `*.py` → `python3` (neither
+  needs the executable bit, so existing guards are unaffected), and any other file with `+x` runs
+  directly via its own shebang. Files that are neither — a README, a config, a guard you disabled
+  by dropping its `+x` — are ignored instead of being fed to `bash`.
+- **A guard that cannot be launched now warns** (bad shebang, lost `+x`) instead of failing
+  silently, matching how a crashing guard already behaved: loud, non-blocking, never a session
+  brick.
+- The three shipped `examples/guards.d/*.sh` stay bash — they are mostly `git` plumbing, which is
+  what bash is good at. They are examples, not the contract.
+
 ## 0.0.7 — 2026-07-29
 
 The launcher stops being a file in your repo. It is now your own symlink, and the old short brand

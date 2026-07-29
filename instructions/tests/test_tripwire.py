@@ -70,6 +70,40 @@ try:
     rc, out, _ = run(crashy, "anything")
     check("a crashing guard warns instead of blocking", rc == 0 and "exit 7" in out, out)
 
+    # ── the project picks the guard language; this engine being python imposes nothing ──
+    def write_files(name, files, executable=()):
+        d = os.path.join(tmp, name)
+        os.makedirs(d, exist_ok=True)
+        for filename, body in files.items():
+            path = os.path.join(d, filename)
+            with open(path, "w") as fh:
+                fh.write(body)
+            if filename in executable:
+                os.chmod(path, 0o755)
+        return d
+
+    PY_BLOCK = ('#!/usr/bin/env python3\nimport os, sys\n'
+                'sys.exit(2 if "forbidden" in os.environ.get("TRIPWIRE_COMMAND", "") '
+                'else 0)\n')
+    langs = write_files("langs", {
+        "10-block.py": PY_BLOCK,                              # no +x — the extension decides
+        "20-shebang": '#!/usr/bin/env bash\necho "shebang guard ran"; exit 3\n',
+        "README.md": "exit 2 — prose, not a guard\n",         # unrunnable → never discovered
+        "notes.txt": "exit 2\n",
+    }, executable=("20-shebang",))
+    rc, _, err = run(langs, "echo forbidden")
+    check("a .py guard blocks without needing +x", rc == 2, f"rc={rc} err={err}")
+    rc, out, _ = run(langs, "echo harmless")
+    check("an extensionless +x guard runs via its own shebang",
+          rc == 0 and "shebang guard ran" in out, out)
+    check("non-runnable files in the dir are ignored", rc == 0 and "prose" not in out, out)
+
+    # a broken shebang is a warning, not a block and not a crash
+    broken = write_files("broken", {"10-nope": "#!/nonexistent/interp\n"}, executable=("10-nope",))
+    rc, out, _ = run(broken, "anything")
+    check("an unlaunchable guard warns instead of blocking",
+          rc == 0 and "could not run" in out, f"rc={rc} out={out}")
+
     # every shipped example guard is sourceable and its tripwire_test passes
     for example in sorted(pathlib.Path(hook("instructions/examples/guards.d")).glob("*.sh")):
         if "tripwire_test" not in example.read_text():

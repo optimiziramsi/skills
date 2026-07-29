@@ -60,7 +60,7 @@ One plugin, eleven concerns. Each concern is a top-level folder with its own `RE
 | [`setup`](setup/README.md) | One-time bootstrap — **scaffold** the `.agent/` workspace index and point CLAUDE.md/AGENTS.md at it, and **scaffold-claude-md** to write a house-style CLAUDE.md (a slim router of the hard rules). |
 | [`reporting`](reporting/README.md) | The **lean-reporting output contract**, enforced — contract injected per prompt (`brevity-reminder`), re-pulsed every Nth tool call (`contract-pulse`), and a Stop `report-guard` that blocks a narrating/over-long final message. |
 | [`session`](session/README.md) | Session continuity — **handoff** (write next-session notes, ≤4k), **continue** (boot from them), **session-summary** + a `session-start` hook. |
-| [`instructions`](instructions/README.md) | Keep the agent-instruction system alive — **retro**, **lessons**, **instructions-audit**, **instructions-maintenance**, **rules-change** skills + `lesson-scout` / `instructions-auditor` agents + `caps` and `file-guard` hooks + two config-driven engines: **meta-lint** (behind `.agent/meta-lint.json`) and **tripwire-guard** (project-owned `.agent/guards.d/*.sh` asserts). |
+| [`instructions`](instructions/README.md) | Keep the agent-instruction system alive — **retro**, **lessons**, **instructions-audit**, **instructions-maintenance**, **rules-change** skills + `lesson-scout` / `instructions-auditor` agents + `caps` and `file-guard` hooks + two config-driven engines: **meta-lint** (behind `.agent/meta-lint.json`) and **tripwire-guard** (project-owned `.agent/guards.d/` asserts, any language). |
 | [`review`](review/README.md) | Structured review — **review** (P0/HIGH/MED/LOW → `.agent/reviews/`) and **qa-gate** skills + `semantic-reviewer`, `spec-cross-checker`, `wireframe-vs-code`, `doc-auditor`, `isolation-reviewer` agents. |
 | [`repo`](repo/README.md) | **rename** — move a file and cascade every reference across docs/skills/config. |
 | [`flow`](flow/README.md) | Work management — **plan**, **milestone**, **scope-cut**, **triage-todo**, **feedback**, plus autonomous background execution: **looper** / **grind** / **collab** driven by shipped Python-3 runners, launched via gitignored `.agent/bin/{loop,grind}` symlinks. Ships the `todo-readonly-guard` — `.todo` stays user-owned (arm with "ALLOW TODO"). |
@@ -98,6 +98,9 @@ false-positive-prone). The flow runners take `FLOW_*` env; see [`flow`](flow/REA
 [`lib/hookio.py`](lib/hookio.py); their tests live in `<topic>/tests/`, not inside the guards.
 There is deliberately no `jq` dependency — a guard that disarms itself when a tool is missing is
 worse than no guard, and `python3` is the one interpreter a Claude Code host already needs.
+**That choice binds this plugin's own code, not yours:** the one place a project supplies
+executable code — `.agent/guards.d/` tripwires — takes `*.sh`, `*.py`, or any executable file with
+a shebang, so your guards are written in whatever your repo already speaks.
 
 **No branch name is hardcoded.** `main` is not assumed anywhere: the git guard detects the repo's
 own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `worktree` skill takes

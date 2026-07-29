@@ -108,7 +108,7 @@ selected), and any other repos' rows stay pinned where they were.
 - amend/rebase PASS by default. The git-guard is a remote/discard safety net (push/pull/fetch,
   bulk-add, non-FF merge, protected-branch move, reset --hard, discards); it deliberately allows
   amend/rebase for FF-landing flows. If your repo enforces append-only history on protected branches
-  ONLY (amend/rebase fine in worktrees), a branch-aware project tripwire in `.agent/guards.d/*.sh`
+  ONLY (amend/rebase fine in worktrees), a branch-aware project tripwire in `.agent/guards.d/`
   (via the tripwire-guard) is the precise fit — `GIT_GUARD_STRICT` re-blocks globally,
   not per-branch.
 - `git fetch` is BLOCKED by default. If your repo treats read-only fetch as fine, set
