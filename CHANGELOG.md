@@ -9,6 +9,37 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.9 — 2026-07-29
+
+`worktree-bash-guard` resolves paths instead of grepping for them — it was blind to every
+relative escape.
+
+- **The guard could be walked around with `cd`.** It asked whether the main checkout's absolute
+  path appeared as a substring of the command text, so anything that never *spelled* that path was
+  invisible: `cd ../../.. && echo x > ./LEAK.md` wrote into the main checkout and the guard said
+  nothing. Found by a live worktree session on a consumer repo (2026-07-29), then reproduced four
+  ways — chained `cd` hops, a bare `../../../LEAK.md`, a subshell, `tee`/`dd of=` through a
+  relative path — all previously allowed, while only the absolute-path form was blocked.
+  It now walks the command's segments, tracks the cwd across `cd`, resolves each write target
+  against it, and compares resolved paths. An interpreter write it cannot resolve (`python3 -c`)
+  is judged by where the shell is standing, so `cd <out> && python3 -c "open('x','w')"` is caught
+  too. Subshell scoping is deliberately not modelled — over-blocking is recoverable (name the
+  worktree path, or use the kill-switch); a missed escape is not.
+  **Still not containment.** It is a best-effort resolver, not a shell: `eval`, a variable holding
+  the path, or a command substitution all defeat it. The Write-tool guard remains the real
+  boundary, and this stays opt-in.
+- **The resolver starts from the session's cwd, not the worktree root.** Relative hops are counted
+  from wherever the shell is standing, and the Bash tool's cwd persists across calls — so a session
+  sitting in a subdirectory made the old start point off by one hop per level: it let a real escape
+  through (`<wt>/src` + `> ../../../../LEAK.md`) and denied writes that never left the worktree
+  (`<wt>/src` + `> ../f.ts`, in the nested layout). The payload's `cwd` is now the origin.
+- 20 tests for the escapes, computed from the fixture rather than hardcoded so they hold for a
+  sibling worktree AND the nested `.claude/worktrees/<name>` layout the skill actually uses, with
+  the worktree root and a subdirectory each exercised as the session cwd.
+- **`worktree` skill § Path discipline was stale** — it said "Bash redirects aren't probed", true
+  only before this guard shipped. It now states what each guard actually covers and keeps the
+  standing instruction: write as if neither existed.
+
 ## 0.0.8 — 2026-07-29
 
 **Project tripwires are no longer bash-only.** `tripwire-guard` discovered `.agent/guards.d/*.sh`

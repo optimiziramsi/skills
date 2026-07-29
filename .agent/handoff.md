@@ -1,42 +1,38 @@
 # Handoff
 
-_Last updated:_ 2026-07-29 — session 11: **0.0.6 landed on `main` (`4e979d4`) and pushed**;
-`./tests.sh` ALL GREEN (7 checks, 438 tests); local install updated to 0.0.6 and verified from the
-cache. `main` == `origin/main` == `slim`.
+_Last updated:_ 2026-07-29 — session 12: **0.0.9 reviewed and fixed up; NOT yet pushed.**
 
-Repo is now two branches (`main`, `slim`) and two worktrees (checkout on `slim`, `_integration`
-pinning `main`) — every earlier feature branch and its worktree was deleted this session; their
-build history is fully contained in `main`.
+`main` is the only branch and there are no worktrees left — the `slim` branch and both worktrees
+(checkout + `_integration`) are gone, so the checkout now sits on `main` itself. Two commits sit
+ahead of `origin/main`, both carrying version **0.0.9**: `10c2820` (another chat's work) and
+`4512ac7` (this session's review fixup). **The user squashes these into one before pushing.**
+`./tests.sh` ALL GREEN (7 checks, 466 tests).
 
-## Session 11 (2026-07-29) — the slimming pass (0.0.6)
+## Session 12 (2026-07-29) — reviewing 0.0.9 before it ships
 
-Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.6. What a cold session can't re-derive:
+Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.9. What a cold session can't re-derive:
 
-- **The diagnosis the user was right about.** The scripts felt like accretion, but the edge cases
-  were each legitimate — the bloat was *scaffolding repeated per file*. Four worktree guards were
-  220 lines carrying ~35 lines of actual decision; the rest was one git preamble ×4, a jq-DISARM
-  block ×3, an inline self-test ×4, a header comment ×4. Fix duplication, not edge cases.
-- **Every hook is python3 over [`lib/hookio.py`](../lib/hookio.py); `jq` is gone.** User's call
-  (asked whether to port bash→python or the reverse). `lib/` at the repo root is a deliberate
-  exception to topic-first co-location — the user approved it explicitly.
-- **Tests live in `<topic>/tests/*.py`, never inside a shipped file.** `tests.sh` check 7a runs
-  them; 7b still runs anything with an inline `--test` (`_flowlib`, `meta-lint`, guards.d examples).
-- **The wrapper version lock is deleted** (user reversed the 0.0.5 decision): whatever plugin
-  version is active supplies both the instructions and the runner, so wrapper/runner drift is not a
-  reachable state. `WRAPPER_VERSION`, `FLOW_WRAPPER_ALLOW_DRIFT` and `tests.sh` check 8 are gone —
-  **do not reintroduce them.** Consumers refresh `bin/loop`/`bin/grind` once.
-- **Honest number:** shipped code lines are roughly flat (python is wordier per line than dense
-  bash). The wins are one language, no external dep, no self-disarming guard, and 78 → 438 tests.
+- **0.0.9 shipped with a bug that undercut its own fix.** The rewritten `worktree-bash-guard`
+  resolves write paths instead of grepping for them, but it started resolving from `wt_root`
+  rather than the hook payload's `cwd`. The Bash tool's cwd persists across calls, so a session
+  standing in a worktree *subdirectory* was off by one hop per level — it let the exact escape
+  class 0.0.9 exists to close straight through, and denied writes that never left the worktree.
+  Fixed in `4512ac7`; 6 regression tests pin it (reverting the one-line fix fails 4 of them).
+- **The fix folded into 0.0.9 rather than cutting 0.0.10** — 0.0.9 was unpushed and materialized
+  in no cache (the local one tops out at 0.0.8), so no consumer could have seen it. Same reasoning
+  applies to anything else caught before this push.
+- Two cosmetic corrections in the same commit: `plugin.json`'s em-dash had been rewritten to a
+  `\u2014` escape (script artifact — marketplace.json still holds the literal), and
+  `worktree/README.md` still claimed the guards make leaks "mechanically impossible", contradicting
+  the honesty 0.0.9 put into the skill. Write-guard is exact; bash guard is best-effort.
 
 ## Machine-local (not repo)
 
-`optimiziramsi-skills@optimiziramsi` **0.0.6** installed; smoke-tested from the cache (16 python
-hooks execute, `lib/` + all 8 `tests/` dirs shipped, gate green, bare wrapper resolves 0.0.6 past
-the legacy 0.0.1 entry under the old marketplace name). Stale caches 0.0.1 / 0.0.4 / 0.0.5 still on disk, harmless.
-`main` pinned in `.claude/worktrees/_integration`; `receive.denyCurrentBranch=updateInstead`.
+`optimiziramsi-skills@optimiziramsi` **0.0.8** is the installed/materialized version; caches
+0.0.4–0.0.8 on disk plus a legacy `opsi/…/0.0.1` under the old marketplace name, all harmless.
+After the push: `claude plugin marketplace update optimiziramsi` → `plugin update` → **restart**.
 Tracked `.claude/settings.json` sets `GIT_GUARD_{PROTECTED,INTEGRATION}_BRANCH` = `main`.
-The main checkout deliberately sits on `slim`, not `main` — git-guard blocks checking out the
-protected branch, so a non-`main` working branch is the normal resting state here.
+Committing on `main` is not blocked; git-guard blocks bulk staging (`git add -A`) — stage by name.
 
 ## Next up
 
@@ -47,10 +43,13 @@ protected branch, so a non-`main` working branch is the normal resting state her
    the shared main `/.git`). Doubles as the runners' never-done live smoke test.
 2. Not yet slimmed: `instructions/bin/meta-lint` is still 1332 lines / 19 checks (user confirmed
    they use it). `flow/bin/_flowlib.py` (908) and the runners are justified by what they do.
+3. `.todo` carries two open design questions the user raised: making `loop`/`grind` worktree-aware,
+   and landing a worktree into a branch that isn't checked out.
 
 ## Standing context
 
 `init-marketplace`, `single-plugin`, `topic-first`, `publish-readiness` = retained build history.
-Done-gate `./tests.sh` (7 checks). `.todo`: plain bullets, `(done)` prefix, no checkboxes. Commits
-single-line (guard live). History append-only. Deliberate source-sweep skips still honored.
-Worktree board is `.agent/worktrees.md`.
+Done-gate `./tests.sh` (7 checks). `.todo`: plain bullets, `(done)` prefix, no checkboxes; the
+`todo-readonly-guard` is live here, so `.todo` edits need "ALLOW TODO" and unarmed deferrals go to
+`.todo-inbox`. Commits single-line (guard live). History append-only. Tests live in
+`<topic>/tests/*.py`, never inside a shipped file. Worktree board is `.agent/worktrees.md`.

@@ -184,9 +184,11 @@ the human a **ready-to-paste restart prompt**: a new-session with worktree ON an
 never create the worktree.** If the project needs env bootstrap (a fresh worktree has no local
 env/secrets), run it now.
 
-**Path discipline:** the hook guards **tool** writes; **Bash redirects aren't probed**, so keep
-shell writes relative to the worktree cwd and never `>` an absolute main-repo path. Derive every
-write path from `git rev-parse --show-toplevel`; never reuse a main-repo absolute path.
+**Path discipline:** the write-guard covers **tool** writes always; shell writes are covered only
+where the project set `WORKTREE_BASH_GUARD_ENABLE=1`, and even there it is a best-effort resolver,
+not a shell. **Write as if neither existed:** keep shell writes relative to the worktree cwd, never
+`>` an absolute main-repo path, and never `cd` out of the worktree to write. Derive every write
+path from `git rev-parse --show-toplevel`; never reuse a main-repo absolute path.
 
 **Known failure modes** (inline, so you don't relearn them): per-call path slips outside the
 worktree; a session mis-rooting to the main checkout; a sub-agent inheriting a stale worktree
