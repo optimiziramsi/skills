@@ -1,14 +1,14 @@
 # Handoff
 
-_Last updated:_ 2026-07-29 — session 12: **0.0.9 reviewed and fixed up; NOT yet pushed.**
+_Last updated:_ 2026-07-29 — session 12: **0.0.9 reviewed + pushed; 0.0.10 committed, unpushed.**
 
 `main` is the only branch and there are no worktrees left — the `slim` branch and both worktrees
-(checkout + `_integration`) are gone, so the checkout now sits on `main` itself. Two commits sit
-ahead of `origin/main`, both carrying version **0.0.9**: `10c2820` (another chat's work) and
-`4512ac7` (this session's review fixup). **The user squashes these into one before pushing.**
-`./tests.sh` ALL GREEN (7 checks, 466 tests).
+(checkout + `_integration`) are gone, so the checkout now sits on `main` itself. The user squashed
+this session's 0.0.9 review fixup into `f4fefc7` and pushed it. **`27ffcbf` (0.0.10, doc-only) is
+one commit ahead of `origin/main` and is the user's to push.** `./tests.sh` ALL GREEN (7 checks,
+466 tests).
 
-## Session 12 (2026-07-29) — reviewing 0.0.9 before it ships
+## Session 12 (2026-07-29) — reviewing 0.0.9, then 0.0.10 on a consumer report
 
 Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.9. What a cold session can't re-derive:
 
@@ -21,16 +21,19 @@ Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.9. What a cold session can
 - **The fix folded into 0.0.9 rather than cutting 0.0.10** — 0.0.9 was unpushed and materialized
   in no cache (the local one tops out at 0.0.8), so no consumer could have seen it. Same reasoning
   applies to anything else caught before this push.
-- Two cosmetic corrections in the same commit: `plugin.json`'s em-dash had been rewritten to a
-  `\u2014` escape (script artifact — marketplace.json still holds the literal), and
-  `worktree/README.md` still claimed the guards make leaks "mechanically impossible", contradicting
-  the honesty 0.0.9 put into the skill. Write-guard is exact; bash guard is best-effort.
+- **0.0.10 came from a consumer repo (rabbit-run) field-testing 0.0.9** — doc-only, `27ffcbf`. The
+  `worktree` skill's fourth "Known failure mode" claimed a write-guard false-positive on the
+  worktree's own nested `.claude/**`: fixed since 0.0.6, re-verified false here in both layouts.
+  Its workaround had become an instruction to route around the guard 0.0.9 hardened. Generalized
+  into a lesson: [doc-fixes-must-not-become-bypasses](lessons/doc-fixes-must-not-become-bypasses.md).
+- **Verify a consumer's claims before landing them.** Both of rabbit-run's held up, but the fix
+  they proposed (just drop the item) needed a replacement they hadn't scoped.
 
 ## Machine-local (not repo)
 
-`optimiziramsi-skills@optimiziramsi` **0.0.8** is the installed/materialized version; caches
-0.0.4–0.0.8 on disk plus a legacy `opsi/…/0.0.1` under the old marketplace name, all harmless.
-After the push: `claude plugin marketplace update optimiziramsi` → `plugin update` → **restart**.
+`optimiziramsi-skills@optimiziramsi` **0.0.8** is installed; caches 0.0.4–0.0.8 on disk plus a
+legacy `opsi/…/0.0.1` under the old marketplace name, all harmless. After the push:
+`claude plugin marketplace update optimiziramsi` → `plugin update` → **restart**.
 Tracked `.claude/settings.json` sets `GIT_GUARD_{PROTECTED,INTEGRATION}_BRANCH` = `main`.
 Committing on `main` is not blocked; git-guard blocks bulk staging (`git add -A`) — stage by name.
 
