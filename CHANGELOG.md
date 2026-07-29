@@ -9,6 +9,28 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.10 — 2026-07-29
+
+Doc-only. The `worktree` skill listed a guard bug that no longer exists, and told the agent to get
+around it by switching channels — advice 0.0.9 turned into a bypass of the guard it had just
+hardened.
+
+- **Dropped the fourth "Known failure mode".** It claimed the write-guard false-positives on the
+  worktree's *own* nested `.claude/**`. It doesn't, and hasn't since 0.0.6 rewrote the guard to
+  test "inside the worktree" **before** "inside the main checkout" — re-verified here across both
+  layouts (sibling and the nested `.claude/worktrees/<name>` one) down to
+  `<wt>/.claude/worktrees/inner/x.md`; every in-worktree path is allowed and every main-rooted one
+  still denied. The other three failure modes were correct and are untouched.
+- **Its workaround was the real damage.** "Work around it with an in-worktree relative Bash/Python
+  write, not an absolute-path tool write" was written when the shell channel was unguarded. After
+  0.0.9 it read as *route around `worktree-bash-guard`* — directly against § Path discipline three
+  lines above it. Replaced with the opposite instruction: **verify, never route around** — a guard
+  denial is a real escape, so re-issue the path instead of switching channels.
+- **What replaces it is attributed to the host, not the guard:** a nested `.claude/**` target
+  occasionally mis-canonicalized by Claude Code's own path resolver (reported from a consumer repo
+  2026-07-29; not reproducible against these guards). The remedy is a `git -C <worktree> status`
+  check that the write landed, not a different write channel.
+
 ## 0.0.9 — 2026-07-29
 
 `worktree-bash-guard` resolves paths instead of grepping for them — it was blind to every

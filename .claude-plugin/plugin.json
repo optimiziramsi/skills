@@ -1,7 +1,7 @@
 {
   "name": "optimiziramsi-skills",
   "displayName": "optimiziramsi skills",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "optimiziramsi's Claude Code toolkit as ONE plugin, organized topic-first — one folder per concern (git, commit, reporting, session, review, repo, instructions, flow, patterns, worktree, setup), each owning its own skills/commands/agents/hooks. Opinionated concerns carry env kill-switches; guards self-gate on project config.",
   "author": {
     "name": "optimiziramsi",

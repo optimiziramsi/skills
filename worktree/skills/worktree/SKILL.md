@@ -192,8 +192,11 @@ path from `git rev-parse --show-toplevel`; never reuse a main-repo absolute path
 
 **Known failure modes** (inline, so you don't relearn them): per-call path slips outside the
 worktree; a session mis-rooting to the main checkout; a sub-agent inheriting a stale worktree
-snapshot; and the write-guard's false-positive on the worktree's *own* nested `.claude/**` (work
-around it with an in-worktree **relative** Bash/Python write, not an absolute-path tool write).
+snapshot; and — the host's own path resolver, not a guard — a nested `.claude/**` target
+occasionally mis-canonicalized (a `worktrees/<name>/.claude` segment dropped, or a spurious "not
+read yet" straight after a clean read). **Verify, never route around:** confirm with
+`git -C <worktree> status` that the write landed where you meant. A guard denial is a real escape
+— re-issue the path, don't switch channels to get past it.
 
 ## Landing — autonomous + self-serializing
 
