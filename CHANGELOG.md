@@ -9,7 +9,7 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
-## 0.0.13-dev.2 — 2026-08-19
+## 0.0.13-dev.3 — 2026-08-19
 
 The worktree leak-probe was scoring the wrong thing. Reported from a consumer repo, where
 `loop --worktree` refused to start on one worktree while an identically-provisioned sibling ran.
@@ -37,6 +37,13 @@ The worktree leak-probe was scoring the wrong thing. Reported from a consumer re
   children.** It was off, so a worktree run was guarded on the file tools while `printf x >
   ../../<main>/f` walked straight out — and the probe's own Bash step would have landed a real file
   in the main checkout. Interactive sessions are unaffected; the guard stays opt-in there.
+- **`worktree-bash-guard` no longer reads a trailing redirect as a destination.** For the verbs
+  whose last positional argument is what gets written (`cp`, `mv`, `tee`, `install`, `rsync`,
+  `sed -i`), `shlex` keeps a glued `2>/dev/null` as a single token, so it took that slot — and once
+  a `cd` had moved the shell into the main checkout it resolved there, denying
+  `cp x.log /tmp/dest/ 2>/dev/null` on a destination of `<main>/2>/dev/null` while the real one was
+  never examined. Redirect tokens (and the target of a bare `>`) are now dropped before the last
+  positional is taken. Suite: 48 → 52 cases.
 
 ## 0.0.12 — 2026-08-19
 
