@@ -127,8 +127,12 @@ Load-bearing facts behind the design:
   version-keyed cache dir as a github source (verified byte-identical for `opsi-infra/platform`
   0.1.0 — a copy, not a symlink). So "a local path is always fresh" is **unproven**; iterate on a
   `0.0.N-dev.M` series, which `release.sh` refuses to release.
-- **Marketplaces are keyed by NAME globally** (`known_marketplaces.json`) — you cannot register a
-  github-sourced and a directory-sourced `optimiziramsi` at once; you swap the source.
+- **Marketplaces are keyed by NAME globally** (`known_marketplaces.json`) — there is exactly one
+  `optimiziramsi`. It is registered from **this checkout's path** (2026-08-19, user), so the
+  branch checked out here is what every project on this machine loads: `main` = production,
+  `develop`/feature = field-testing, for as long as it stays checked out. Consequence: `develop`'s
+  version must never equal `main`'s or the switch is invisible — hence the `-dev` series, which
+  `release.sh` opens after every release and refuses to publish.
 
 Decisions: `main` stays GitHub's default branch (the `github` source resolves the default branch).
 History is kept on both sides — no orphan restart. Hotfixes are ordinary releases; no cherry-pick

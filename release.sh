@@ -18,7 +18,8 @@
 # deliberately one the guard would permit anyway.)
 #
 #   ./release.sh --dry-run   # show the tree that would land, change nothing
-#   ./release.sh             # cut it
+#   ./release.sh             # cut it, then open the next -dev series on develop
+#   ./release.sh --no-open   # cut it and leave develop's version alone
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -30,10 +31,12 @@ DEV_ONLY=(.agent .claude .todo .todo-inbox CLAUDE.md tests.sh release.sh .gitign
 
 DRY_RUN=0
 SKIP_TESTS=0
+OPEN_NEXT=1
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --skip-tests) SKIP_TESTS=1 ;;
+    --no-open) OPEN_NEXT=0 ;;
     -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
     *) echo "release: unknown argument '$arg'" >&2; exit 2 ;;
   esac
@@ -126,5 +129,29 @@ git push -q . "$TMP_BRANCH:$PUB_BRANCH"          # local fast-forward land; no r
 git tag "$TAG" "$PUB_BRANCH"
 
 echo "release: $PUB_BRANCH is now $(git rev-parse --short "$PUB_BRANCH"), tagged $TAG"
+
+# Open the next development series. The local marketplace is folder-bound, so switching this
+# checkout between branches switches what every project on this machine loads — and the install
+# cache is version-keyed. If develop and main ever carried the SAME version, the switch would be
+# invisible. A -dev suffix keeps them distinct, and release.sh refuses to publish one.
+if [ "$OPEN_NEXT" -eq 1 ]; then
+  NEXT=$(python3 - "$VERSION" <<'PY'
+import sys
+major, minor, patch = (sys.argv[1].split('.') + ['0', '0'])[:3]
+print(f"{major}.{minor}.{int(patch) + 1}-dev.1")
+PY
+)
+  python3 - "$NEXT" <<'PY'
+import json, re, sys
+p = '.claude-plugin/plugin.json'
+s = open(p).read()
+open(p, 'w').write(re.sub(r'("version":\s*")[^"]+(")', r'\g<1>' + sys.argv[1] + r'\g<2>', s, count=1))
+assert json.load(open(p))['version'] == sys.argv[1]
+PY
+  git add .claude-plugin/plugin.json
+  git commit -q -m "open $NEXT"
+  echo "release: $DEV_BRANCH opened at $NEXT"
+fi
+
 echo "release: yours to publish —"
-echo "  git push origin $PUB_BRANCH && git push origin $TAG"
+echo "  git push origin $PUB_BRANCH && git push origin $TAG && git push origin $DEV_BRANCH"

@@ -1,55 +1,50 @@
-# Dev marketplace — test `develop` in real projects without cutting a release
+# The local marketplace is this folder — whatever branch is checked out is what ships locally
 
-Goal: run unreleased plugin code in other repos (loopers, guards, skills) so a bug costs a commit,
-not a public version.
+One marketplace registration on this machine, sourced from **this checkout's path**. No swapping,
+no second name: `git checkout main` and every project on this computer runs the released plugin;
+`git checkout develop` (or a feature branch) and they all run that instead, for as long as you
+leave it there.
 
-## How the plumbing actually works
-
-- **Marketplaces are keyed by NAME, globally.** `~/.claude/plugins/known_marketplaces.json` holds
-  one entry per name; the name comes from `.claude-plugin/marketplace.json` (`optimiziramsi`).
-  There is no way to have a github-sourced and a directory-sourced `optimiziramsi` at the same
-  time — you **swap the source**, you don't run both.
-- **A directory source is a real source, not a symlink to your tree.** `installLocation` points at
-  your path, but the *plugin* still materializes into
-  `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` — verified as a byte-identical copy
-  for a directory-sourced plugin, exactly like a github one.
-- **That cache is version-keyed**, which is why a same-version edit can stay invisible
-  ([lesson](lessons/plugin-version-bump-on-edit.md)). Treat "a local path is always fresh" as
-  **unproven** until you've watched an edit land with the version unchanged. Until then, iterate on
-  a `0.0.N-dev.M` version series — `release.sh` refuses to release any `-dev`/`-rc` version, so the
-  series cannot escape by accident.
-- **Plugins bind at session start.** Restart CCD after any marketplace/install/version change; a
-  resumed session keeps the old binding.
-
-## Switching this machine to the dev source
-
-Remotes and install records are the user's — run these yourself, from a plain terminal:
+## Register it (once, yours to run)
 
 ```bash
-claude plugin marketplace remove optimiziramsi && claude plugin marketplace add /Users/YOU/PROJECTS/git/github.com/optimiziramsi/skills
+claude plugin marketplace remove optimiziramsi && claude plugin marketplace add "$(git rev-parse --show-toplevel)"
 ```
 
-The path is this checkout, which sits on `develop`. Every project that already has
-`optimiziramsi-skills@optimiziramsi` installed now resolves it from local disk. Restart CCD.
+Restart CCD. Projects that already have `optimiziramsi-skills@optimiziramsi` installed now resolve
+it from disk. The github registration is gone — `main` in this checkout is the production copy.
 
-Prefer a fixed path that doesn't move with your branch? Add a worktree and point at that instead:
+## What makes the branch switch actually take
 
-```bash
-git worktree add .claude/worktrees/dev develop
-```
+- **Marketplaces are keyed by NAME globally** (`~/.claude/plugins/known_marketplaces.json`), and
+  the name comes from `.claude-plugin/marketplace.json`. There is exactly one `optimiziramsi`;
+  pointing it at a path is what makes it follow your branch.
+- **The install cache is version-keyed**:
+  `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` holds a real copy, verified
+  byte-identical for a directory source — it is not a symlink to your tree
+  ([lesson](lessons/plugin-version-bump-on-edit.md)). So **`develop`'s version must never equal
+  `main`'s**, or switching branches would be invisible. `release.sh` enforces this from both ends:
+  it refuses to publish a `-dev`/`-rc` version, and after landing a release it opens the next
+  `0.0.N-dev.1` on `develop`.
+- **Iterating within `develop`** bumps the dev counter — `0.0.12-dev.1` → `-dev.2` → … Treat "same
+  version, new content rebinds" as unproven until you have watched it happen.
+- **Plugins bind at session start.** Restart CCD after a branch switch; a resumed session keeps the
+  old binding.
 
-## Switching back to the public source
+## Consequences worth knowing before you leave `develop` checked out for days
 
-```bash
-claude plugin marketplace remove optimiziramsi && claude plugin marketplace add optimiziramsi/skills
-```
-
-Do this before validating a release the way consumers will get it — the shallow clone tracks
-`main`, so it is the only way to see the *filtered* tree in situ.
+- **The working tree is the source, not a commit.** Uncommitted edits here are live in every
+  project on this machine.
+- **`main` has no workbench.** Checking it out removes `.agent/`, `.todo*`, `CLAUDE.md`,
+  `.claude/`, `tests.sh`, `release.sh` from disk — they are simply not tracked there. They come
+  back on `git checkout develop`. Gitignored things (`.agent/loop/`, `.claude/worktrees/`,
+  `.idea/`) survive the switch untouched.
+- **No agent does the switching.** `main` is the protected branch; `git checkout main` is yours.
 
 ## The loop
 
-1. Edit on `develop`, bump to `0.0.N-dev.M`, commit.
-2. `claude plugin update optimiziramsi-skills@optimiziramsi` in the test project, restart, exercise it.
-3. Repeat until it holds up in the field.
-4. Collapse the `-dev` series to the real `0.0.N` and cut the release (`.claude/skills/release/`).
+1. Edit on `develop` (or a feature branch off it), bump the `-dev` counter, commit.
+2. Restart CCD in the test project and exercise it. Leave it for as long as you want.
+3. When it holds up: bump to the final `0.0.N`, write the `CHANGELOG.md` section, and cut the
+   release ([`release` skill](../.claude/skills/release/SKILL.md)).
+4. `git checkout main` when you want the machine back on production.
