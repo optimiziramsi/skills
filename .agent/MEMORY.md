@@ -107,3 +107,36 @@ section).
 Run: `cd <scratch> && python3 <repo>/flow/bin/loop --model sonnet` → type `yes`. Confirm:
 SMOKE.txt says "ok", job-status flipped to done, ## Report filled, new commit in `git log`.
 Remove this note once the live test passes.
+
+## Public `main` / working `develop` — filtered tree-copy release (2026-08-19, user)
+
+`main` is the **published plugin only**; `develop` is the working repo. Reason is legibility, not
+secrecy: a visitor (and every consumer's plugin cache) could not tell plugin content from this
+repo's own workbench, and some files existed in three near-identical forms (shipped payload,
+this repo's live copy, an example for a consumer repo).
+
+Load-bearing facts behind the design:
+
+- **A consumer's marketplace clone is SHALLOW and main-only** — `~/.claude/plugins/marketplaces/<name>/.git`
+  carries a `shallow` file and the refspec `+refs/heads/main:refs/remotes/origin/main`.
+  `develop` never reaches anyone. This is why a private repo was rejected as unnecessary.
+- **Consumers get the tree twice**: that clone *plus* a per-version copy at
+  `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`. Before the split both carried
+  `.agent/`, `.todo`, `.todo-inbox`, `CLAUDE.md`, `.claude/settings.json`.
+- **Directory-sourced marketplaces are not special**: the plugin still materializes into the same
+  version-keyed cache dir as a github source (verified byte-identical for `opsi-infra/platform`
+  0.1.0 — a copy, not a symlink). So "a local path is always fresh" is **unproven**; iterate on a
+  `0.0.N-dev.M` series, which `release.sh` refuses to release.
+- **Marketplaces are keyed by NAME globally** (`known_marketplaces.json`) — you cannot register a
+  github-sourced and a directory-sourced `optimiziramsi` at once; you swap the source.
+
+Decisions: `main` stays GitHub's default branch (the `github` source resolves the default branch).
+History is kept on both sides — no orphan restart. Hotfixes are ordinary releases; no cherry-pick
+path back from `main`. No separate examples repo — `scaffold-claude-md` / `scaffold` already
+generate the example, and a checked-in copy would become the third drifting version of it.
+`instructions/examples/` stays on `main`: it is shipped payload the meta-lint and tripwire engines
+reference, not a showcase. `other/` stays public by user call.
+
+Machinery: [`release.sh`](../release.sh) (filtered tree-copy → FF land → tag, no remote),
+[`.claude/skills/release/`](../.claude/skills/release/SKILL.md) (the protocol),
+[`dev-marketplace.md`](./dev-marketplace.md) (test unreleased code in other repos).
