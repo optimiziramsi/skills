@@ -9,6 +9,29 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.12 — 2026-08-19
+
+Two fixes to things that fail silently: a guard that blocked commands it should not have, and an
+authoring rule that nothing enforced.
+
+- **`todo-readonly-guard` no longer reads prose as a write.** Its verb rules (`mv`/`cp`/`rm`/
+  `truncate`/`install`, `sed -i`/`perl -i`) matched anywhere in a Bash command, and the gap
+  between verb and target could span newlines — so a heredoc whose *text* said "install for
+  project" and, twelve lines later, "stale `.todo` item" was denied as a write to `.todo`. Verbs
+  now count only at the start of a command segment (past any `VAR=x` prefix), and no rule pairs a
+  verb on one line with a target on another. The same pass closed the opposite hole: the trailing
+  boundary `(["'\s]|$)` missed every target followed by punctuation, so `(rm .todo)` and
+  `rm .todo; echo x` were silently *allowed*. Now a `(?![\w.-])` lookahead, which still refuses
+  `.todos`, `.todo.bak`, and `.todo-inbox`. Suite: 26 → 33 cases.
+- **`ADOPTION.md` refreshed for the two-branch split**, re-verified against CCD/CC 2.1.235. New:
+  what `main` actually contains and that your marketplace clone is shallow and main-only, so
+  `develop` is never fetched; how to point the one registration at a local checkout instead of
+  GitHub (and that the two are mutually exclusive, since marketplaces are keyed by name); that
+  `claude plugin marketplace remove` drops the install records of every plugin from that
+  marketplace, in every scope and repo, and re-adding restores none of them; and that a directory
+  source has no clone to refresh — its install cache is still a version-keyed copy, so a bump plus
+  `claude plugin update` plus a restart is the only path from an edit to a bind.
+
 ## 0.0.11 — 2026-08-19
 
 The published tree is now the plugin and nothing else. `main` carries `.claude-plugin/`, the topic
