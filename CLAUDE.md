@@ -13,18 +13,25 @@ not restated.
    resume at its **Next up**.
 2. Read [`.agent/MEMORY.md`](.agent/MEMORY.md) — durable facts, decisions, gotchas.
 3. This repo tracks its own working continuity like an ordinary project: `.agent/` (memory,
-   handoff, lessons) and the root `.todo` / `.todo-inbox` are versioned. Only machine-local or
-   path-bearing artifacts stay gitignored — runner scratch (`.agent/loop/`, `.agent/grind/`),
-   `.claude/settings.local.json`, `_review/` migration staging, and OS/build junk. Keep committed
-   `.agent/` content free of real local paths and personal data.
+   handoff, lessons) and the root `.todo` / `.todo-inbox` are versioned **on `develop`** — the
+   release filter keeps them off `main`, so they are workbench, not shipped content. Only
+   machine-local or path-bearing artifacts stay gitignored — runner scratch (`.agent/loop/`,
+   `.agent/grind/`), `.claude/settings.local.json`, `_review/` migration staging, and OS/build
+   junk. Keep committed `.agent/` content free of real local paths and personal data.
 
 ## Hard rules — every session, no exceptions
 
 - **Git remotes are the user's.** Never `git push` / `pull` (`git fetch` is fine). The user reviews
   and pushes from their own client. History is append-only (no `--amend` / `rebase` / `reset` to a
-  commit); never discard uncommitted work. `main` carries the marketplace (squash-landed
-  2026-07-18); `init-marketplace` is the retained build history. *(The `git` plugin dogfoods its
-  own guard.)*
+  commit); never discard uncommitted work. *(The `git` plugin dogfoods its own guard.)*
+- **Two branches: work on `develop`, publish to `main`.** `develop` is the working branch — all
+  work happens there or on branches off it. `main` is the **published plugin only** (no `.agent/`,
+  `.todo*`, `CLAUDE.md`, `.claude/`, `tests.sh`, `release.sh`), written **only** by `./release.sh`
+  as a filtered tree-copy — never by hand, never by merge, never `git checkout main`. A consumer's
+  marketplace clone is shallow and tracks `main` alone, so `develop` never reaches them. Cutting a
+  release: the repo-local [`release` skill](.claude/skills/release/SKILL.md). Testing unreleased
+  code in other repos: [`.agent/dev-marketplace.md`](.agent/dev-marketplace.md) — never cut a
+  release just to try something. `init-marketplace` is the retained build history.
 - **Commit as you go.** Small, focused commits, terse imperative single-line subject — the
   `commit` plugin's own house style, dogfooded here. Don't batch into one final commit; don't wait
   to be asked.

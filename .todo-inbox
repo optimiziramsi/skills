@@ -1,5 +1,15 @@
 # .todo-inbox — agent deferrals awaiting user triage (record list, newest on top)
 
+- topic: refresh ADOPTION.md for the develop/main split
+  type: chore
+  origin: 2026-08-19 (public-release branch model)
+  why: `.todo` is user-owned and the session was never armed with "ALLOW TODO" — user asked for
+    this to go in `.todo`; move it there when arming next
+  context: ADOPTION.md predates the two-branch model. Needs: what `main` now contains (plugin +
+    public docs only), that the consumer clone is shallow and main-only, the dev-marketplace
+    swap (directory source ↔ github source, one name at a time), and a re-read of the CCD
+    install-scope field notes against current CCD. User: "full, needs to be updated soon".
+
 - topic: mark the "make grind and loop worktree aware" .todo item (done)
   type: chore
   origin: 2026-07-28 (session 10, worktree loop-grind-launch)
