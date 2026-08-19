@@ -25,9 +25,10 @@ the new hook code bind. The discipline the `instructions` plugin already follows
 - Bumping is necessary but not sufficient on the consumer side: a marketplace update is **not** a
   plugin-install update. The consumer must also update the install record and restart. See
   `ADOPTION.md` § "Updating the plugin".
-- Mechanization was proposed (a `tests.sh` gate that fails when a commit touches `plugins/<name>/**`
-  without moving that plugin's `version`). Until it lands this is honored by hand — which is the
-  whole reason this lesson is routed into CLAUDE.md § Authoring conventions.
+- **Mechanized 2026-08-19** — `tests.sh` § 8 fails when shipped content changed (working tree or
+  HEAD) without `.claude-plugin/plugin.json` moving. It derives "shipped" from `release.sh`'s
+  `DEV_ONLY` line, so the two definitions cannot drift. It is a gate, not a bumper: it refuses the
+  commit, it does not write the version for you.
 
 **Origin:** 2026-07-21 — field adoption of the `git` plugin into a consumer repo surfaced a dead
 `GIT_GUARD_STRICT=reset` across three restarts; root-caused to the missing version bump in `47f58c1`,

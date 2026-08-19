@@ -35,8 +35,8 @@ not restated.
 - **"Done" means validated**, not just written: run **`./tests.sh`** (JSON validity, marketplace ↔
   plugin manifests agree, declared component paths resolve, every `${CLAUDE_PLUGIN_ROOT}` hook
   target exists, every `/command` has its same-named skill, `claude plugin validate . --strict`,
-  every hook self-test) and check **no project-specific content leaked in** — the plugin ships the
-  *system*, never any one project's conventions.
+  hook self-tests, version discipline) and check **no project-specific content leaked in** — the
+  plugin ships the *system*, never any one project's conventions.
 - **Lean reporting.** No narration, no tool-output dumps. Report once at the end: outcome → a few
   terse bullets → questions grouped by topic. Assume an expert reader.
 - **Minimum, surgical change.** Every changed line traces to the request; nothing speculative.

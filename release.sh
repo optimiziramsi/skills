@@ -26,7 +26,8 @@ cd "$(dirname "$0")"
 DEV_BRANCH=develop
 PUB_BRANCH=main
 
-# Development-only paths — present on $DEV_BRANCH, never on $PUB_BRANCH.
+# Development-only paths — present on $DEV_BRANCH, never on $PUB_BRANCH. Everything else is
+# SHIPPED content; tests.sh § 8 parses this one line to know which is which, so keep it one line.
 DEV_ONLY=(.agent .claude .todo .todo-inbox CLAUDE.md tests.sh release.sh .gitignore)
 
 DRY_RUN=0
@@ -53,7 +54,10 @@ git rev-parse --verify --quiet "$PUB_BRANCH" >/dev/null || die "no local $PUB_BR
 VERSION=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
 TAG="v$VERSION"
 case "$VERSION" in
-  *-dev*|*-rc*) die "version $VERSION is a pre-release series — bump to a final version first" ;;
+  # ANY pre-release series — -dev.N on develop, -<branch-slug>.N on a feature branch, -rc.N —
+  # is local-only by construction and must never land on $PUB_BRANCH. tests.sh § 8 is the other
+  # half of this: it keeps those series distinct per branch.
+  *-*) die "version $VERSION is a pre-release series — bump to a final version first" ;;
 esac
 if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
   die "tag $TAG already exists — bump the version in .claude-plugin/plugin.json"

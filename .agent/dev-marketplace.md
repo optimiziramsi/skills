@@ -46,9 +46,18 @@ it from disk. The github registration is gone — `main` in this checkout is the
   `.idea/`) survive the switch untouched.
 - **No agent does the switching.** `main` is the protected branch; `git checkout main` is yours.
 
+## Feature branches carry their own series
+
+`tests.sh` § 8 enforces it: on any branch other than `develop` / `main`, the version must be
+`X.Y.Z-<branch-slug>.N` — `feat/abc-branch` → `0.0.12-feat-abc-branch.1`, then `.2`, `.3`. Same
+reason the `-dev` counter exists: the install cache is version-keyed, so a branch sharing
+`develop`'s version would switch invisibly, and reverting would look like nothing happened. Drop
+back to the `-dev` series when you return to `develop`. `release.sh` refuses to publish ANY
+pre-release, so a branch series can never reach `main`.
+
 ## The loop
 
-1. Edit on `develop` (or a feature branch off it), bump the `-dev` counter, commit.
+1. Edit on `develop` (or a feature branch off it), bump the `-dev` counter, commit. `tests.sh` § 8 fails the gate if shipped content moved and the version did not.
 2. Update the install, then restart CCD — a **marketplace** update alone never moves the pin
    (`installed_plugins.json` keeps the old version and CCD keeps binding it):
 
