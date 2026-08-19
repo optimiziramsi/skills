@@ -55,6 +55,11 @@ esac
 if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
   die "tag $TAG already exists — bump the version in .claude-plugin/plugin.json"
 fi
+# Consumers re-materialize only on a version CHANGE — shipping a new tree under the version
+# already on $PUB_BRANCH reaches nobody. .agent/lessons/plugin-version-bump-on-edit.md
+PUB_VERSION=$(git show "$PUB_BRANCH:.claude-plugin/plugin.json" |
+  python3 -c "import json,sys; print(json.load(sys.stdin)['version'])")
+[ "$VERSION" != "$PUB_VERSION" ] || die "$PUB_BRANCH already ships $VERSION — bump the version in .claude-plugin/plugin.json"
 grep -q "^## $VERSION" CHANGELOG.md || die "CHANGELOG.md has no '## $VERSION' section"
 
 if [ "$SKIP_TESTS" -eq 0 ]; then
