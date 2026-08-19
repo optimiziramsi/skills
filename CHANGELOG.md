@@ -9,6 +9,25 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.11 — 2026-08-19
+
+The published tree is now the plugin and nothing else. `main` carries `.claude-plugin/`, the topic
+folders, `lib/`, `other/`, and the public docs; the working repo — `.agent/`, `.todo`,
+`.todo-inbox`, `CLAUDE.md`, `.claude/`, `tests.sh` — lives on `develop` and stops here.
+
+- **Why it mattered.** You do not just browse this repo, you get a copy of it: installing the
+  marketplace clones it to `~/.claude/plugins/marketplaces/optimiziramsi`, and installing the
+  plugin copies the tree again to `~/.claude/plugins/cache/.../<version>/`. Both used to carry this
+  repo's own workbench, so a file could plausibly be read as plugin payload, as the maintainer's
+  live config, or as an example of what your repo should look like — three shapes, one directory.
+  Now there is one shape.
+- **Nothing moved inside the plugin.** Every skill, command, agent, hook, and `bin/` script is
+  byte-identical to 0.0.10 and lives at the same path; `instructions/examples/` is still shipped
+  payload the meta-lint and tripwire engines reference. Update as usual — nothing to re-wire.
+- **How it's produced.** A filtered tree-copy, not a merge: each release builds one commit whose
+  tree is `develop` minus the development-only paths, then fast-forwards `main` onto it. History is
+  preserved on both branches, and a release can never conflict with the working tree.
+
 ## 0.0.10 — 2026-07-29
 
 Doc-only. The `worktree` skill listed a guard bug that no longer exists, and told the agent to get
