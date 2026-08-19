@@ -1,6 +1,0 @@
-{
-  "env": {
-    "GIT_GUARD_PROTECTED_BRANCH": "main",
-    "GIT_GUARD_INTEGRATION_BRANCH": "main"
-  }
-}
