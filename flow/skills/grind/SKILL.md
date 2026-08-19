@@ -206,6 +206,10 @@ an obstacle — `unenforced` means a denied call went through anyway, so run the
 `FLOW_PROBE_STRICT=1` turns it into a refusal. Both keep the transcript and print the path
 (`FLOW_WORKTREE_UNSAFE=1` skips confinement entirely).
 
+The dirty-tree gate ignores both runners' own logs (judged by the file's directory), and the
+runner commits the ones it wrote when the run ends — so a `loop` run in the same tree no longer
+blocks a mission. `FLOW_NO_LOG_COMMIT=1` opts out of the commit.
+
 **Pre-flight the mission's tools** (its find-candidate commands, build/test) before handing off — a
 bad command makes every iteration thrash. The runner writes `.agent/grind/.gitignore` on first run:
 committed = the mission `.md`, its `.log` memory, and `runner_*.log`; ignored = `*.iter`,

@@ -185,6 +185,11 @@ status — the runner never commits.
   `FLOW_CLAUDE_PERMISSION_MODE`, `FLOW_EXTRA_CLAUDE_ARGS`, `FLOW_BACKOFF_BASE`,
   `FLOW_LONG_BACKOFF_BASE`, `FLOW_ITER_TIMEOUT_SECS`, `FLOW_ITER_PAUSE_SECS`. Run
   `.agent/bin/loop --help` / `.agent/bin/grind --help` for the full flag list.
+- **A runner lands its own logs, and ignores the other runner's.** Each runner commits the
+  session logs it wrote (its job dir only, path-limited, `FLOW_NO_LOG_COMMIT=1` to opt out) at the
+  end of a run — the files are worth keeping, and leaving them uncommitted hands the next run a
+  dirty tree. `grind`'s dirty-tree gate judges runner-owned files by the **file's own directory**,
+  so a `loop` session's logs in `.agent/loop/` never read as work in progress in `.agent/grind/`.
 - **Resilient by default.** `grind` guards every iteration: a wall-clock watchdog
   (900s default) kills hung sessions; a dirty-tree guard refuses to start on uncommitted changes
   (auto-resuming a previously interrupted iteration); a productivity gate only advances on a clean

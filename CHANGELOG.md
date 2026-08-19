@@ -9,7 +9,7 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
-## 0.0.13-dev.4 — 2026-08-19
+## 0.0.13-dev.5 — 2026-08-19
 
 The worktree leak-probe was scoring the wrong thing. Reported from a consumer repo, where
 `loop --worktree` refused to start on one worktree while an identically-provisioned sibling ran.
@@ -58,6 +58,19 @@ The worktree leak-probe was scoring the wrong thing. Reported from a consumer re
 - **The probe child runs with no settings sources** (`--setting-sources ""`), so no project or
   plugin `SessionStart` hook injects third-party context into it — the mechanism behind the
   self-poisoning loop above. Real jobs keep the project's settings; only the probe is isolated.
+- **A `loop` run no longer blocks every later `grind` in the same tree.** grind's dirty-tree gate
+  exempted runner-owned files only inside the *mission's* directory, so the structurally identical
+  files loop writes into `.agent/loop/` — `runner_*.log`, per-job `.log` — counted as work in
+  progress: grind refused to start, and (via the same predicate) scored every iteration
+  unproductive. The exemption is now a property of the file's own directory, so each runner reads
+  the other's bookkeeping as bookkeeping. A wholly-untracked job dir, which git reports as one
+  collapsed entry, counts too.
+- **Each runner commits the session logs it wrote, at the end of its run.** They were designed to
+  be kept (only `*.jsonl` and grind's transient state are gitignored) but nothing ever committed
+  them, so every run ended by handing the tree to the user dirty — leaving "commit runner logs as
+  if they were work" or "gitignore them and lose the evidence" as the only outs. The commit is
+  path-limited to that runner's own job dir, never touches a child's work or anything else staged,
+  and is best-effort (a git failure is reported, never fatal). `FLOW_NO_LOG_COMMIT=1` opts out.
 - **`worktree-bash-guard` no longer reads a trailing redirect as a destination.** For the verbs
   whose last positional argument is what gets written (`cp`, `mv`, `tee`, `install`, `rsync`,
   `sed -i`), `shlex` keeps a glued `2>/dev/null` as a single token, so it took that slot — and once

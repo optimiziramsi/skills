@@ -212,7 +212,9 @@ read it before advising. `FLOW_WORKTREE_UNSAFE=1` skips confinement entirely (th
 Before handing off, **pre-flight the tools** the jobs rely on — confirm the build/test/lint commands
 actually run in this repo. A runner that fails every job on a broken command wastes a whole batch.
 The runner writes per-job logs to `.agent/loop/{stem}.log` (readable) + `.agent/loop/{stem}.jsonl`
-(raw) and a session overview to `.agent/loop/runner_*.log`.
+(raw) and a session overview to `.agent/loop/runner_*.log`, and commits the tracked ones itself
+when the run ends (`FLOW_NO_LOG_COMMIT=1` opts out) — so the next runner in that tree doesn't meet
+a tree dirtied by bookkeeping.
 
 ### Permissions
 

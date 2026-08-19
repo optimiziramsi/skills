@@ -413,30 +413,34 @@ def main():
     fl.info(fl.dim(f"runner log: {runner_log}"))
 
     done_count = 0
-    while True:
-        jobs = load_jobs(job_dir)
-        queue = runnable_queue(jobs)
-        if not queue:
-            if opts["watch"]:
-                fl.info(fl.dim("queue empty — watching for new pending jobs (Ctrl+C to stop)…"))
+    try:
+        while True:
+            jobs = load_jobs(job_dir)
+            queue = runnable_queue(jobs)
+            if not queue:
+                if opts["watch"]:
+                    fl.info(fl.dim("queue empty — watching for new pending jobs (Ctrl+C to stop)…"))
+                    try:
+                        time.sleep(10)
+                        continue
+                    except KeyboardInterrupt:
+                        fl.info("\nstopped.")
+                        break
+                break
+            for job in queue:
                 try:
-                    time.sleep(10)
-                    continue
-                except KeyboardInterrupt:
-                    fl.info("\nstopped.")
-                    break
-            break
-        for job in queue:
-            try:
-                # re-check the job is still runnable (a prior job may have changed things)
-                meta, _, _ = fl.read_job(job["path"])
-                if (meta.get("job-status") or "").strip().lower() not in ("pending", "running"):
-                    continue
-                run_one(job, opts, runner_log, settings_json=settings_json)
-                done_count += 1
-            except Exception as e:  # noqa: BLE001 — one job's error must not kill the batch
-                fl.info(fl.red(f"  runner error on {job['base']}: {e} — skipping"))
-
+                    # re-check the job is still runnable (a prior job may have changed things)
+                    meta, _, _ = fl.read_job(job["path"])
+                    if (meta.get("job-status") or "").strip().lower() not in ("pending", "running"):
+                        continue
+                    run_one(job, opts, runner_log, settings_json=settings_json)
+                    done_count += 1
+                except Exception as e:  # noqa: BLE001 — one job's error must not kill the batch
+                    fl.info(fl.red(f"  runner error on {job['base']}: {e} — skipping"))
+    finally:
+        # the runner's own session logs are the runner's to land — left behind they hand the
+        # next run (a grind mission in this tree) a dirty tree it refuses to start on
+        fl.commit_runner_logs(job_dir, f"flow: loop session logs ({done_count} job(s))")
     fl.info(fl.green(f"\ndone — {done_count} job(s) processed."))
 
 

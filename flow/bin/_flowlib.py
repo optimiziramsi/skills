@@ -20,6 +20,7 @@ Escape hatches / overrides (env vars):
   FLOW_WORKTREE_UNSAFE=1     skip worktree confinement + its leak-probe (you own the risk)
   FLOW_PROBE_MODEL           model for the one-off leak-probe session (default sonnet)
   FLOW_PROBE_STRICT=1        an UNCONFIRMED leak-probe refuses to run instead of warning
+  FLOW_NO_LOG_COMMIT=1       don't commit the runner's own logs at the end of a run
 """
 
 import json
@@ -333,6 +334,95 @@ def coerce_int(meta: dict, key: str, default: int) -> int:
         return int(str(meta.get(key, default)).strip())
     except (ValueError, TypeError):
         return default
+
+
+# ── Runner-owned bookkeeping ────────────────────────────────────────────────
+# Both runners write logs and counters into their job dir while they work. Those files are
+# theirs, not the project's work — and each runner has to read the OTHER's the same way, since
+# one tree commonly holds both (drain a queue with `loop`, then run a mission with `grind`).
+# Judging by the file's own directory rather than by whose run is asking is what makes that
+# work; the runners then commit their own at the end of a run so the next one starts clean.
+FLOW_JOB_DIRS = (".agent/loop", ".agent/grind")
+RUNNER_OWNED_SUFFIXES = (".log", ".jsonl", ".iter", ".attempt")
+
+
+def runner_owned(path, extra_dirs=()):
+    """True when repo-relative `path` is a flow runner's own bookkeeping rather than work.
+
+    Job and mission `.md` files are work and never match — only the logs, transcripts,
+    counters and the job dir's own `.gitignore` do.
+    """
+    dirs = set(FLOW_JOB_DIRS) | set(extra_dirs)
+    if path.endswith("/"):
+        return path.rstrip("/") in dirs   # git collapses a wholly-untracked dir into one entry
+    if os.path.dirname(path) not in dirs:
+        return False
+    base = os.path.basename(path)
+    return base == ".gitignore" or base.endswith(RUNNER_OWNED_SUFFIXES)
+
+
+def git_dirty(cwd=None):
+    """(toplevel, [(porcelain line, repo-relative path)]) — (None, []) when git can't answer.
+
+    Fail-open by design: no git, no repo, or a broken invocation disengages the callers'
+    guards rather than blocking a run.
+    """
+    try:
+        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
+                             text=True, cwd=cwd)
+        if top.returncode != 0:
+            return None, []
+        st = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True,
+                            cwd=cwd)
+        if st.returncode != 0:
+            return None, []
+    except Exception:  # noqa: BLE001 — a guard must never break the run
+        return None, []
+    out = []
+    for line in st.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        path = line[3:]
+        if " -> " in path:                       # a rename reports "old -> new"
+            path = path.split(" -> ", 1)[1]
+        out.append((line, path.strip().strip('"')))
+    return top.stdout.strip(), out
+
+
+def commit_runner_logs(job_dir, message):
+    """Commit the runner's OWN log/state files under `job_dir` — nothing else, ever.
+
+    A runner never commits a child's work (each child commits its own), but its session logs
+    are its to land: left behind they hand the next run a dirty tree, which grind refuses to
+    start on and scores as an unproductive iteration. The alternative — gitignoring them —
+    throws away the evidence the logs exist for. Path-limited, so anything else staged or
+    dirty is untouched, and best-effort: a git failure is reported, never raised.
+    FLOW_NO_LOG_COMMIT=1 turns it off.
+    """
+    if os.environ.get("FLOW_NO_LOG_COMMIT") == "1":
+        return
+    top, dirty = git_dirty()
+    if not top:
+        return
+    rel_dir = os.path.relpath(os.path.abspath(job_dir), top).replace(os.sep, "/")
+    # only this runner's OWN dir: the other runner's logs are exempt from the dirty-tree gate
+    # (see `runner_owned`), but landing them is that runner's business, not ours
+    mine = [path for _, path in dirty
+            if os.path.dirname(path) == rel_dir and runner_owned(path, (rel_dir,))]
+    if not mine:
+        return
+    try:
+        add = subprocess.run(["git", "add", "--"] + mine, capture_output=True, text=True)
+        if add.returncode != 0:
+            raise RuntimeError(add.stderr.strip() or "git add failed")
+        out = subprocess.run(["git", "commit", "-m", message, "--"] + mine,
+                             capture_output=True, text=True)
+        if out.returncode != 0:
+            raise RuntimeError(out.stderr.strip() or out.stdout.strip() or "git commit failed")
+    except Exception as e:  # noqa: BLE001 — a log commit must never end a run
+        info(yellow(f"  runner logs left uncommitted ({e})"))
+        return
+    info(dim(f"  committed {len(mine)} runner log file(s)"))
 
 
 # ── Claude invocation ───────────────────────────────────────────────────────
@@ -1042,6 +1132,19 @@ def _self_test() -> int:
         check("refuses an unknown name", dies_on("nope", repo))
         # A directory name must not be beaten by a substring hit elsewhere.
         check("exact name wins over substring", resolves_to("alpha", wt_a, repo))
+
+        # ── runner-owned bookkeeping ────────────────────────────────────────
+        check("a runner's own log is not work", runner_owned(".agent/loop/runner_260819.log"))
+        check("the other runner's dir counts too", runner_owned(".agent/grind/sweep.jsonl"))
+        check("counters are not work", runner_owned(".agent/grind/sweep.iter"))
+        check("the job dir's .gitignore is not work", runner_owned(".agent/loop/.gitignore"))
+        check("a job file IS work", not runner_owned(".agent/loop/260101_120000_thing.md"))
+        check("source is work", not runner_owned("src/app.ts"))
+        check("a log outside any job dir is work", not runner_owned("docs/build.log"))
+        check("a custom --dir is honored", runner_owned("tmp/jobs/x.log", ("tmp/jobs",)))
+        check("a wholly-untracked job dir collapses to one entry, still not work",
+              runner_owned(".agent/loop/"))
+        check("an untracked dir that is not a job dir stays work", not runner_owned(".agent/"))
 
         # ── worktree confinement ────────────────────────────────────────────
         main_ctx, wt_ctx = worktree_context(repo), worktree_context(wt_a)
