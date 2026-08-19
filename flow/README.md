@@ -161,16 +161,20 @@ status — the runner never commits.
   NAME is a branch, a worktree directory name, a path, a unique substring of either, or `root`;
   ambiguity is an error listing candidates, never a guess. `loop --worktree all` surveys every
   worktree, arms once, and runs a child runner per tree with a queue (not with `--watch`).
-- **Worktree runs are confined, and the confinement is proven first.** In a linked worktree the
-  runners inject the `worktree` topic's PreToolUse guards into every child (arming the opt-in bash
-  guard, since a run guarded only on the file tools is confined on paper only) and then run a
-  one-off **leak-probe** session that tries to write into the main checkout by both the Write tool
-  and a bash redirect. The verdict is read from **the guards' own deny output** in the probe
-  transcript, never from which files did or didn't appear: `confined` needs a deny observed on
-  both channels, a file that landed is a `leak`, and a probe model that declines to attempt the
-  escape is `declined` — its own refusal, because nothing was proven either way. Every refusal
-  keeps the probe transcript and prints its path. Main-checkout runs are unchanged.
-  `FLOW_WORKTREE_UNSAFE=1` skips it, `FLOW_PROBE_MODEL` picks the probe model.
+- **Worktree runs are confined, and the confinement is proven first — in two independent steps.**
+  In a linked worktree the runners inject the `worktree` topic's PreToolUse guards into every child
+  (arming the opt-in bash guard, since a run guarded only on the file tools is confined on paper
+  only). Then: (1) both guards are fired at **this worktree's real paths** with synthetic payloads —
+  no model, deterministic — and must deny; (2) a one-off **leak-probe** session establishes the
+  other half, which is a property of the CLI rather than of the guards: that a PreToolUse `deny`
+  fires *and is honored* in a headless child under `--dangerously-skip-permissions`. The probe asks
+  the model only for two ordinary writes inside its own worktree and injects a witness hook that
+  denies them, so nothing in it reads as an escape attempt. Verdicts: `enforced` (witness deny seen,
+  neither file exists) arms; `unenforced` (a denied call took effect anyway) **refuses**;
+  `unconfirmed` (the session made no guarded tool call) **warns and continues**, since the guards
+  are verified and registered by then — `FLOW_PROBE_STRICT=1` makes that fatal instead. Every
+  non-green verdict keeps the probe transcript and prints its path. Main-checkout runs are
+  unchanged. `FLOW_WORKTREE_UNSAFE=1` skips the lot, `FLOW_PROBE_MODEL` picks the probe model.
 - **Full permissions, explicit arm.** Jobs run with `--dangerously-skip-permissions` (a headless
   session can't answer a prompt, so unattended edits/commits need it). The runner requires an
   interactive "yes" — or `-y` for cron/unattended.

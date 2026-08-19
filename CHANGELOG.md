@@ -9,7 +9,7 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
-## 0.0.13-dev.3 — 2026-08-19
+## 0.0.13-dev.4 — 2026-08-19
 
 The worktree leak-probe was scoring the wrong thing. Reported from a consumer repo, where
 `loop --worktree` refused to start on one worktree while an identically-provisioned sibling ran.
@@ -37,6 +37,27 @@ The worktree leak-probe was scoring the wrong thing. Reported from a consumer re
   children.** It was off, so a worktree run was guarded on the file tools while `printf x >
   ../../<main>/f` walked straight out — and the probe's own Bash step would have landed a real file
   in the main checkout. Interactive sessions are unaffected; the guard stays opt-in there.
+- **The leak-probe no longer depends on a model agreeing to attempt a sandbox break.** Asking a
+  session to write into the main checkout is a request a correctly-aligned model refuses — and the
+  lines added to preempt that refusal were quoted back as the evidence for it ("framing designed to
+  preempt refusal … that's a social-engineering pattern"). Observed compliance was 1 in 4. Worse,
+  each refusal was recorded by a session-memory plugin and replayed into the *next* probe, so
+  refusal got likelier the more the probe ran. The probe now asks for two ordinary writes **inside
+  the worktree** and injects a witness hook that denies them: a witness deny in the transcript plus
+  neither file existing proves what actually mattered — that a PreToolUse `deny` fires **and is
+  honored** in a `--dangerously-skip-permissions` child. Nothing in the prompt reads as an escape,
+  and the probe no longer writes into the main checkout even when it fails.
+- **The guards themselves are now checked directly, against the real worktree.** Before the probe,
+  both guards are fired at this checkout's actual worktree/main pair with synthetic payloads — no
+  model, no tool call, deterministic — and must deny. That covers layout-specific surprises (a
+  worktree nested under its own main checkout, symlinked paths) the fixture suite can't.
+- **A probe that proves nothing no longer bricks the runner.** `unenforced` (a denied call took
+  effect anyway) still refuses — that is the dangerous answer. `unconfirmed` (the session made no
+  guarded tool call) now warns loudly and continues, since the guards are verified and registered
+  by that point; `FLOW_PROBE_STRICT=1` restores the refusal.
+- **The probe child runs with no settings sources** (`--setting-sources ""`), so no project or
+  plugin `SessionStart` hook injects third-party context into it — the mechanism behind the
+  self-poisoning loop above. Real jobs keep the project's settings; only the probe is isolated.
 - **`worktree-bash-guard` no longer reads a trailing redirect as a destination.** For the verbs
   whose last positional argument is what gets written (`cp`, `mv`, `tee`, `install`, `rsync`,
   `sed -i`), `shlex` keeps a glued `2>/dev/null` as a single token, so it took that slot — and once
