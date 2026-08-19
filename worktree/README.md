@@ -28,7 +28,9 @@ No-ops entirely when you're not in a linked worktree.
   event: PreToolUse `Bash`
   purpose:
     Deny a shell write (`>`, `sed -i`, `tee`…) into the main checkout from a worktree. **Opt-in**
-    (false-positive-prone): `WORKTREE_BASH_GUARD_ENABLE=1`.
+    (false-positive-prone): `WORKTREE_BASH_GUARD_ENABLE=1` — which the `flow` runners set for the
+    headless children they launch in a worktree, where there is no human to un-block a false
+    positive and the shell is the widest way out.
 
 - name: `worktree-leak-detector`
   kind: hook

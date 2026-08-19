@@ -9,6 +9,35 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.13-dev.2 — 2026-08-19
+
+The worktree leak-probe was scoring the wrong thing. Reported from a consumer repo, where
+`loop --worktree` refused to start on one worktree while an identically-provisioned sibling ran.
+
+- **The verdict now reads the guards' own deny output, not filesystem side-effects.** The probe
+  asked a throwaway session to write a positive control inside the worktree and to escape into the
+  main checkout twice, then judged by `os.path.exists()`. Two ways that lied. A tidy model deleted
+  its own control file and the run died `INCONCLUSIVE` (model-dependent — hence two trees
+  disagreeing on identical input). Worse, a model that simply *declined* to attempt the escape —
+  the correct reading of a prompt that looks like a sandbox break, and increasingly the likely one
+  — left no leak file behind and was scored `confined`, printing "confinement proven" in green on
+  a transcript in which no PreToolUse hook fired at all. That inverts the probe's purpose: whether
+  hooks fire under `--dangerously-skip-permissions` is precisely the open question. `confined` now
+  requires each guard's deny to be **observed in the transcript**, on both channels.
+- **A declining probe gets its own verdict.** `declined` ("the probe model refused to attempt the
+  escape, so the guards were never exercised", naming which channel was denied and which was never
+  tried) instead of the old message that sent the user off to check their CLI. `inconclusive` now
+  means only what it says: the session never ran (its control was never read, or it died).
+- **The positive control is written by the runner and only read by the probe**, carrying a nonce
+  that is not in the prompt — so a cleanup-happy model can't delete the evidence, and finding the
+  nonce in the transcript proves the session really ran inside the worktree.
+- **Every refusal keeps its transcript and prints the path** (log + raw stream). Previously only a
+  `leak` did, so the two verdicts you actually hit were a dead end.
+- **The runners now arm the opt-in bash guard (`WORKTREE_BASH_GUARD_ENABLE=1`) for their headless
+  children.** It was off, so a worktree run was guarded on the file tools while `printf x >
+  ../../<main>/f` walked straight out — and the probe's own Bash step would have landed a real file
+  in the main checkout. Interactive sessions are unaffected; the guard stays opt-in there.
+
 ## 0.0.12 — 2026-08-19
 
 Two fixes to things that fail silently: a guard that blocked commands it should not have, and an

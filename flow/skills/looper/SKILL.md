@@ -200,11 +200,14 @@ the tree.
 
 **Confinement is automatic and gated.** When the runner's cwd is a linked worktree it injects the
 `worktree` guards into every headless child, then spends one cheap throwaway session on a
-**leak-probe** that tries to write into the main checkout — and **refuses to run** unless that write
-is blocked. Tell the user what a refusal means rather than working around it: a `leak` verdict says
-PreToolUse hooks don't fire under bypass on that CLI, so jobs should run from the **main checkout**
-instead. `FLOW_WORKTREE_UNSAFE=1` skips confinement entirely (they own the risk);
-`FLOW_PROBE_MODEL` tunes the probe.
+**leak-probe** that tries to write into the main checkout — and **refuses to run** unless the guards
+are seen denying both the Write-tool and the Bash attempt. Tell the user what a refusal means
+rather than working around it: `leak` says PreToolUse hooks don't fire under bypass on that CLI, so
+jobs should run from the **main checkout** instead; `declined` says the probe model refused to
+attempt the escape, so nothing was tested — re-run, or set `FLOW_PROBE_MODEL` to one that follows
+the self-test; `inconclusive` says the probe session never ran. Each keeps its transcript and
+prints the path — read it before advising. `FLOW_WORKTREE_UNSAFE=1` skips confinement entirely
+(they own the risk).
 
 Before handing off, **pre-flight the tools** the jobs rely on — confirm the build/test/lint commands
 actually run in this repo. A runner that fails every job on a broken command wastes a whole batch.

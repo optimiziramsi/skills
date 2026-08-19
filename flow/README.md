@@ -162,9 +162,14 @@ status — the runner never commits.
   ambiguity is an error listing candidates, never a guess. `loop --worktree all` surveys every
   worktree, arms once, and runs a child runner per tree with a queue (not with `--watch`).
 - **Worktree runs are confined, and the confinement is proven first.** In a linked worktree the
-  runners inject the `worktree` topic's PreToolUse guards into every child and then run a one-off
-  **leak-probe** session that tries to write into the main checkout by both the Write tool and a
-  bash redirect — refusing to start unless both are blocked. Main-checkout runs are unchanged.
+  runners inject the `worktree` topic's PreToolUse guards into every child (arming the opt-in bash
+  guard, since a run guarded only on the file tools is confined on paper only) and then run a
+  one-off **leak-probe** session that tries to write into the main checkout by both the Write tool
+  and a bash redirect. The verdict is read from **the guards' own deny output** in the probe
+  transcript, never from which files did or didn't appear: `confined` needs a deny observed on
+  both channels, a file that landed is a `leak`, and a probe model that declines to attempt the
+  escape is `declined` — its own refusal, because nothing was proven either way. Every refusal
+  keeps the probe transcript and prints its path. Main-checkout runs are unchanged.
   `FLOW_WORKTREE_UNSAFE=1` skips it, `FLOW_PROBE_MODEL` picks the probe model.
 - **Full permissions, explicit arm.** Jobs run with `--dangerously-skip-permissions` (a headless
   session can't answer a prompt, so unattended edits/commits need it). The runner requires an
