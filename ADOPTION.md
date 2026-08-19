@@ -5,6 +5,25 @@ adoption (2026-07, CCD 2.1.215, then the 11-plugin marketplace; since the 2026-0
 (0.0.1) everything ships as the single `optimiziramsi-skills@optimiziramsi` plugin). Goal: the
 plugin owns the generic system, the repo keeps only what is repo-specific, zero overlap.
 
+Re-verified 2026-08-19 against CCD/CC 2.1.235 and the `develop`/`main` split (0.0.11): the install
+and update mechanics below still hold, and the CLI equivalents of every UI step are named inline.
+
+## What you receive: `main`, and only `main`
+
+- **Two branches, one of them yours.** `main` is the published plugin — `.claude-plugin/`, the
+  topic folders, `lib/`, `other/`, and the public docs (this file, `README.md`, `CHANGELOG.md`).
+  The working repo — `.agent/`, `.todo*`, `CLAUDE.md`, `.claude/`, `tests.sh`, `release.sh` —
+  lives on `develop` and stops there. `main` is written only by the release script, as a filtered
+  tree-copy rather than a merge, so each release is one commit and `main`'s history is the release
+  list.
+- **Your clone is shallow and main-only.** The marketplace clone under
+  `~/.claude/plugins/marketplaces/<name>` fetches `+refs/heads/main:refs/remotes/origin/main`, so
+  `develop` is not merely hidden — it is never fetched. What you have is the published tree, not
+  the authors' working tree.
+- **Version shapes tell you the source.** A plain `X.Y.Z` came from `main`. Any pre-release
+  (`X.Y.Z-dev.N`, `X.Y.Z-<branch-slug>.N`) can only come from a local directory-source
+  registration — the release script refuses to publish one.
+
 ## Enable — marketplace global, plugins per-project
 
 - Two layers, two homes. The **marketplace registration** lives in global `~/.claude/settings.json`:
@@ -13,6 +32,17 @@ plugin owns the generic system, the repo keeps only what is repo-specific, zero 
   "https://github.com/optimiziramsi/skills.git"}`) also works. **Plugin enablement** lives in the
   project's committed `.claude/settings.json` `enabledPlugins` (`"optimiziramsi-skills@optimiziramsi": true`). Never
   enable it in global settings — enables travel with the repo.
+- **Two sources, one name.** The registration above points at GitHub. Point it at a local
+  checkout instead — `claude plugin marketplace add /path/to/skills`, or `"source": {"source":
+  "directory", "path": "/path/to/skills"}` — and every project on that machine loads whatever
+  branch is checked out there. That is how you try an unreleased fix, and the only way to see a
+  `-dev` series. Marketplaces are keyed by NAME globally, so the two forms are mutually exclusive:
+  swapping means `claude plugin marketplace remove optimiziramsi` and then adding the other source.
+- **`marketplace remove` is not a local operation.** It drops the install records of every plugin
+  from that marketplace, in every scope, for every repo on the machine — and re-adding the
+  marketplace restores none of them. A registered marketplace whose plugins were never re-installed
+  renders as a marketplace with nothing in it. After any remove/re-add: re-install, then confirm
+  with `claude plugin list`.
 - Why the marketplace is NOT declared per-project: the name registers once in the global registry
   (`~/.claude/plugins/known_marketplaces.json`); startup syncs the settings declaration into the
   registry, and a second project-level declaration of the same name is just a competing identity
@@ -69,7 +99,7 @@ marketplace — two independent things must move, then a restart:
   re-materializes its install cache when that version *changes*. A same-version code change never
   reaches you, however many times you restart — re-fetching the marketplace clone updates the clone,
   not your installed cache. (Field case: a `git-guard` `reset` block sat dead across three restarts
-  because the fix shipped without a version bump. the plugin now treats "any consumer-visible change →
+  because the fix shipped without a version bump. The plugin now treats "any consumer-visible change →
   bump `.claude-plugin/plugin.json`" as an authoring rule, so this should not recur — but verify
   the version moved.)
 - **You must update the install, not just the marketplace.** Even once the marketplace advances
@@ -95,6 +125,11 @@ selected), and any other repos' rows stay pinned where they were.
   bindings in memory from settings + registry + pins.
 - Full author→consumer chain, no skippable step: bump `plugin.json` + push → marketplace update
   (clone) → plugin update (pin) → new session / restart (bind).
+- **With a directory source there is no clone to refresh** — the marketplace reads the checkout
+  live, so `marketplace update` only re-validates it and rewrites a timestamp. The install cache is
+  still a version-keyed COPY of that tree, never a link to it: an edit in the checkout reaches you
+  only after a version bump, `claude plugin update`, and a restart. Verified 2026-08-19 across
+  three `-dev` bumps.
 
 ## Editing settings.json during adoption
 

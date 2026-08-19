@@ -21,12 +21,22 @@ ARM_PHRASE = re.compile(r"allow\s+\.?todo", re.I)
 
 # `.todo` as a WRITE TARGET — not a mere mention, and not an unrelated redirect like
 # `2>/dev/null`. One readable alternative per channel; add a channel by adding a row.
-DOT_TODO = r"""["']?([\w./-]*/)?\.todo(["'\s]|$)"""
+#
+# Two anti-false-positive rules, both learned the hard way (2026-08-19: a `python3 - <<EOF` whose
+# PROSE said "install for project" and, twelve lines later, "stale .todo item", was denied as a
+# write): a verb counts only at the START of a command segment, so a quoted or heredoc'd mention
+# is inert, and no rule may pair a verb on one line with a target on another.
+SEGMENT = r"(?:^|[\n;|&(])\s*(?:\w+=\S+\s+)*"   # start of a command, past any env prefix
+SAME_LINE = r"[^|;&\n]*"                        # a verb and its target share one line
+# Trailing boundary as a lookahead, not a character: the old `(["'\s]|$)` missed every target
+# followed by shell punctuation — `(rm .todo)`, `rm .todo; echo x`. `(?![\w.-])` still refuses
+# `.todos` / `.todo.bak` / `.todo-inbox`.
+DOT_TODO = r"""["']?([\w./-]*/)?\.todo(?![\w.-])"""
 WRITES_TODO = re.compile("|".join((
-    r"""(^|[^0-9&])>{1,2}\s*""" + DOT_TODO,      # echo x > .todo   /  sort f >> .todo
-    r"\btee\b[^|;&]*\.todo",                     # ... | tee -a .todo
-    r"\b(sed|perl)\s+-i[^|;&]*\.todo",           # sed -i '' s/a/b/ .todo
-    r"\b(mv|cp|rm|truncate|install)\b[^|;&]*\s" + DOT_TODO,
+    r"""(^|[^0-9&])>{1,2}[^\S\n]*""" + DOT_TODO,  # echo x > .todo   /  sort f >> .todo
+    r"\btee\b" + SAME_LINE + r"\.todo",           # ... | tee -a .todo
+    SEGMENT + r"(sed|perl)\s+-i" + SAME_LINE + r"\.todo",   # sed -i '' s/a/b/ .todo
+    SEGMENT + r"(mv|cp|rm|truncate|install)\b" + SAME_LINE + r"\s" + DOT_TODO,
     r"\bof=\S*\.todo",                           # dd of=.todo
 )))
 

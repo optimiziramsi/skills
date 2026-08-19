@@ -49,6 +49,13 @@ try:
     denies("deny mv onto .todo", "Bash", {"command": "mv draft.md .todo"})
     denies("deny rm", "Bash", {"command": "rm .todo"})
     denies("deny dd of=", "Bash", {"command": "dd if=x of=.todo"})
+    denies("deny a verb after &&", "Bash", {"command": "cd /repo && rm .todo"})
+    denies("deny a verb after ;", "Bash", {"command": "echo hi; rm .todo"})
+    denies("deny a verb behind an env prefix", "Bash", {"command": "FOO=1 rm .todo"})
+    denies("deny a verb in a subshell", "Bash", {"command": "(rm .todo)"})
+    denies("deny a target followed by punctuation", "Bash", {"command": "rm .todo; echo done"})
+    allows("allow a longer name that merely starts with .todo", "Bash",
+           {"command": "echo x >> .todos"})
 
     # ── bash reads stay free ───────────────────────────────────────────────
     allows("allow a read", "Bash", {"command": "cat .todo"})
@@ -58,6 +65,13 @@ try:
     allows("allow a write to .todo-inbox", "Bash", {"command": "echo x >> .todo-inbox"})
     allows("allow the TODO_GUARD_SKIP=1 bypass", "Bash",
            {"command": "TODO_GUARD_SKIP=1 echo x >> .todo"})
+    # Regression 2026-08-19: a heredoc that PARKED text in .todo-inbox was denied because its
+    # prose said "install for project" and, lines later, "stale .todo item".
+    allows("allow a verb and a mention on different lines of a heredoc", "Bash",
+           {"command": 'python3 - <<EOF\ns = "enabledPlugins true, install for project"\n'
+                       't = "stale .todo item is superseded"\nEOF'})
+    allows("allow a quoted mention mid-line", "Bash",
+           {"command": 'git commit -m "install notes for the .todo file"'})
     allows("kill-switch disarms", "Edit", {"file_path": "/repo/.todo"},
            env={"TODO_GUARD_DISABLE": "1"})
 
