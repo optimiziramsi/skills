@@ -27,14 +27,19 @@ it from disk. The github registration is gone — `main` in this checkout is the
   it refuses to publish a `-dev`/`-rc` version, and after landing a release it opens the next
   `0.0.N-dev.1` on `develop`.
 - **Iterating within `develop`** bumps the dev counter — `0.0.12-dev.1` → `-dev.2` → … Treat "same
-  version, new content rebinds" as unproven until you have watched it happen.
+  version, new content rebinds" as unproven until you have watched it happen. The proven cycle
+  (verified 2026-08-19 across `-dev.1` → `-dev.2` → `-dev.3`): bump + commit → `claude plugin
+  update` → restart CCD. `claude plugin marketplace update` was verified NOT to move the install
+  at all — it validates the source and rewrites `lastUpdated`, nothing more.
 - **Plugins bind at session start.** Restart CCD after a branch switch; a resumed session keeps the
   old binding.
 
 ## Consequences worth knowing before you leave `develop` checked out for days
 
-- **The working tree is the source, not a commit.** Uncommitted edits here are live in every
-  project on this machine.
+- **The working tree is what the marketplace reads — but not what an installed plugin runs.**
+  The branch you leave checked out decides which `marketplace.json` and which version the
+  marketplace advertises; the installed plugin runs from its version-keyed cache copy. So
+  uncommitted edits here are *not* live anywhere until you bump + `claude plugin update` + restart.
 - **`main` has no workbench.** Checking it out removes `.agent/`, `.todo*`, `CLAUDE.md`,
   `.claude/`, `tests.sh`, `release.sh` from disk — they are simply not tracked there. They come
   back on `git checkout develop`. Gitignored things (`.agent/loop/`, `.claude/worktrees/`,
@@ -44,7 +49,16 @@ it from disk. The github registration is gone — `main` in this checkout is the
 ## The loop
 
 1. Edit on `develop` (or a feature branch off it), bump the `-dev` counter, commit.
-2. Restart CCD in the test project and exercise it. Leave it for as long as you want.
-3. When it holds up: bump to the final `0.0.N`, write the `CHANGELOG.md` section, and cut the
+2. Update the install, then restart CCD — a **marketplace** update alone never moves the pin
+   (`installed_plugins.json` keeps the old version and CCD keeps binding it):
+
+   ```bash
+   claude plugin update optimiziramsi-skills@optimiziramsi --scope user
+   ```
+
+   CCD equivalent: Manage plugins → the plugin page → Update. Mechanics and the per-scope pin rules
+   live in [ADOPTION.md](../ADOPTION.md) § "Updating the plugin".
+3. Exercise it in the test project. Leave it for as long as you want.
+4. When it holds up: bump to the final `0.0.N`, write the `CHANGELOG.md` section, and cut the
    release ([`release` skill](../.claude/skills/release/SKILL.md)).
-4. `git checkout main` when you want the machine back on production.
+5. `git checkout main` when you want the machine back on production.
