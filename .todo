@@ -1,5 +1,3 @@
 # opsi — todo
 
-- Push `init-marketplace` — nothing is installable until pushed (remote pushes are user-owned); then follow `_review/MIGRATION.md` to disable local dupes, and drop the 3 worktree guards from `~/.claude/settings.json` if enabling `worktree@opsi`.
-- Live-test the flow runner against a real `claude -p` from a plain terminal (nested guard blocks it inside a session; how-to in the looper/grind skills' "First run — smoke-test it"; memory: flow-runner-needs-live-test).
 - Live test looper and grinder on another project (branches / worktrees) and fix any issues 
