@@ -202,8 +202,9 @@ relative to the worktree, because that is where the mission lives.
 every iteration's child, fires them at the worktree's real paths, and then runs a live leak-probe
 that checks the CLI honors a PreToolUse `deny` under bypass at all. A refusal is information, not
 an obstacle — `unenforced` means a denied call went through anyway, so run the mission from the
-**main checkout** instead; `unconfirmed` (the probe made no guarded tool call) only warns, and
-`FLOW_PROBE_STRICT=1` turns it into a refusal. Both keep the transcript and print the path
+**main checkout** instead; `unconfirmed` (the probe made no guarded tool call) means nothing was
+proven, so it refuses too (`FLOW_PROBE_LENIENT=1` downgrades it to a warning). Both keep the
+transcript and print the path
 (`FLOW_WORKTREE_UNSAFE=1` skips confinement entirely).
 
 The dirty-tree gate ignores both runners' own logs (judged by the file's directory), and the

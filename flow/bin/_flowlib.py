@@ -19,7 +19,7 @@ Escape hatches / overrides (env vars):
   FLOW_ITER_TIMEOUT_SECS     grind wall-clock watchdog per iteration (default 900; 0 = off)
   FLOW_WORKTREE_UNSAFE=1     skip worktree confinement + its leak-probe (you own the risk)
   FLOW_PROBE_MODEL           model for the one-off leak-probe session (default sonnet)
-  FLOW_PROBE_STRICT=1        an UNCONFIRMED leak-probe refuses to run instead of warning
+  FLOW_PROBE_LENIENT=1       an UNCONFIRMED leak-probe warns instead of refusing to run
   FLOW_NO_LOG_COMMIT=1       don't commit the runner's own logs at the end of a run
 """
 
@@ -939,9 +939,9 @@ def worktree_preflight():
     In worktree mode it runs the guards' suite, arms the opt-in bash guard for the children,
     fires both guards at this worktree's real paths, and then spends one throwaway session
     proving the CLI actually honors a hook deny under bypass. It die()s when a deny is IGNORED
-    (the dangerous answer) and warns when the probe session never made a guarded call (nothing
-    proven either way — FLOW_PROBE_STRICT=1 makes that fatal too). FLOW_WORKTREE_UNSAFE=1 skips
-    the whole thing — the escape hatch; you own the risk.
+    (the dangerous answer) and also when the probe session never made a guarded call, since
+    unproven is not proven — FLOW_PROBE_LENIENT=1 downgrades that second one to a warning.
+    FLOW_WORKTREE_UNSAFE=1 skips the whole thing — the escape hatch; you own the risk.
     """
     ctx = worktree_context()
     if not ctx or not ctx["is_linked"]:
@@ -996,10 +996,12 @@ def worktree_preflight():
         "are verified (their suite passed, and they deny a main-checkout write from this very "
         "worktree) and they are registered for every child — nothing is disproven, but nothing "
         "about the CLI is proven either.")
-    if os.environ.get("FLOW_PROBE_STRICT") == "1":
-        die("✘ " + unconfirmed + " FLOW_PROBE_STRICT=1 — REFUSING to run.")
-    info(yellow("    ⚠ " + unconfirmed + " CONTINUING with the guards armed; set "
-                "FLOW_PROBE_STRICT=1 to make this fatal instead."))
+    if os.environ.get("FLOW_PROBE_LENIENT") != "1":
+        die("✘ " + unconfirmed + " REFUSING to run — unproven is not proven. Re-try (a probe "
+            "session that answers normally is the usual case), pick another FLOW_PROBE_MODEL, or "
+            "set FLOW_PROBE_LENIENT=1 to continue on an unconfirmed probe (you own the risk).")
+    info(yellow("    ⚠ " + unconfirmed + " FLOW_PROBE_LENIENT=1 — CONTINUING with the guards "
+                "armed anyway. You own the risk."))
     return settings
 
 
@@ -1181,12 +1183,12 @@ def _self_test() -> int:
             fh.write(STUB_CLI)
         prev_cwd, prev_env = os.getcwd(), dict(os.environ)
 
-        def preflight(mode, strict=False):
+        def preflight(mode, lenient=False):
             """(settings-or-None, died, stderr) for one stubbed preflight."""
             os.environ["STUB_MODE"] = mode
-            os.environ.pop("FLOW_PROBE_STRICT", None)
-            if strict:
-                os.environ["FLOW_PROBE_STRICT"] = "1"
+            os.environ.pop("FLOW_PROBE_LENIENT", None)
+            if lenient:
+                os.environ["FLOW_PROBE_LENIENT"] = "1"
             buf = io.StringIO()
             try:
                 with contextlib.redirect_stderr(buf):
@@ -1205,15 +1207,15 @@ def _self_test() -> int:
             got, died, err = preflight("unenforced")
             check("preflight REFUSES when a hook deny is IGNORED",
                   died and got is None and "went through anyway" in err)
-            # A model that declines, or a session that dies, proves nothing either way — and must
-            # not brick the runner: the guards are already verified and registered by here.
+            # A model that declines, or a session that dies, proves nothing either way — which
+            # is not the same as proving there is nothing wrong, so the default is to refuse.
             for mode in ("no-tools", "mute"):
                 got, died, err = preflight(mode)
-                check(f"preflight WARNS but arms on a {mode} probe",
-                      got is not None and not died and "UNCONFIRMED" in err)
-            got, died, err = preflight("no-tools", strict=True)
-            check("FLOW_PROBE_STRICT=1 turns UNCONFIRMED back into a refusal",
-                  died and got is None and "UNCONFIRMED" in err)
+                check(f"preflight REFUSES an UNCONFIRMED {mode} probe by default",
+                      died and got is None and "UNCONFIRMED" in err)
+            got, died, err = preflight("no-tools", lenient=True)
+            check("FLOW_PROBE_LENIENT=1 downgrades UNCONFIRMED to a warning",
+                  got is not None and not died and "UNCONFIRMED" in err)
             check("preflight arms the shell guard for the children it launches",
                   os.environ.get("WORKTREE_BASH_GUARD_ENABLE") == "1")
             check("the probe child loads no settings sources (no third-party session context)",

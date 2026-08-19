@@ -171,8 +171,8 @@ status — the runner never commits.
   the model only for two ordinary writes inside its own worktree and injects a witness hook that
   denies them, so nothing in it reads as an escape attempt. Verdicts: `enforced` (witness deny seen,
   neither file exists) arms; `unenforced` (a denied call took effect anyway) **refuses**;
-  `unconfirmed` (the session made no guarded tool call) **warns and continues**, since the guards
-  are verified and registered by then — `FLOW_PROBE_STRICT=1` makes that fatal instead. Every
+  `unconfirmed` (the session made no guarded tool call) **also refuses**, because unproven is not
+  proven — `FLOW_PROBE_LENIENT=1` downgrades that one to a warning. Every
   non-green verdict keeps the probe transcript and prints its path. Main-checkout runs are
   unchanged. `FLOW_WORKTREE_UNSAFE=1` skips the lot, `FLOW_PROBE_MODEL` picks the probe model.
 - **Full permissions, explicit arm.** Jobs run with `--dangerously-skip-permissions` (a headless

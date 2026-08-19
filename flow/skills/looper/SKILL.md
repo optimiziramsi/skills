@@ -203,11 +203,12 @@ the tree.
 then spends one cheap throwaway session on a **leak-probe** — which asks only for two ordinary
 writes inside the worktree and injects a witness hook that denies them, to establish that a
 PreToolUse `deny` is honored at all under bypass. Tell the user what each verdict means rather than
-working around it: `unenforced` (a denied call went through anyway) is a **refusal** — hook denies
-aren't honored under bypass on that CLI, so jobs should run from the **main checkout** instead;
-`unconfirmed` (the probe made no guarded tool call) is a **warning** and the run continues, with
-`FLOW_PROBE_STRICT=1` available to make it fatal. Both keep the transcript and print the path —
-read it before advising. `FLOW_WORKTREE_UNSAFE=1` skips confinement entirely (they own the risk).
+working around it: `unenforced` (a denied call went through anyway) means hook denies aren't
+honored under bypass on that CLI, so jobs should run from the **main checkout** instead;
+`unconfirmed` (the probe made no guarded tool call) proves nothing either way — re-run, or pick
+another `FLOW_PROBE_MODEL`. Both refuse; `FLOW_PROBE_LENIENT=1` downgrades the second to a warning
+if the user accepts running unproven. Both keep the transcript and print the path — read it before
+advising. `FLOW_WORKTREE_UNSAFE=1` skips confinement entirely (they own the risk).
 
 Before handing off, **pre-flight the tools** the jobs rely on — confirm the build/test/lint commands
 actually run in this repo. A runner that fails every job on a broken command wastes a whole batch.

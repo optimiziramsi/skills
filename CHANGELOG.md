@@ -9,7 +9,7 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
-## 0.0.13-dev.5 — 2026-08-19
+## 0.0.13-dev.6 — 2026-08-19
 
 The worktree leak-probe was scoring the wrong thing. Reported from a consumer repo, where
 `loop --worktree` refused to start on one worktree while an identically-provisioned sibling ran.
@@ -51,10 +51,11 @@ The worktree leak-probe was scoring the wrong thing. Reported from a consumer re
   both guards are fired at this checkout's actual worktree/main pair with synthetic payloads — no
   model, no tool call, deterministic — and must deny. That covers layout-specific surprises (a
   worktree nested under its own main checkout, symlinked paths) the fixture suite can't.
-- **A probe that proves nothing no longer bricks the runner.** `unenforced` (a denied call took
-  effect anyway) still refuses — that is the dangerous answer. `unconfirmed` (the session made no
-  guarded tool call) now warns loudly and continues, since the guards are verified and registered
-  by that point; `FLOW_PROBE_STRICT=1` restores the refusal.
+- **The verdicts are named for what they establish, and both non-green ones refuse.**
+  `unenforced` — a denied call took effect anyway — is the dangerous answer. `unconfirmed` — the
+  session made no guarded tool call — proves nothing either way, which is not proof that nothing
+  is wrong, so it refuses as well; `FLOW_PROBE_LENIENT=1` downgrades it to a warning for anyone
+  who accepts running unproven.
 - **The probe child runs with no settings sources** (`--setting-sources ""`), so no project or
   plugin `SessionStart` hook injects third-party context into it — the mechanism behind the
   self-poisoning loop above. Real jobs keep the project's settings; only the probe is isolated.
