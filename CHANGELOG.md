@@ -9,7 +9,7 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
-## 0.0.13-dev.6 — 2026-08-19
+## 0.0.13 — 2026-08-20
 
 The worktree leak-probe was scoring the wrong thing. Reported from a consumer repo, where
 `loop --worktree` refused to start on one worktree while an identically-provisioned sibling ran.
