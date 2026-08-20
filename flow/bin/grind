@@ -178,42 +178,20 @@ def ensure_gitignore(job_dir):
             fh.write(GITIGNORE_BODY)
 
 
-def dirty_tree(job_dir, stem):
-    """Return dirty `git status --porcelain` lines, excluding runner-owned files.
+def dirty_tree(job_dir):
+    """Return dirty `git status --porcelain` lines, excluding every flow runner's own files.
 
-    Excluded: the mission's memory log (created empty pre-run, grows via the agent),
-    the runner's own transcript/state files, and `runner_*.log` overviews — they are
-    dirty BY the run, not meaningful work. Returns None when git is unavailable or
-    this isn't a repo (guard disabled, fail-open).
+    Exempt: this mission's memory log, transcripts, counters and `runner_*.log` overviews —
+    dirty BY a run, not meaningful work — and the same for the OTHER runner's job dir, since
+    `loop` and `grind` share a tree and loop's session logs would otherwise read as work in
+    progress and block every mission here. Returns None when git is unavailable or this isn't
+    a repo (guard disabled, fail-open).
     """
-    try:
-        top = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                             capture_output=True, text=True)
-        if top.returncode != 0:
-            return None
-        st = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-        if st.returncode != 0:
-            return None
-    except Exception:  # noqa: BLE001 — guard must never break the run
+    top, entries = fl.git_dirty()
+    if not top:
         return None
-    rel_dir = os.path.relpath(os.path.abspath(job_dir), top.stdout.strip()).replace(os.sep, "/")
-    own = {f"{rel_dir}/{stem}.log", f"{rel_dir}/{stem}.run.log", f"{rel_dir}/{stem}.jsonl",
-           f"{rel_dir}/{stem}.iter", f"{rel_dir}/{stem}.attempt", f"{rel_dir}/.gitignore"}
-    dirty = []
-    for line in st.stdout.splitlines():
-        if len(line) < 4:
-            continue
-        path = line[3:]
-        if " -> " in path:
-            path = path.split(" -> ", 1)[1]
-        path = path.strip().strip('"')
-        if path in own:
-            continue
-        if (os.path.dirname(path) == rel_dir and
-                os.path.basename(path).startswith("runner_") and path.endswith(".log")):
-            continue
-        dirty.append(line)
-    return dirty
+    rel_dir = os.path.relpath(os.path.abspath(job_dir), top).replace(os.sep, "/")
+    return [line for line, path in entries if not fl.runner_owned(path, (rel_dir,))]
 
 
 def tagged_commit_exists(topic, iteration):
@@ -450,7 +428,7 @@ def main():
                 fl.set_frontmatter_field(mission_path, "status", "done")
                 break
 
-            dirty = dirty_tree(job_dir, stem)
+            dirty = dirty_tree(job_dir)
             if dirty:
                 if fresh_started == 0 and iteration > 0:
                     # Previous session was interrupted mid-iteration — its in-flight
@@ -512,7 +490,7 @@ def main():
         committed = tagged_commit_exists(topic, iteration)
         meta_after, _, _ = fl.read_job(mission_path)
         status_after = (meta_after.get("status") or "active").strip().lower()
-        dirty_after = dirty_tree(job_dir, stem)
+        dirty_after = dirty_tree(job_dir)
         tree_clean = not dirty_after  # None (no git) counts as clean — gate needs git anyway
 
         if tree_clean and (committed or status_after != "active"):
@@ -574,6 +552,7 @@ def main():
             break
         time.sleep(iter_pause)
 
+    fl.commit_runner_logs(job_dir, f"flow: grind session logs ({topic})")
     fl.info(fl.green(f"\ngrind finished — {iteration} iteration(s) run."))
 
 

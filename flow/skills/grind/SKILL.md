@@ -199,10 +199,17 @@ An ambiguous name is an error listing the candidates — it never guesses. The m
 relative to the worktree, because that is where the mission lives.
 
 **Confinement is automatic and gated:** in a worktree the runner injects the `worktree` guards into
-every iteration's child and refuses to start unless a live leak-probe proves a main-checkout write
-is blocked. A refusal is information, not an obstacle — a `leak` verdict means PreToolUse hooks
-don't fire under bypass on that CLI, so run the mission from the **main checkout** instead
-(`FLOW_WORKTREE_UNSAFE=1` skips confinement; `FLOW_PROBE_MODEL` tunes the probe).
+every iteration's child, fires them at the worktree's real paths, and then runs a live leak-probe
+that checks the CLI honors a PreToolUse `deny` under bypass at all. A refusal is information, not
+an obstacle — `unenforced` means a denied call went through anyway, so run the mission from the
+**main checkout** instead; `unconfirmed` (the probe made no guarded tool call) means nothing was
+proven, so it refuses too (`FLOW_PROBE_LENIENT=1` downgrades it to a warning). Both keep the
+transcript and print the path
+(`FLOW_WORKTREE_UNSAFE=1` skips confinement entirely).
+
+The dirty-tree gate ignores both runners' own logs (judged by the file's directory), and the
+runner commits the ones it wrote when the run ends — so a `loop` run in the same tree no longer
+blocks a mission. `FLOW_NO_LOG_COMMIT=1` opts out of the commit.
 
 **Pre-flight the mission's tools** (its find-candidate commands, build/test) before handing off — a
 bad command makes every iteration thrash. The runner writes `.agent/grind/.gitignore` on first run:

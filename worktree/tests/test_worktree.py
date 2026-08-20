@@ -80,6 +80,17 @@ with scratch_repo({"f.ts": "a\n"}) as repo:
           '"deny"' in runs(f"dd if=/dev/null of={up}/LEAK.md")[1])
     check("deny an interpreter write after cd (target opaque, cwd is not)",
           '"deny"' in runs(f"cd {up} && python3 -c \"open('LEAK.md','w')\"")[1])
+    # A trailing `2>/dev/null` is ONE shlex token, so the last-positional rule used to read it as
+    # the destination — and once a `cd` put the shell in the main checkout it resolved there,
+    # blocking benign commands whose real destination was never even looked at (field report).
+    check("allow cp with a trailing 2>/dev/null (the redirect is not the destination)",
+          runs(f"cd {up} && cp x.log /tmp/dest/ 2>/dev/null")[1] == "")
+    check("allow tee with a trailing 2>/dev/null",
+          runs(f"cd {up} && cat f | tee /tmp/out.txt 2>/dev/null")[1] == "")
+    check("still deny the REAL destination past a trailing 2>/dev/null",
+          '"deny"' in runs(f"cd {up} && cp /tmp/x.log LEAK.md 2>/dev/null")[1])
+    check("a bare redirect does not steal the last-positional slot",
+          '"deny"' in runs(f"cd {up} && cp /tmp/x.log LEAK.md > /tmp/log")[1])
     # the layout the skill actually uses — worktree NESTED under the main checkout, where every
     # escape is a plain `../..` and the in-worktree test has to win before the main-checkout one
     nested_up = os.path.relpath(repo.main, sibling)

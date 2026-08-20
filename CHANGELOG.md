@@ -9,6 +9,77 @@ everything below `0.1.0` is field-testing.
 To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
 optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
 
+## 0.0.13 — 2026-08-20
+
+The worktree leak-probe was scoring the wrong thing. Reported from a consumer repo, where
+`loop --worktree` refused to start on one worktree while an identically-provisioned sibling ran.
+
+- **The verdict now reads the guards' own deny output, not filesystem side-effects.** The probe
+  asked a throwaway session to write a positive control inside the worktree and to escape into the
+  main checkout twice, then judged by `os.path.exists()`. Two ways that lied. A tidy model deleted
+  its own control file and the run died `INCONCLUSIVE` (model-dependent — hence two trees
+  disagreeing on identical input). Worse, a model that simply *declined* to attempt the escape —
+  the correct reading of a prompt that looks like a sandbox break, and increasingly the likely one
+  — left no leak file behind and was scored `confined`, printing "confinement proven" in green on
+  a transcript in which no PreToolUse hook fired at all. That inverts the probe's purpose: whether
+  hooks fire under `--dangerously-skip-permissions` is precisely the open question. `confined` now
+  requires each guard's deny to be **observed in the transcript**, on both channels.
+- **A declining probe gets its own verdict.** `declined` ("the probe model refused to attempt the
+  escape, so the guards were never exercised", naming which channel was denied and which was never
+  tried) instead of the old message that sent the user off to check their CLI. `inconclusive` now
+  means only what it says: the session never ran (its control was never read, or it died).
+- **The positive control is written by the runner and only read by the probe**, carrying a nonce
+  that is not in the prompt — so a cleanup-happy model can't delete the evidence, and finding the
+  nonce in the transcript proves the session really ran inside the worktree.
+- **Every refusal keeps its transcript and prints the path** (log + raw stream). Previously only a
+  `leak` did, so the two verdicts you actually hit were a dead end.
+- **The runners now arm the opt-in bash guard (`WORKTREE_BASH_GUARD_ENABLE=1`) for their headless
+  children.** It was off, so a worktree run was guarded on the file tools while `printf x >
+  ../../<main>/f` walked straight out — and the probe's own Bash step would have landed a real file
+  in the main checkout. Interactive sessions are unaffected; the guard stays opt-in there.
+- **The leak-probe no longer depends on a model agreeing to attempt a sandbox break.** Asking a
+  session to write into the main checkout is a request a correctly-aligned model refuses — and the
+  lines added to preempt that refusal were quoted back as the evidence for it ("framing designed to
+  preempt refusal … that's a social-engineering pattern"). Observed compliance was 1 in 4. Worse,
+  each refusal was recorded by a session-memory plugin and replayed into the *next* probe, so
+  refusal got likelier the more the probe ran. The probe now asks for two ordinary writes **inside
+  the worktree** and injects a witness hook that denies them: a witness deny in the transcript plus
+  neither file existing proves what actually mattered — that a PreToolUse `deny` fires **and is
+  honored** in a `--dangerously-skip-permissions` child. Nothing in the prompt reads as an escape,
+  and the probe no longer writes into the main checkout even when it fails.
+- **The guards themselves are now checked directly, against the real worktree.** Before the probe,
+  both guards are fired at this checkout's actual worktree/main pair with synthetic payloads — no
+  model, no tool call, deterministic — and must deny. That covers layout-specific surprises (a
+  worktree nested under its own main checkout, symlinked paths) the fixture suite can't.
+- **The verdicts are named for what they establish, and both non-green ones refuse.**
+  `unenforced` — a denied call took effect anyway — is the dangerous answer. `unconfirmed` — the
+  session made no guarded tool call — proves nothing either way, which is not proof that nothing
+  is wrong, so it refuses as well; `FLOW_PROBE_LENIENT=1` downgrades it to a warning for anyone
+  who accepts running unproven.
+- **The probe child runs with no settings sources** (`--setting-sources ""`), so no project or
+  plugin `SessionStart` hook injects third-party context into it — the mechanism behind the
+  self-poisoning loop above. Real jobs keep the project's settings; only the probe is isolated.
+- **A `loop` run no longer blocks every later `grind` in the same tree.** grind's dirty-tree gate
+  exempted runner-owned files only inside the *mission's* directory, so the structurally identical
+  files loop writes into `.agent/loop/` — `runner_*.log`, per-job `.log` — counted as work in
+  progress: grind refused to start, and (via the same predicate) scored every iteration
+  unproductive. The exemption is now a property of the file's own directory, so each runner reads
+  the other's bookkeeping as bookkeeping. A wholly-untracked job dir, which git reports as one
+  collapsed entry, counts too.
+- **Each runner commits the session logs it wrote, at the end of its run.** They were designed to
+  be kept (only `*.jsonl` and grind's transient state are gitignored) but nothing ever committed
+  them, so every run ended by handing the tree to the user dirty — leaving "commit runner logs as
+  if they were work" or "gitignore them and lose the evidence" as the only outs. The commit is
+  path-limited to that runner's own job dir, never touches a child's work or anything else staged,
+  and is best-effort (a git failure is reported, never fatal). `FLOW_NO_LOG_COMMIT=1` opts out.
+- **`worktree-bash-guard` no longer reads a trailing redirect as a destination.** For the verbs
+  whose last positional argument is what gets written (`cp`, `mv`, `tee`, `install`, `rsync`,
+  `sed -i`), `shlex` keeps a glued `2>/dev/null` as a single token, so it took that slot — and once
+  a `cd` had moved the shell into the main checkout it resolved there, denying
+  `cp x.log /tmp/dest/ 2>/dev/null` on a destination of `<main>/2>/dev/null` while the real one was
+  never examined. Redirect tokens (and the target of a bare `>`) are now dropped before the last
+  positional is taken. Suite: 48 → 52 cases.
+
 ## 0.0.12 — 2026-08-19
 
 Two fixes to things that fail silently: a guard that blocked commands it should not have, and an

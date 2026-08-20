@@ -29,6 +29,10 @@ import hookio  # noqa: E402
 REDIRECT = re.compile(r"(?:^|[^0-9>&])>>?\s*(?![>&])([^\s;|&()<>]+)")
 # verbs whose LAST positional argument is the thing written
 WRITES_LAST = re.compile(r"(?:^|[\s;|&(])(sed\s+-i|tee|install|cp|mv|rsync)(?:\s|$)")
+# a token that is a redirect, not an argument: `>`, `>>`, `2>`, `&>`, and their glued forms
+# (`2>/dev/null`, `2>&1`). shlex keeps a glued redirect as ONE token, so without this the "last
+# positional is the destination" rule reads `cp x /tmp/d/ 2>/dev/null` as writing to `2>/dev/null`.
+REDIRECT_TOKEN = re.compile(r"^(?:\d*|&)>{1,2}")
 DD_OF = re.compile(r"(?:^|\s)of=([^\s;|&()]+)")
 # a write we cannot resolve — the interpreter owns the path, so fall back to judging the cwd
 OPAQUE = re.compile(r"(?:^|\s)(python3?|perl|ruby|node)\s+-(c|e)\b")
@@ -61,13 +65,34 @@ def resolve(target, cwd):
     return os.path.normpath(target)
 
 
+def positional(seg):
+    """The segment's argument tokens — flags dropped, and redirects dropped operator AND target.
+
+    Redirect targets are already collected by REDIRECT; leaving them in here would let a plain
+    `> out` steal the last-positional slot from the verb's real destination.
+    """
+    out, skip = [], False
+    for tok in tokens(seg)[1:]:
+        if skip:                                     # the target of a bare redirect operator
+            skip = False
+            continue
+        m = REDIRECT_TOKEN.match(tok)
+        if m:
+            skip = m.end() == len(tok)               # bare `>` / `2>`: its target is the next token
+            continue
+        if tok.startswith("-"):
+            continue
+        out.append(tok)
+    return out
+
+
 def write_targets(seg, cwd):
     """Absolute paths this segment writes to, plus whether it writes somewhere unresolvable."""
     found, opaque = [], bool(OPAQUE.search(seg))
     raw = [m.group(1) for m in REDIRECT.finditer(seg)]
     raw += [m.group(1) for m in DD_OF.finditer(seg)]
     if WRITES_LAST.search(seg):
-        args = [t for t in tokens(seg)[1:] if not t.startswith("-")]
+        args = positional(seg)
         if args:
             raw.append(args[-1])
     for target in raw:

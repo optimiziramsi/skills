@@ -88,8 +88,19 @@ try:
     check("the iteration counter persisted", grind.read_iter(path, live) == 1)
     check("the attempt counter is clear", grind.read_attempt(path, live) == 0)
     check("the tagged commit is visible to the gate", "item-1.txt" in subprocess.run(
-        ["git", "-C", repo, "log", "--oneline", "-1", "--name-only"],
+        ["git", "-C", repo, "log", "--oneline", "-3", "--name-only"],
         capture_output=True, text=True).stdout)
+
+    def porcelain():
+        return subprocess.run(["git", "-C", repo, "status", "--porcelain"],
+                              capture_output=True, text=True).stdout.strip()
+
+    # the runner lands its OWN logs on the way out: otherwise every following run — including
+    # the next grind — meets a tree dirtied by nothing but bookkeeping
+    check("the runner commits its own session logs", porcelain() == "", porcelain())
+    check("the log commit is the runner's, not the agent's", "session logs" in subprocess.run(
+        ["git", "-C", repo, "log", "--oneline", "-1"], capture_output=True, text=True).stdout)
+
     check("the memory log exists", os.path.isfile(os.path.join(live, "sweep.log".replace(
         "sweep", os.path.splitext(MISSION)[0]))))
 
@@ -136,6 +147,40 @@ try:
     # a non-active mission refuses to run
     rc, _, err = run([MISSION, "-y"])
     check("a done mission will not run", rc != 0 and "not 'active'" in err, err[-300:])
+
+    # ── the two runners share a tree ───────────────────────────────────────
+    # A loop run leaves structurally identical files in ITS dir. They are that runner's
+    # bookkeeping too, so they must not read as work in progress here — and they are not this
+    # runner's to commit either (field report 2026-08-19: 7 files under .agent/loop/ blocked
+    # every mission in .agent/grind/).
+    pathlib.Path(path).write_text(mission(max_iterations=3))
+    subprocess.run(["git", "-C", repo, "add", "-f", f".agent/grind/{MISSION}"],
+                   capture_output=True, check=True)
+    # may be a no-op: the reactivated mission can match what was committed at the top
+    subprocess.run(["git", "-C", repo, "-c", "user.email=t@t", "-c", "user.name=t",
+                    "commit", "-q", "-m", "reactivate"], capture_output=True)
+    run([MISSION, "--reset"])
+    os.makedirs(os.path.join(repo, ".agent", "loop"), exist_ok=True)
+    # commit loop's .gitignore first, as a live tree has: otherwise git collapses the whole
+    # untracked dir into a single `.agent/loop/` entry and never names the files
+    pathlib.Path(repo, ".agent", "loop", ".gitignore").write_text("*.jsonl\n")
+    subprocess.run(["git", "-C", repo, "add", "-f", ".agent/loop/.gitignore"],
+                   capture_output=True, check=True)
+    subprocess.run(["git", "-C", repo, "-c", "user.email=t@t", "-c", "user.name=t",
+                    "commit", "-q", "-m", "loop dir"], capture_output=True, check=True)
+    pathlib.Path(repo, ".agent", "loop", "runner_260819_120000.log").write_text("x\n")
+    pathlib.Path(repo, ".agent", "loop", "some-job.log").write_text("x\n")
+    rc, _, err = run([MISSION, "--once", "-y"], action="grind-commit")
+    check("another runner's logs don't block a mission", "working tree dirty" not in err,
+          err[-400:])
+    check("and are left for that runner to land, not committed here",
+          ".agent/loop/some-job.log" in porcelain(), porcelain())
+    shutil.rmtree(os.path.join(repo, ".agent", "loop"))
+
+    rc, _, err = run_cli(GRIND, [MISSION, "--once", "-y"], cwd=repo,
+                         env={**env, "STUB_ACTION": "grind-commit", "FLOW_NO_LOG_COMMIT": "1"})
+    check("FLOW_NO_LOG_COMMIT=1 leaves the runner's logs uncommitted",
+          ".agent/grind/" in porcelain(), porcelain())
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

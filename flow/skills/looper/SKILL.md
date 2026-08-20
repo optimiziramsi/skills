@@ -199,17 +199,23 @@ with `--watch` (the first tree would never drain); run one watching runner per w
 the tree.
 
 **Confinement is automatic and gated.** When the runner's cwd is a linked worktree it injects the
-`worktree` guards into every headless child, then spends one cheap throwaway session on a
-**leak-probe** that tries to write into the main checkout — and **refuses to run** unless that write
-is blocked. Tell the user what a refusal means rather than working around it: a `leak` verdict says
-PreToolUse hooks don't fire under bypass on that CLI, so jobs should run from the **main checkout**
-instead. `FLOW_WORKTREE_UNSAFE=1` skips confinement entirely (they own the risk);
-`FLOW_PROBE_MODEL` tunes the probe.
+`worktree` guards into every headless child, fires those guards at the worktree's real paths, and
+then spends one cheap throwaway session on a **leak-probe** — which asks only for two ordinary
+writes inside the worktree and injects a witness hook that denies them, to establish that a
+PreToolUse `deny` is honored at all under bypass. Tell the user what each verdict means rather than
+working around it: `unenforced` (a denied call went through anyway) means hook denies aren't
+honored under bypass on that CLI, so jobs should run from the **main checkout** instead;
+`unconfirmed` (the probe made no guarded tool call) proves nothing either way — re-run, or pick
+another `FLOW_PROBE_MODEL`. Both refuse; `FLOW_PROBE_LENIENT=1` downgrades the second to a warning
+if the user accepts running unproven. Both keep the transcript and print the path — read it before
+advising. `FLOW_WORKTREE_UNSAFE=1` skips confinement entirely (they own the risk).
 
 Before handing off, **pre-flight the tools** the jobs rely on — confirm the build/test/lint commands
 actually run in this repo. A runner that fails every job on a broken command wastes a whole batch.
 The runner writes per-job logs to `.agent/loop/{stem}.log` (readable) + `.agent/loop/{stem}.jsonl`
-(raw) and a session overview to `.agent/loop/runner_*.log`.
+(raw) and a session overview to `.agent/loop/runner_*.log`, and commits the tracked ones itself
+when the run ends (`FLOW_NO_LOG_COMMIT=1` opts out) — so the next runner in that tree doesn't meet
+a tree dirtied by bookkeeping.
 
 ### Permissions
 

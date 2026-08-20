@@ -19,6 +19,8 @@ Escape hatches / overrides (env vars):
   FLOW_ITER_TIMEOUT_SECS     grind wall-clock watchdog per iteration (default 900; 0 = off)
   FLOW_WORKTREE_UNSAFE=1     skip worktree confinement + its leak-probe (you own the risk)
   FLOW_PROBE_MODEL           model for the one-off leak-probe session (default sonnet)
+  FLOW_PROBE_LENIENT=1       an UNCONFIRMED leak-probe warns instead of refusing to run
+  FLOW_NO_LOG_COMMIT=1       don't commit the runner's own logs at the end of a run
 """
 
 import json
@@ -334,14 +336,108 @@ def coerce_int(meta: dict, key: str, default: int) -> int:
         return default
 
 
+# ── Runner-owned bookkeeping ────────────────────────────────────────────────
+# Both runners write logs and counters into their job dir while they work. Those files are
+# theirs, not the project's work — and each runner has to read the OTHER's the same way, since
+# one tree commonly holds both (drain a queue with `loop`, then run a mission with `grind`).
+# Judging by the file's own directory rather than by whose run is asking is what makes that
+# work; the runners then commit their own at the end of a run so the next one starts clean.
+FLOW_JOB_DIRS = (".agent/loop", ".agent/grind")
+RUNNER_OWNED_SUFFIXES = (".log", ".jsonl", ".iter", ".attempt")
+
+
+def runner_owned(path, extra_dirs=()):
+    """True when repo-relative `path` is a flow runner's own bookkeeping rather than work.
+
+    Job and mission `.md` files are work and never match — only the logs, transcripts,
+    counters and the job dir's own `.gitignore` do.
+    """
+    dirs = set(FLOW_JOB_DIRS) | set(extra_dirs)
+    if path.endswith("/"):
+        return path.rstrip("/") in dirs   # git collapses a wholly-untracked dir into one entry
+    if os.path.dirname(path) not in dirs:
+        return False
+    base = os.path.basename(path)
+    return base == ".gitignore" or base.endswith(RUNNER_OWNED_SUFFIXES)
+
+
+def git_dirty(cwd=None):
+    """(toplevel, [(porcelain line, repo-relative path)]) — (None, []) when git can't answer.
+
+    Fail-open by design: no git, no repo, or a broken invocation disengages the callers'
+    guards rather than blocking a run.
+    """
+    try:
+        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
+                             text=True, cwd=cwd)
+        if top.returncode != 0:
+            return None, []
+        st = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True,
+                            cwd=cwd)
+        if st.returncode != 0:
+            return None, []
+    except Exception:  # noqa: BLE001 — a guard must never break the run
+        return None, []
+    out = []
+    for line in st.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        path = line[3:]
+        if " -> " in path:                       # a rename reports "old -> new"
+            path = path.split(" -> ", 1)[1]
+        out.append((line, path.strip().strip('"')))
+    return top.stdout.strip(), out
+
+
+def commit_runner_logs(job_dir, message):
+    """Commit the runner's OWN log/state files under `job_dir` — nothing else, ever.
+
+    A runner never commits a child's work (each child commits its own), but its session logs
+    are its to land: left behind they hand the next run a dirty tree, which grind refuses to
+    start on and scores as an unproductive iteration. The alternative — gitignoring them —
+    throws away the evidence the logs exist for. Path-limited, so anything else staged or
+    dirty is untouched, and best-effort: a git failure is reported, never raised.
+    FLOW_NO_LOG_COMMIT=1 turns it off.
+    """
+    if os.environ.get("FLOW_NO_LOG_COMMIT") == "1":
+        return
+    top, dirty = git_dirty()
+    if not top:
+        return
+    rel_dir = os.path.relpath(os.path.abspath(job_dir), top).replace(os.sep, "/")
+    # only this runner's OWN dir: the other runner's logs are exempt from the dirty-tree gate
+    # (see `runner_owned`), but landing them is that runner's business, not ours
+    mine = [path for _, path in dirty
+            if os.path.dirname(path) == rel_dir and runner_owned(path, (rel_dir,))]
+    if not mine:
+        return
+    try:
+        add = subprocess.run(["git", "add", "--"] + mine, capture_output=True, text=True)
+        if add.returncode != 0:
+            raise RuntimeError(add.stderr.strip() or "git add failed")
+        out = subprocess.run(["git", "commit", "-m", message, "--"] + mine,
+                             capture_output=True, text=True)
+        if out.returncode != 0:
+            raise RuntimeError(out.stderr.strip() or out.stdout.strip() or "git commit failed")
+    except Exception as e:  # noqa: BLE001 — a log commit must never end a run
+        info(yellow(f"  runner logs left uncommitted ({e})"))
+        return
+    info(dim(f"  committed {len(mine)} runner log file(s)"))
+
+
 # ── Claude invocation ───────────────────────────────────────────────────────
 def build_claude_argv(prompt: str, model: str, permission_mode: str, effort=None, max_turns=None,
-                      settings_json=None):
+                      settings_json=None, isolated=False):
     """Construct the claude argv using only flags the installed CLI supports.
 
     `settings_json` (a JSON string) rides in on `--settings`; the runners use it to inject
     the worktree-confinement guard into each headless child. Absent, the argv is
     byte-identical to the pre-confinement behavior.
+
+    `isolated` drops every settings SOURCE (user/project/local) — and with them every
+    third-party plugin and its SessionStart context — while keeping `--settings`, which is
+    explicit and applies regardless. Only the leak-probe wants this: a real job needs the
+    project's own setup, but the probe must face the guards and nothing else.
     """
     flags = supported_flags()
     # When --help couldn't be probed (empty set, e.g. a stubbed CLAUDE_BIN), don't
@@ -356,6 +452,10 @@ def build_claude_argv(prompt: str, model: str, permission_mode: str, effort=None
         argv += ["--effort", effort]
     if max_turns and ok("--max-turns"):
         argv += ["--max-turns", str(max_turns)]
+    if isolated and ok("--setting-sources"):
+        argv += ["--setting-sources", ""]
+    if isolated and ok("--include-hook-events"):
+        argv += ["--include-hook-events"]   # hook lifecycle in the stream: the probe's diagnostics
     if settings_json and ok("--settings"):
         argv += ["--settings", settings_json]
     pm = os.environ.get("FLOW_CLAUDE_PERMISSION_MODE", permission_mode)
@@ -415,7 +515,8 @@ def _summarize_event(obj: dict):
 
 
 def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_extra=None,
-                   effort=None, max_turns=None, timeout_secs=None, settings_json=None):
+                   effort=None, max_turns=None, timeout_secs=None, settings_json=None,
+                   isolated=False):
     """Run one headless claude session. Streams events to a readable .log and a raw
     .jsonl. Returns (exit_code, elapsed_secs, saw_transient, timed_out).
 
@@ -424,10 +525,11 @@ def run_claude_job(prompt, model, permission_mode, log_path, jsonl_path, env_ext
     of burning a retry. `timeout_secs` arms a wall-clock watchdog: past the deadline the
     child gets SIGTERM, then SIGKILL after a 10s grace (`timed_out` reports it fired).
     `settings_json` (when set) is injected via `--settings` — the runners use it to confine a
-    worktree run's children to the worktree (see `worktree_preflight`).
+    worktree run's children to the worktree (see `worktree_preflight`). `isolated` additionally
+    strips the settings sources (leak-probe only; see `build_claude_argv`).
     """
     argv = build_claude_argv(prompt, model, permission_mode, effort=effort, max_turns=max_turns,
-                             settings_json=settings_json)
+                             settings_json=settings_json, isolated=isolated)
     env = dict(os.environ)
     if env_extra:
         env.update(env_extra)
@@ -637,68 +739,209 @@ def confine_settings_json(hooks):
     ]}})
 
 
+# ── The leak-probe ─────────────────────────────────────────────────────────
+# What the probe has to establish is a property of the CLI, not of the guards: that a PreToolUse
+# hook injected via --settings actually FIRES in a headless child running with
+# --dangerously-skip-permissions, and that its `deny` is HONORED there. The guards' own logic is
+# settled before any model runs — by their shipped suite, and by `confine_smoke()` firing them at
+# this worktree's real paths.
+#
+# So the probe no longer asks a model to attempt an escape. That design failed on its own terms:
+# a well-aligned model reads "write outside your worktree" as a prompt injection and declines —
+# correctly — and the lines added to talk it out of declining were quoted back as the evidence
+# that it should. Compliance ran ~1 in 4, and each refusal fed the next probe through session
+# memory. Instead the probe asks for two ORDINARY writes inside the worktree, and injects a
+# witness hook that denies every guarded call. If a witness deny shows up in the transcript and
+# neither file exists, denies fire and are honored; if a file exists anyway, they are not. Both
+# readings are the CLI's behavior, not the model's disposition.
 PROBE_MODEL_DEFAULT = "sonnet"  # cheap; the model can't affect WHETHER a hook fires
+PROBE_WITNESS = (".flow_probe_witness", ".flow_probe_witness_sh")  # (Write channel, Bash channel)
 _PROBE_PROMPT = """\
-CONFINEMENT SELF-TEST — you are a disposable probe, NOT doing real work. Do EXACTLY these three
-steps in order, then reply DONE. Do nothing else and explain nothing.
-1. Use the Write tool to create the file `{ok}` with the exact content `OK`.
-2. Use the Write tool to create the file `{leak_tool}` with the exact content `LEAK`.
-3. Run this Bash command exactly: printf LEAK > {leak_bash}
-Reply DONE.
+Setup check for a batch runner — you are a disposable probe session, not doing real work. Create
+two files inside your own working directory, then reply DONE.
+1. Use the Write tool to create the file `{witness_write}` with the exact content `OK`.
+2. Run this Bash command exactly: printf OK > {witness_bash}
+Both paths are inside this worktree. If a tool call comes back blocked, that is fine and expected —
+say so and reply DONE; do not work around it and do not try another route.
 """
+_WITNESS_HOOK = '''#!/usr/bin/env python3
+# PreToolUse witness for the flow leak-probe: denies every guarded call in that one throwaway
+# session. Its reason carries a per-run nonce, so seeing it in the transcript proves THIS
+# probe's hook ran — and a witnessed file that exists anyway proves the deny was ignored.
+import json
+print(json.dumps({"hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason":
+        "flow-probe-witness NONCE: this session is the runner's confinement self-test and "
+        "nothing in it needs to be carried out. Report the block and finish.",
+}}))
+'''
 
 
-def run_leak_probe(ctx, model, settings_json):
-    """One throwaway child (same bypass flags + injected guards) that tries to write into the
-    main checkout by BOTH the Write tool and a bash redirect, plus a positive control inside the
-    worktree. Returns:
-      'confined'     — neither main-checkout write landed AND the control did (guards work),
-      'leak'         — a main-checkout write landed (confinement is NOT effective),
-      'inconclusive' — the control never landed, so cooperation couldn't be confirmed.
-    Every probe file is cleaned up; on a leak the transcript is kept and its path surfaced.
+def confine_smoke(hooks, ctx):
+    """Fire both guards at THIS worktree's real paths, with synthetic payloads and no model.
+
+    The shipped suite proves the guards on a fixture repo; this proves them on the layout in
+    front of us — a worktree nested under its own main checkout, a symlinked path, a branch name
+    that resolves oddly. Cheap (two subprocess calls) and, unlike anything involving a model,
+    deterministic. die()s unless both deny.
     """
-    ok = os.path.join(ctx["wt_root"], ".flow_probe_ok")
-    leak_tool = os.path.join(ctx["main_root"], ".flow_probe_tool")
-    leak_bash = os.path.join(ctx["main_root"], ".flow_probe_bash")
+    escape = os.path.join(ctx["main_root"], ".flow_probe_smoke")
+    payloads = {
+        "Edit|Write|MultiEdit|NotebookEdit": {"cwd": ctx["wt_root"], "tool_name": "Write",
+                                              "tool_input": {"file_path": escape}},
+        "Bash": {"cwd": ctx["wt_root"], "tool_name": "Bash",
+                 "tool_input": {"command": f"printf x > {shlex.quote(escape)}"}},
+    }
+    for path, matcher in hooks:
+        payload = payloads.get(matcher)
+        if payload is None:
+            continue
+        # the bash guard is opt-in; the runner arms it for every child, so the smoke test judges
+        # it armed too, whatever this process's environment happens to hold
+        out = subprocess.run([sys.executable, path], input=json.dumps(payload),
+                             capture_output=True, text=True,
+                             env={**os.environ, "WORKTREE_BASH_GUARD_ENABLE": "1"}).stdout
+        if '"deny"' not in out:
+            die(f"guard {os.path.basename(path)} did NOT deny a main-checkout write from this "
+                f"worktree — refusing to run.\n  worktree: {ctx['wt_root']}\n"
+                f"  target:   {escape}\n  guard said: {out.strip() or '(nothing)'}")
+    info(dim("    guards deny a main-checkout write from THIS worktree: ok"))
+
+
+def probe_settings_json(hooks, witness_path):
+    """The run's confinement settings PLUS the probe-only witness hook, registered last on the
+    same matchers — so the real guards run first and the witness has the final say."""
+    settings = json.loads(confine_settings_json(hooks))
+    for entry in settings["hooks"]["PreToolUse"]:
+        entry["hooks"].append({"type": "command",
+                               "command": f"python3 {shlex.quote(witness_path)}"})
+    return json.dumps(settings)
+
+
+def _slurp(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    except OSError:
+        return ""
+
+
+def _session_replied(path):
+    """True when the transcript holds model output — an assistant message or a result payload.
+
+    This is the line between "the session ran and refused" (`declined`, retry or change the probe
+    model) and "the session never got off the ground" (`inconclusive`, go look at the CLI). A
+    reasoned refusal is a session that ran, whether or not it touched a single file.
+    """
+    text, parsed_any = _slurp(path), False
+    for line in text.splitlines():
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        parsed_any = True
+        if obj.get("type") == "result" and str(obj.get("result") or "").strip():
+            return True
+        if obj.get("type") == "assistant":
+            for block in ((obj.get("message") or {}).get("content") or []):
+                if isinstance(block, dict) and str(block.get("text", "")).strip():
+                    return True
+    # No stream-json (an older CLI, or --output-format unavailable): any output at all is speech.
+    return bool(text.strip()) and not parsed_any
+
+
+def run_leak_probe(ctx, model, hooks):
+    """One throwaway child, run exactly like a real job (same bypass flags, same injected guards)
+    plus a witness hook that denies every guarded call. It is asked for two ordinary writes
+    INSIDE its own worktree — nothing that reads as an escape, so there is nothing for a
+    well-aligned model to refuse.
+
+    Returns a dict — verdict, the evidence behind it, and the transcript paths, kept for every
+    verdict except 'enforced':
+      'enforced'    — the witness deny appears in the transcript and neither file exists: a
+                      PreToolUse deny fires AND is honored in a bypass child. Confinement is live.
+      'unenforced'  — a witnessed file exists anyway: the deny was ignored (or no hook ran at
+                      all). This is the dangerous one — a real job could reach the main checkout.
+      'unconfirmed' — no witness deny and no file: the session made no guarded tool call (it died,
+                      said nothing, or answered without touching a tool). Nothing is proven and
+                      nothing is disproven; the guards' own logic is already established by
+                      `confine_smoke` and their suite.
+    """
+    # The child runs isolated (see `build_claude_argv`): no settings sources, so no third-party
+    # plugin gets to narrate this session to the model. A memory plugin replaying "an earlier
+    # probe was a prompt-injection attempt" into the next probe made refusal MORE likely the more
+    # the probe ran — a self-poisoning loop, since each refusal was itself recorded.
+    witness_write = os.path.join(ctx["wt_root"], PROBE_WITNESS[0])
+    witness_bash = os.path.join(ctx["wt_root"], PROBE_WITNESS[1])
+    # The nonce is not in the prompt: finding it in the transcript can only mean THIS run's
+    # witness hook ran, on a real tool call, in the child.
+    nonce = "FPW-" + os.urandom(6).hex()
 
     def _clean():
-        for p in (ok, leak_tool, leak_bash):
+        for path in (witness_write, witness_bash):
             try:
-                os.unlink(p)
+                os.unlink(path)
             except OSError:
                 pass
 
     _clean()
-    prompt = _PROBE_PROMPT.format(ok=ok, leak_tool=leak_tool, leak_bash=shlex.quote(leak_bash))
+    fd0, whook = tempfile.mkstemp(prefix="flow_probe_witness_", suffix=".py")
+    with os.fdopen(fd0, "w", encoding="utf-8") as fh:
+        fh.write(_WITNESS_HOOK.replace("NONCE", nonce))
+    prompt = _PROBE_PROMPT.format(witness_write=witness_write,
+                                  witness_bash=shlex.quote(witness_bash))
     fd1, plog = tempfile.mkstemp(prefix="flow_probe_", suffix=".log")
     fd2, pjsonl = tempfile.mkstemp(prefix="flow_probe_", suffix=".jsonl")
     os.close(fd1)
     os.close(fd2)
     try:
         run_claude_job(prompt, model, DEFAULT_PERMISSION_MODE, plog, pjsonl,
-                       settings_json=settings_json, max_turns=6, timeout_secs=180)
-        leaked = os.path.exists(leak_tool) or os.path.exists(leak_bash)
-        cooperated = os.path.exists(ok)
+                       settings_json=probe_settings_json(hooks, whook),
+                       max_turns=6, timeout_secs=180, isolated=True)
+        landed = [os.path.basename(f) for f in (witness_write, witness_bash) if os.path.exists(f)]
+        # the raw stream ONLY: every child stdout line lands there, while the readable log also
+        # carries the runner's own header, which spells out the injected --settings blob
+        transcript = _slurp(pjsonl)
+        replied = _session_replied(pjsonl)
     finally:
         _clean()
-    if leaked:
-        info(red(f"    probe transcript kept for inspection: {plog}"))
-        return "leak"
-    for p in (plog, pjsonl):
         try:
-            os.unlink(p)
+            os.unlink(whook)
         except OSError:
             pass
-    return "confined" if cooperated else "inconclusive"
+    res = {"witnessed": nonce in transcript, "landed": landed, "replied": replied,
+           "guard_events": sum(transcript.count(os.path.basename(h)) for h, _ in hooks),
+           "log": plog, "jsonl": pjsonl}
+    if landed:
+        res["verdict"] = "unenforced"
+    elif res["witnessed"]:
+        res["verdict"] = "enforced"
+    else:
+        res["verdict"] = "unconfirmed"
+    if res["verdict"] == "enforced":
+        for path in (plog, pjsonl):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+        res["log"] = res["jsonl"] = None
+    return res
 
 
 def worktree_preflight():
     """Call once before arming. Returns the `--settings` JSON to inject into every child, or
     None for normal (main-checkout / non-repo) mode — where behavior is unchanged.
 
-    In worktree mode it self-tests the guards (fast, no model call), then runs the live
-    leak-probe and die()s unless confinement is proven. FLOW_WORKTREE_UNSAFE=1 skips the whole
-    thing — the escape hatch; you own the risk.
+    In worktree mode it runs the guards' suite, arms the opt-in bash guard for the children,
+    fires both guards at this worktree's real paths, and then spends one throwaway session
+    proving the CLI actually honors a hook deny under bypass. It die()s when a deny is IGNORED
+    (the dangerous answer) and also when the probe session never made a guarded call, since
+    unproven is not proven — FLOW_PROBE_LENIENT=1 downgrades that second one to a warning.
+    FLOW_WORKTREE_UNSAFE=1 skips the whole thing — the escape hatch; you own the risk.
     """
     ctx = worktree_context()
     if not ctx or not ctx["is_linked"]:
@@ -722,21 +965,44 @@ def worktree_preflight():
             f"{st.stdout}\n{st.stderr}")
     info(dim(f"    guard self-tests: ok ({st.stdout.count('PASS')})"))
     settings = confine_settings_json(hooks)
+    # The bash guard is opt-in (false-positive-prone in interactive use), but a worktree run that
+    # guards only the file tools is confined on paper only — `printf x > ../../<main>/f` walks
+    # straight out of it. Children inherit this process's environment, so arm it here for every
+    # child the runner launches, the probe included.
+    os.environ["WORKTREE_BASH_GUARD_ENABLE"] = "1"
+    confine_smoke(hooks, ctx)
     probe_model = os.environ.get("FLOW_PROBE_MODEL", PROBE_MODEL_DEFAULT)
-    info(dim(f"    verifying confinement with a live leak-probe ({probe_model}, one throwaway session)…"))
-    verdict = run_leak_probe(ctx, probe_model, settings)
-    if verdict == "confined":
-        info(green("    ✓ leak-probe: writes into the main checkout are BLOCKED — confinement proven."))
+    info(dim(f"    verifying the CLI honors a hook deny under bypass ({probe_model}, one "
+             "throwaway session)…"))
+    res = run_leak_probe(ctx, probe_model, hooks)
+    if res["verdict"] == "enforced":
+        info(green("    ✓ leak-probe: a PreToolUse deny FIRED and was HONORED in a "
+                   "--dangerously-skip-permissions child — confinement is live."))
         return settings
-    if verdict == "leak":
-        die("✘ leak-probe: a test write REACHED the main checkout — confinement is NOT effective "
-            "under --dangerously-skip-permissions on this CLI (PreToolUse hooks likely don't fire "
-            "under bypass here). REFUSING to run — a real job could leak into the main checkout. "
-            "Run jobs from the main checkout instead, or pursue OS-sandbox confinement.")
-    die("✘ leak-probe INCONCLUSIVE — the probe session never wrote its positive-control file, so "
-        "confinement could not be confirmed. REFUSING to run. Re-try; if it persists, check the "
-        "CLI / probe model (FLOW_PROBE_MODEL), or set FLOW_WORKTREE_UNSAFE=1 to override (not "
-        "recommended).")
+    # Every non-green verdict keeps its transcript and says where it is — the verdict is a claim
+    # about that session, and the session is the only place to check it.
+    info(red(f"    probe transcript: {res['log']}"))
+    info(red(f"    probe raw stream: {res['jsonl']}"))
+    if res["verdict"] == "unenforced":
+        die(f"✘ leak-probe: a tool call that a PreToolUse hook DENIED went through anyway "
+            f"({', '.join(res['landed'])} was created). Hook denies are not honored under "
+            "--dangerously-skip-permissions on this CLI, so the worktree guards cannot hold a "
+            "real job in. REFUSING to run — run jobs from the main checkout instead, or pursue "
+            "OS-sandbox confinement.")
+    unconfirmed = (
+        "leak-probe UNCONFIRMED — the probe session never made a guarded tool call "
+        f"({'it answered without calling a tool' if res['replied'] else 'it produced no output'}), "
+        "so whether this CLI honors a hook deny under bypass is untested. The guards themselves "
+        "are verified (their suite passed, and they deny a main-checkout write from this very "
+        "worktree) and they are registered for every child — nothing is disproven, but nothing "
+        "about the CLI is proven either.")
+    if os.environ.get("FLOW_PROBE_LENIENT") != "1":
+        die("✘ " + unconfirmed + " REFUSING to run — unproven is not proven. Re-try (a probe "
+            "session that answers normally is the usual case), pick another FLOW_PROBE_MODEL, or "
+            "set FLOW_PROBE_LENIENT=1 to continue on an unconfirmed probe (you own the risk).")
+    info(yellow("    ⚠ " + unconfirmed + " FLOW_PROBE_LENIENT=1 — CONTINUING with the guards "
+                "armed anyway. You own the risk."))
+    return settings
 
 
 # ── The executing-model protocol (prepended to every job/mission prompt) ────
@@ -759,6 +1025,55 @@ note in its Report/Log section, then committing. {status_contract}
 
 
 # ── Self-test (`python3 _flowlib.py --test`; run by the repo's tests.sh) ─────
+# Stub CLI for _self_test: plays a probe child session, emitting the stream-json events the
+# verdict is read from (the guards' deny reasons) and, in `leak` mode, actually escaping.
+# Stub CLI for _self_test: plays a probe child session — it RUNS the PreToolUse hooks the
+# runner injected, exactly as the CLI would, and then either honors their deny or ignores
+# it. So the witness hook, the settings blob and every verdict are exercised for real.
+STUB_CLI = r"""#!/usr/bin/env python3
+import json, os, re, shlex, subprocess, sys
+
+if "--help" in sys.argv:
+    print("--print --model --effort --max-turns --settings --setting-sources "
+          "--include-hook-events --permission-mode --dangerously-skip-permissions "
+          "--output-format --verbose")
+    raise SystemExit(0)
+mode = os.environ.get("STUB_MODE", "enforced")
+
+
+def ev(obj):
+    print(json.dumps(obj), flush=True)
+
+
+def says(text):
+    ev({"type": "assistant", "message": {"content": [{"type": "text", "text": text}]}})
+
+
+if mode == "mute":                                # a session that produced nothing at all
+    raise SystemExit(0)
+if mode == "no-tools":                            # it answered, but never called a tool
+    says("Nothing for me to do here.")
+    raise SystemExit(0)
+prompt = sys.argv[-1]
+settings = json.loads(sys.argv[sys.argv.index("--settings") + 1])
+targets = [t for t in re.findall(r"`([^`]+)`", prompt) + re.findall(r"> (\S+)", prompt)
+           if ".flow_probe_witness" in t]
+verdicts = []
+for entry in settings["hooks"]["PreToolUse"]:     # run every injected hook, as the CLI would
+    for hook in entry["hooks"]:
+        out = subprocess.run(shlex.split(hook["command"]), input="{}",
+                             capture_output=True, text=True).stdout.strip()
+        if out:
+            verdicts.append(out)
+for verdict in verdicts:
+    ev({"type": "user", "message": {"content": [{"type": "tool_result", "content": verdict}]}})
+if mode == "unenforced" or not verdicts:          # deny ignored, or no hook ran at all
+    for target in targets:
+        open(target, "w").write("OK")
+says("DONE")
+"""
+
+
 def _self_test() -> int:
     import contextlib
     import io
@@ -820,12 +1135,35 @@ def _self_test() -> int:
         # A directory name must not be beaten by a substring hit elsewhere.
         check("exact name wins over substring", resolves_to("alpha", wt_a, repo))
 
+        # ── runner-owned bookkeeping ────────────────────────────────────────
+        check("a runner's own log is not work", runner_owned(".agent/loop/runner_260819.log"))
+        check("the other runner's dir counts too", runner_owned(".agent/grind/sweep.jsonl"))
+        check("counters are not work", runner_owned(".agent/grind/sweep.iter"))
+        check("the job dir's .gitignore is not work", runner_owned(".agent/loop/.gitignore"))
+        check("a job file IS work", not runner_owned(".agent/loop/260101_120000_thing.md"))
+        check("source is work", not runner_owned("src/app.ts"))
+        check("a log outside any job dir is work", not runner_owned("docs/build.log"))
+        check("a custom --dir is honored", runner_owned("tmp/jobs/x.log", ("tmp/jobs",)))
+        check("a wholly-untracked job dir collapses to one entry, still not work",
+              runner_owned(".agent/loop/"))
+        check("an untracked dir that is not a job dir stays work", not runner_owned(".agent/"))
+
         # ── worktree confinement ────────────────────────────────────────────
         main_ctx, wt_ctx = worktree_context(repo), worktree_context(wt_a)
         check("main checkout is not a linked worktree", not main_ctx["is_linked"])
         check("a worktree is linked", wt_ctx["is_linked"])
         check("worktree ctx points at the main checkout",
               wt_ctx["main_root"] == os.path.realpath(repo) and wt_ctx["wt_root"] == os.path.realpath(wt_a))
+        # confine_smoke fires the real guards at the real worktree/main pair — the check the
+        # live probe no longer needs a model for.
+        try:
+            with contextlib_redirect_stderr():
+                confine_smoke(confine_hooks(), wt_ctx)
+            smoked = True
+        except SystemExit:
+            smoked = False
+        check("the guards deny a main-checkout write from the real worktree", smoked)
+
         settings = json.loads(confine_settings_json(confine_hooks()))
         entries = settings["hooks"]["PreToolUse"]
         check("settings register both guards on PreToolUse", len(entries) == 2)
@@ -838,45 +1176,60 @@ def _self_test() -> int:
         check("no --settings without confinement",
               "--settings" not in build_claude_argv("p", "m", ""))
 
-        # End-to-end preflight against a stubbed CLI: the stub plays the child session and
-        # decides which probe files appear, so all three verdicts are exercised for real.
+        # End-to-end preflight against a stubbed CLI that runs the injected hooks for real,
+        # so each verdict is reached the way a live probe would reach it.
         stub = os.path.join(tmp, "claude_stub.py")
         with open(stub, "w") as fh:
-            fh.write(
-                "#!/usr/bin/env python3\n"
-                "import os, re, sys\n"
-                "if '--help' in sys.argv:\n"
-                "    print('--print --model --effort --max-turns --settings --permission-mode '\n"
-                "          '--dangerously-skip-permissions --output-format --verbose')\n"
-                "    raise SystemExit(0)\n"
-                "mode = os.environ.get('STUB_MODE', 'confined')\n"
-                "paths = re.findall(r'`([^`]+)`', sys.argv[-1]) + re.findall(r'> (\\S+)', sys.argv[-1])\n"
-                "ok = [p for p in paths if p.endswith('.flow_probe_ok')]\n"
-                "leaks = [p for p in paths if '.flow_probe_' in p and not p.endswith('_ok')]\n"
-                "if mode in ('confined', 'leak'):\n"
-                "    open(ok[0], 'w').write('OK')\n"
-                "if mode == 'leak':\n"
-                "    open(leaks[0], 'w').write('LEAK')\n"
-            )
+            fh.write(STUB_CLI)
         prev_cwd, prev_env = os.getcwd(), dict(os.environ)
+
+        def preflight(mode, lenient=False):
+            """(settings-or-None, died, stderr) for one stubbed preflight."""
+            os.environ["STUB_MODE"] = mode
+            os.environ.pop("FLOW_PROBE_LENIENT", None)
+            if lenient:
+                os.environ["FLOW_PROBE_LENIENT"] = "1"
+            buf = io.StringIO()
+            try:
+                with contextlib.redirect_stderr(buf):
+                    return worktree_preflight(), False, buf.getvalue()
+            except SystemExit:
+                return None, True, buf.getvalue()
+
         try:
             os.chdir(wt_a)
             os.chmod(stub, 0o755)
             os.environ["CLAUDE_BIN"] = stub
-            for mode, expect_settings in (("confined", True), ("leak", False), ("silent", False)):
-                os.environ["STUB_MODE"] = mode
-                try:
-                    with contextlib_redirect_stderr():
-                        got = worktree_preflight()
-                    died = False
-                except SystemExit:
-                    got, died = None, True
-                if expect_settings:
-                    check(f"preflight arms on a {mode} probe", got is not None and not died)
-                else:
-                    check(f"preflight REFUSES on a {mode} probe", died and got is None)
+            os.environ["TMPDIR"] = tmp   # a kept transcript belongs in the throwaway tree
+            got, died, err = preflight("enforced")
+            check("preflight arms when a hook deny is honored in the child",
+                  got is not None and not died and "HONORED" in err)
+            got, died, err = preflight("unenforced")
+            check("preflight REFUSES when a hook deny is IGNORED",
+                  died and got is None and "went through anyway" in err)
+            # A model that declines, or a session that dies, proves nothing either way — which
+            # is not the same as proving there is nothing wrong, so the default is to refuse.
+            for mode in ("no-tools", "mute"):
+                got, died, err = preflight(mode)
+                check(f"preflight REFUSES an UNCONFIRMED {mode} probe by default",
+                      died and got is None and "UNCONFIRMED" in err)
+            got, died, err = preflight("no-tools", lenient=True)
+            check("FLOW_PROBE_LENIENT=1 downgrades UNCONFIRMED to a warning",
+                  got is not None and not died and "UNCONFIRMED" in err)
+            check("preflight arms the shell guard for the children it launches",
+                  os.environ.get("WORKTREE_BASH_GUARD_ENABLE") == "1")
+            check("the probe child loads no settings sources (no third-party session context)",
+                  "--setting-sources" in build_claude_argv("p", "m", "", isolated=True))
+            check("a real job keeps the project's settings sources",
+                  "--setting-sources" not in build_claude_argv("p", "m", ""))
+            check("the witness hook rides in on the probe's settings only",
+                  "flow_probe_witness_x.py" in
+                  probe_settings_json(confine_hooks(), "/tmp/flow_probe_witness_x.py")
+                  and "flow_probe_witness" not in confine_settings_json(confine_hooks()))
+            check("no probe file survives the probe",
+                  not any(os.path.exists(os.path.join(wt_a, name)) for name in PROBE_WITNESS))
             os.chdir(repo)
-            os.environ["STUB_MODE"] = "leak"  # would leak, but the main checkout never confines
+            os.environ["STUB_MODE"] = "unenforced"  # the main checkout never confines at all
             with contextlib_redirect_stderr():
                 check("main checkout skips confinement entirely", worktree_preflight() is None)
         finally:

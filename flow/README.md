@@ -161,11 +161,20 @@ status — the runner never commits.
   NAME is a branch, a worktree directory name, a path, a unique substring of either, or `root`;
   ambiguity is an error listing candidates, never a guess. `loop --worktree all` surveys every
   worktree, arms once, and runs a child runner per tree with a queue (not with `--watch`).
-- **Worktree runs are confined, and the confinement is proven first.** In a linked worktree the
-  runners inject the `worktree` topic's PreToolUse guards into every child and then run a one-off
-  **leak-probe** session that tries to write into the main checkout by both the Write tool and a
-  bash redirect — refusing to start unless both are blocked. Main-checkout runs are unchanged.
-  `FLOW_WORKTREE_UNSAFE=1` skips it, `FLOW_PROBE_MODEL` picks the probe model.
+- **Worktree runs are confined, and the confinement is proven first — in two independent steps.**
+  In a linked worktree the runners inject the `worktree` topic's PreToolUse guards into every child
+  (arming the opt-in bash guard, since a run guarded only on the file tools is confined on paper
+  only). Then: (1) both guards are fired at **this worktree's real paths** with synthetic payloads —
+  no model, deterministic — and must deny; (2) a one-off **leak-probe** session establishes the
+  other half, which is a property of the CLI rather than of the guards: that a PreToolUse `deny`
+  fires *and is honored* in a headless child under `--dangerously-skip-permissions`. The probe asks
+  the model only for two ordinary writes inside its own worktree and injects a witness hook that
+  denies them, so nothing in it reads as an escape attempt. Verdicts: `enforced` (witness deny seen,
+  neither file exists) arms; `unenforced` (a denied call took effect anyway) **refuses**;
+  `unconfirmed` (the session made no guarded tool call) **also refuses**, because unproven is not
+  proven — `FLOW_PROBE_LENIENT=1` downgrades that one to a warning. Every
+  non-green verdict keeps the probe transcript and prints its path. Main-checkout runs are
+  unchanged. `FLOW_WORKTREE_UNSAFE=1` skips the lot, `FLOW_PROBE_MODEL` picks the probe model.
 - **Full permissions, explicit arm.** Jobs run with `--dangerously-skip-permissions` (a headless
   session can't answer a prompt, so unattended edits/commits need it). The runner requires an
   interactive "yes" — or `-y` for cron/unattended.
@@ -176,6 +185,11 @@ status — the runner never commits.
   `FLOW_CLAUDE_PERMISSION_MODE`, `FLOW_EXTRA_CLAUDE_ARGS`, `FLOW_BACKOFF_BASE`,
   `FLOW_LONG_BACKOFF_BASE`, `FLOW_ITER_TIMEOUT_SECS`, `FLOW_ITER_PAUSE_SECS`. Run
   `.agent/bin/loop --help` / `.agent/bin/grind --help` for the full flag list.
+- **A runner lands its own logs, and ignores the other runner's.** Each runner commits the
+  session logs it wrote (its job dir only, path-limited, `FLOW_NO_LOG_COMMIT=1` to opt out) at the
+  end of a run — the files are worth keeping, and leaving them uncommitted hands the next run a
+  dirty tree. `grind`'s dirty-tree gate judges runner-owned files by the **file's own directory**,
+  so a `loop` session's logs in `.agent/loop/` never read as work in progress in `.agent/grind/`.
 - **Resilient by default.** `grind` guards every iteration: a wall-clock watchdog
   (900s default) kills hung sessions; a dirty-tree guard refuses to start on uncommitted changes
   (auto-resuming a previously interrupted iteration); a productivity gate only advances on a clean

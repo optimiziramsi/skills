@@ -92,7 +92,7 @@ no concern is stuck on:
 | `WORKTREE_LEAK_DETECT_DISABLE=1` | the post-edit worktree leak detector |
 
 Opt-**in**, off by default: `WORKTREE_BASH_GUARD_ENABLE=1` (shell-channel worktree containment —
-false-positive-prone). The flow runners take `FLOW_*` env; see [`flow`](flow/README.md).
+false-positive-prone; the flow runners arm it for their own children in worktree mode). The flow runners take `FLOW_*` env; see [`flow`](flow/README.md).
 
 **Runtime: python3 (stdlib only), nothing else.** Every hook is python over the shared
 [`lib/hookio.py`](lib/hookio.py); their tests live in `<topic>/tests/`, not inside the guards.
