@@ -1,7 +1,7 @@
 {
   "name": "todo",
   "displayName": "optimiziramsi todo",
-  "version": "0.1.0-dev.2",
+  "version": "0.1.0",
   "description": "The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with \"ALLOW TODO\").",
   "author": {
     "name": "optimiziramsi",

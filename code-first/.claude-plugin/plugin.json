@@ -1,7 +1,7 @@
 {
   "name": "code-first",
   "displayName": "optimiziramsi code-first",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0",
   "description": "Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge.",
   "author": {
     "name": "optimiziramsi",

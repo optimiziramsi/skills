@@ -1,7 +1,7 @@
 {
   "name": "runners",
   "displayName": "optimiziramsi runners",
-  "version": "0.1.0-dev.3",
+  "version": "0.1.0",
   "description": "Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree.",
   "author": {
     "name": "optimiziramsi",

@@ -4,7 +4,7 @@ Versions of the `runners@optimiziramsi` plugin. History before the split into on
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-10-18
 
 - Split out of the single `optimiziramsi-skills` plugin (`looper`, `grind`, `collab`, the runners and `runner-link` from its `flow` topic). Enable it per project with `claude plugin install runners@optimiziramsi --scope project`.
 - Worktree confinement injects a vendored copy of the `worktree-guards` plugin's guards

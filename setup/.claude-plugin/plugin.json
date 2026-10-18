@@ -1,7 +1,7 @@
 {
   "name": "setup",
   "displayName": "optimiziramsi setup",
-  "version": "0.1.0-dev.3",
+  "version": "0.1.0",
   "description": "One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md.",
   "author": {
     "name": "optimiziramsi",

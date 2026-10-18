@@ -1,7 +1,7 @@
 {
   "name": "rename",
   "displayName": "optimiziramsi rename",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0",
   "description": "Move a file and cascade every reference to it across docs, skills and config.",
   "author": {
     "name": "optimiziramsi",

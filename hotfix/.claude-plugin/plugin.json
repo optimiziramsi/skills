@@ -1,7 +1,7 @@
 {
   "name": "hotfix",
   "displayName": "optimiziramsi hotfix",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0",
   "description": "Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch.",
   "author": {
     "name": "optimiziramsi",

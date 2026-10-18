@@ -1,7 +1,7 @@
 {
   "name": "qa-gate",
   "displayName": "optimiziramsi qa-gate",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0",
   "description": "The done-gate — typecheck, unit, e2e and visual verification before any claim of done.",
   "author": {
     "name": "optimiziramsi",

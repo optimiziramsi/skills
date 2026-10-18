@@ -2,7 +2,7 @@
 
 Versions of the `code-first@optimiziramsi` plugin.
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-10-18
 
 - New: the code-first working style as its own plugin — an injected contract with a per-repo
   override chain, a Stop guard on inline fenced code, `/idea` (start / list / promote / drop), a

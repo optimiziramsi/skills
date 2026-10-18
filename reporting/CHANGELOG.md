@@ -4,7 +4,7 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-10-18
 
 - Split out of the single `optimiziramsi-skills` plugin (its `reporting` topic). Enable it per project with `claude plugin install reporting@optimiziramsi --scope project`.
 - The injected contract can be replaced per repo: `REPORT_CONTRACT_FILE` → `.agent/output-contract.md`

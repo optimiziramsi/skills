@@ -1,7 +1,7 @@
 {
   "name": "lessons",
   "displayName": "optimiziramsi lessons",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0",
   "description": "Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug.",
   "author": {
     "name": "optimiziramsi",
