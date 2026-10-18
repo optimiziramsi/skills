@@ -1,6 +1,6 @@
 # git — Claude Code git safety net
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `git@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 A single PreToolUse guard that stops Claude from doing the git things you almost never want an agent
 to do on its own — regardless of how you write commits. Commit *style* is deliberately **not** here;
@@ -44,7 +44,7 @@ Enable `git` alone to get the guardrails while keeping your own commit format.
   "extraKnownMarketplaces": {
     "optimiziramsi": { "source": { "source": "github", "repo": "optimiziramsi/skills" } }
   },
-  "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true }
+  "enabledPlugins": { "git@optimiziramsi": true }
 }
 ```
 

@@ -1,6 +1,6 @@
 # instructions — keep the agent instruction system alive
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `instructions@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 The meta-system: capture what you learn, route it to the right store, and keep the instruction
 system consistent over time — so you fix something once and every future session inherits it.
@@ -168,7 +168,7 @@ discovery dir. The engine is python3 (stdlib only) — no `jq`, so it has no way
 ## Enable
 
 ```json
-{ "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true } }
+{ "enabledPlugins": { "instructions@optimiziramsi": true } }
 ```
 
 > **Note:** enabling this plugin activates the `caps` hook in every project that enables it. It's a

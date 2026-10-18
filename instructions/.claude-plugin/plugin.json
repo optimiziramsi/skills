@@ -1,7 +1,7 @@
 {
   "name": "instructions",
   "displayName": "optimiziramsi instructions",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0-dev.2",
   "description": "Keep the agent-instruction system alive — retro, lessons, instructions-audit, instructions-maintenance, rules-change; lesson-scout + instructions-auditor agents; caps, file-guard, meta-lint and tripwire-guard hooks.",
   "author": {
     "name": "optimiziramsi",

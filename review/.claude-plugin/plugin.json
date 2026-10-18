@@ -1,7 +1,7 @@
 {
   "name": "review",
   "displayName": "optimiziramsi review",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0-dev.2",
   "description": "Structured review — review (P0/HIGH/MED/LOW → .agent/reviews/) and qa-gate skills, plus semantic, spec, wireframe, doc-drift and isolation reviewer agents.",
   "author": {
     "name": "optimiziramsi",

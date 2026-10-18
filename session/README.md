@@ -1,6 +1,6 @@
 # session — Claude Code session continuity
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `session@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 Write the handoff at session close; boot the next session from it.
 
@@ -39,5 +39,5 @@ _Planned:_ `collab`, a stop-nudge hook.
 ## Enable
 
 ```json
-{ "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true } }
+{ "enabledPlugins": { "session@optimiziramsi": true } }
 ```

@@ -1,6 +1,6 @@
 # review — Claude Code review & quality gates
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `review@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 ## Contents
 
@@ -55,5 +55,5 @@ plugin.)
 ## Enable
 
 ```json
-{ "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true } }
+{ "enabledPlugins": { "review@optimiziramsi": true } }
 ```

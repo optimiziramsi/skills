@@ -1,6 +1,6 @@
 # commit — the house commit style
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `commit@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 An **opinionated** commit convention: bare imperative single-line messages, topic-close +
 pause-for-review cadence, and stage-by-name discipline. Split out from the `git` plugin on purpose —
@@ -49,7 +49,7 @@ guidance), but enabling `git` is what enforces them.
   "extraKnownMarketplaces": {
     "optimiziramsi": { "source": { "source": "github", "repo": "optimiziramsi/skills" } }
   },
-  "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true }
+  "enabledPlugins": { "commit@optimiziramsi": true }
 }
 ```
 

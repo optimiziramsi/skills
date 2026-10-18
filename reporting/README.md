@@ -1,6 +1,6 @@
 # reporting — the lean-reporting output contract, enforced
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `reporting@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 The house **output contract**: total silence while working (zero text between tool calls), then
 exactly one report — **1 outcome line + ≤5 terse fact bullets + a numbered `Q:` list** (omitted if
@@ -48,7 +48,7 @@ firing often.
   "extraKnownMarketplaces": {
     "optimiziramsi": { "source": { "source": "github", "repo": "optimiziramsi/skills" } }
   },
-  "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true }
+  "enabledPlugins": { "reporting@optimiziramsi": true }
 }
 ```
 

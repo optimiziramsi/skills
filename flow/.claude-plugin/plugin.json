@@ -1,7 +1,7 @@
 {
   "name": "flow",
   "displayName": "optimiziramsi flow",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0-dev.2",
   "description": "Work management — plan, milestone, scope-cut, triage-todo, feedback, plus the looper / grind / collab background runners; ships the .todo readonly guard (arm with \"ALLOW TODO\").",
   "author": {
     "name": "optimiziramsi",

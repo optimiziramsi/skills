@@ -1,6 +1,6 @@
 # flow — work-management for Claude
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `flow@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 How work gets shaped, tracked, and executed across a project — one topic at a time (**plan**), one
 strategic initiative across many sessions (**milestone**), removing something cleanly
@@ -206,7 +206,7 @@ status — the runner never commits.
   "extraKnownMarketplaces": {
     "optimiziramsi": { "source": { "source": "github", "repo": "optimiziramsi/skills" } }
   },
-  "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true }
+  "enabledPlugins": { "flow@optimiziramsi": true }
 }
 ```
 

@@ -1,6 +1,6 @@
 # repo — Claude Code repo-maintenance utilities
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `repo@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 ## Contents
 
@@ -15,5 +15,5 @@ _Planned:_ `scope-cut` (sweep + remove a cut feature) and similar repo-hygiene u
 ## Enable
 
 ```json
-{ "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true } }
+{ "enabledPlugins": { "repo@optimiziramsi": true } }
 ```

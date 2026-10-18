@@ -1,7 +1,7 @@
 {
   "name": "repo",
   "displayName": "optimiziramsi repo",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0-dev.2",
   "description": "rename — move a file and cascade every reference across docs, skills and config.",
   "author": {
     "name": "optimiziramsi",

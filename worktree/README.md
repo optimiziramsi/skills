@@ -1,6 +1,6 @@
 # worktree — Claude Code git-worktree safety
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `worktree@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 Guards that keep file edits inside the **active git worktree** so they don't silently leak into the
 main checkout or a sibling worktree — mitigating [claude-code
@@ -57,7 +57,7 @@ Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1` (write-guard **and** the Session
 `WORKTREE_LEAK_DETECT_DISABLE=1`, `WORKTREE_BASH_GUARD_ENABLE=1` (opt-in),
 `WORKTREE_GUARD_MODE=json|exit2` (default `json`).
 
-All four guards are python3 (stdlib only) over the shared [`lib/hookio.py`](../lib/hookio.py), so
+All four guards are python3 (stdlib only) over the shared [`lib/hookio.py`](lib/hookio.py) (vendored into each plugin that uses it), so
 they have no `jq` dependency and cannot disarm themselves on a missing tool. Their tests live in
 [`tests/test_worktree.py`](tests/test_worktree.py), not inside the guards — run them with
 `python3 worktree/tests/test_worktree.py` (the flow runners also run this file before arming
@@ -104,7 +104,7 @@ nowhere; the push then fast-forwards with no config at all.*
 ## Enable
 
 ```json
-{ "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true } }
+{ "enabledPlugins": { "worktree@optimiziramsi": true } }
 ```
 
 > **Migration note:** these guards may already be wired directly in your
