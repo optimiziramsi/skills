@@ -50,6 +50,12 @@
       "category": "workflow"
     },
     {
+      "name": "context",
+      "source": "./context",
+      "description": "Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh.",
+      "category": "workflow"
+    },
+    {
       "name": "lessons",
       "source": "./lessons",
       "description": "Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug.",

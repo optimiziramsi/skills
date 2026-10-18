@@ -51,7 +51,7 @@ Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 
 ## Plugins
 
-Nineteen plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
+Twenty plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
 together: `worktree` + `worktree-guards`; `todo` + `planning`.
 
 | Plugin | Provides |
@@ -63,6 +63,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`rename`](rename/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
 | [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message. |
 | [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot. |
+| [`context`](context/README.md) | Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh. |
 | [`lessons`](lessons/README.md) | Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug. |
 | [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
 | [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), and ask before the agent edits Claude settings or hook scripts (file-guard). |
@@ -98,6 +99,7 @@ no concern is stuck on:
 | `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_PULSE_EVERY`, `REPORT_GUARD_MAX_LINES` tune it |
 | `CODE_FIRST_OFF=1` | the whole code-first plugin (`CODE_FIRST_GUARD_OFF=1` drops only its Stop guard on inline code) |
 | `SESSION_START_OFF=1` | the SessionStart state snapshot + freshness nudges |
+| `CONTEXT_NUDGE_OFF=1` | the context-window nudges (`CONTEXT_WINDOW_TOKENS`, `CONTEXT_NUDGE_AT`, `CONTEXT_SNOOZE_PCT` tune them) |
 | `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
 | `FLOW_LINK_OFF=1` | re-stamping the runner-link pointer (`.agent/bin/{loop,grind}` then keep their current target) |
 | `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard (`FILE_GUARD_EXTRA` adds prefixes) |
