@@ -1,0 +1,17 @@
+{
+  "name": "planning",
+  "displayName": "optimiziramsi planning",
+  "version": "0.1.0",
+  "description": "Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/planning#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "planning",
+    "workflow"
+  ]
+}

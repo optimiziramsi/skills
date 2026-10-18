@@ -1,13 +1,13 @@
 # Changelog
 
-`optimiziramsi-skills` — one plugin, versioned in
-[`.claude-plugin/plugin.json`](.claude-plugin/plugin.json). Any consumer-visible change bumps that
-version in the same commit; Claude Code only re-materializes an installed plugin on a version
-*change*, so a same-version edit never reaches consumers. `1.0.0` is reserved for go-live —
-everything below `0.1.0` is field-testing.
+**Frozen — pre-split history.** From 0.1.0 the marketplace ships one plugin per concern, each
+versioned in its own `<plugin>/.claude-plugin/plugin.json` with its own `<plugin>/CHANGELOG.md`
+(e.g. [`git/CHANGELOG.md`](git/CHANGELOG.md)). Migrating from the single plugin:
+[ADOPTION.md](ADOPTION.md) § "Migrating from the single `optimiziramsi-skills` plugin".
 
-To pick up a new version: `claude plugin marketplace update optimiziramsi` → `claude plugin update
-optimiziramsi-skills@optimiziramsi` → **restart**. See [ADOPTION.md](ADOPTION.md).
+Below: `optimiziramsi-skills`, the single plugin (0.0.1 – 0.0.13), versioned in the then-root
+`.claude-plugin/plugin.json`. `1.0.0` is reserved for go-live — everything below it is
+field-testing.
 
 ## 0.0.13 — 2026-08-20
 

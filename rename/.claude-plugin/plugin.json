@@ -1,0 +1,17 @@
+{
+  "name": "rename",
+  "displayName": "optimiziramsi rename",
+  "version": "0.1.0",
+  "description": "Move a file and cascade every reference to it across docs, skills and config.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/rename#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "refactor",
+    "rename"
+  ]
+}

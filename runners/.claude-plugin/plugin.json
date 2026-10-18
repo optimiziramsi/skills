@@ -1,0 +1,18 @@
+{
+  "name": "runners",
+  "displayName": "optimiziramsi runners",
+  "version": "0.1.0",
+  "description": "Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/runners#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "automation",
+    "runners",
+    "background"
+  ]
+}

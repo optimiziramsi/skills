@@ -1,11 +1,10 @@
-# worktree — Claude Code git-worktree safety
+# worktree — the parallel-work protocol
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `worktree@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
-Guards that keep file edits inside the **active git worktree** so they don't silently leak into the
-main checkout or a sibling worktree — mitigating [claude-code
-#36182](https://github.com/anthropics/claude-code/issues/36182).
-No-ops entirely when you're not in a linked worktree.
+Drive one topic on its own git worktree as small reviewed slices, landing to the integration
+branch only on the human's explicit OK. Usually enabled together with
+[`worktree-guards`](../worktree-guards), which keeps the edits inside the worktree.
 
 ## Contents
 
@@ -18,50 +17,12 @@ No-ops entirely when you're not in a linked worktree.
     human coordinates; `.agent/worktrees.md` is the board. Covers reserve → plan+example →
     execute → close, plus pause/resume, recycle, and the self-serializing land loop.
 
-- name: `worktree-write-guard`
-  kind: hook
-  event: PreToolUse `Edit|Write|MultiEdit|NotebookEdit`
-  purpose: Deny a file write whose absolute path escapes the worktree into the main checkout.
-
-- name: `worktree-bash-guard`
-  kind: hook
-  event: PreToolUse `Bash`
-  purpose:
-    Deny a shell write (`>`, `sed -i`, `tee`…) into the main checkout from a worktree. **Opt-in**
-    (false-positive-prone): `WORKTREE_BASH_GUARD_ENABLE=1` — which the `flow` runners set for the
-    headless children they launch in a worktree, where there is no human to un-block a false
-    positive and the shell is the widest way out.
-
-- name: `worktree-leak-detector`
-  kind: hook
-  event: PostToolUse `Edit|Write|…`
-  purpose:
-    After an in-worktree edit, warn loudly if the same path went dirty in the main checkout (a
-    leak already happened).
-
-- name: `worktree-detect`
-  kind: hook
-  event: SessionStart
-  purpose:
-    Flag a session rooted in a linked worktree and nudge toward the `/worktree` protocol. Silent
-    in the main checkout; honors `WORKTREE_GUARD_DISABLE=1`.
-
-The skill and the guards are complementary: the guards are the *mechanism*; the skill is the
+The skill and [`worktree-guards`](../worktree-guards) are complementary: the guards are the *mechanism*; the skill is the
 *workflow* on top (who takes what, how slices get reviewed and landed). The skill relies on the
 write-guard for its leak protection — that one is exact (it resolves a tool's path). The bash
 guard is best-effort: it resolves what a shell command would write, but it is not a shell, so
 `eval`, a variable holding the path, or a command substitution defeat it. Write as if neither
 existed.
-
-Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1` (write-guard **and** the SessionStart nudge),
-`WORKTREE_LEAK_DETECT_DISABLE=1`, `WORKTREE_BASH_GUARD_ENABLE=1` (opt-in),
-`WORKTREE_GUARD_MODE=json|exit2` (default `json`).
-
-All four guards are python3 (stdlib only) over the shared [`lib/hookio.py`](../lib/hookio.py), so
-they have no `jq` dependency and cannot disarm themselves on a missing tool. Their tests live in
-[`tests/test_worktree.py`](tests/test_worktree.py), not inside the guards — run them with
-`python3 worktree/tests/test_worktree.py` (the flow runners also run this file before arming
-worktree confinement).
 
 ## The integration branch
 
@@ -70,7 +31,7 @@ target, substituted for `<integration>` wherever it appears. Worktree branches a
 nothing reaches it except through the human-gated review→land flow. It assumes the `.agent/` house
 layout for its board (`.agent/worktrees.md`) and per-topic plans (`.agent/plan/<slug>.md`).
 
-Declare it in the project's `.claude/settings.json` `env` so the skill and the `git` guard agree:
+Declare it in the project's `.claude/settings.json` `env` so the skill and [`git-guard`](../git-guard) agree:
 
 ```json
 { "env": { "GIT_GUARD_PROTECTED_BRANCH": "main", "GIT_GUARD_INTEGRATION_BRANCH": "develop" } }
@@ -103,10 +64,6 @@ nowhere; the push then fast-forwards with no config at all.*
 
 ## Enable
 
-```json
-{ "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true } }
+```bash
+claude plugin install worktree@optimiziramsi --scope project
 ```
-
-> **Migration note:** these guards may already be wired directly in your
-> `~/.claude/settings.json` **and/or the project's `.claude/settings.json`**. If you enable this
-> plugin, **remove the duplicate hook entries from BOTH files** to avoid running each guard twice.

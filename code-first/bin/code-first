@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""code-first — the deterministic half of `/idea` (the skill does the git writes).
+
+  code-first base     print the branch ideas are cut from; exit 1 + reason when none is safe
+  code-first list     open idea branches: name, age in days, last subject (oldest first)
+  code-first prefix   the branch prefix (CODE_FIRST_BRANCH_PREFIX, default idea/)
+  code-first tag      the commit tag (CODE_FIRST_COMMIT_TAG, default IDEA)
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "hooks"))
+import _codefirst as cf  # noqa: E402
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else "help"
+    if cmd == "base":
+        base, problem = cf.resolve_base(os.getcwd())
+        if problem:
+            print(f"code-first: {problem}", file=sys.stderr)
+            return 1
+        print(base)
+    elif cmd == "list":
+        rows = cf.idea_branches(os.getcwd())
+        for branch, age, subject in rows:
+            print(f"{branch}\t{age}d\t{subject}")
+        if not rows:
+            print(f"(no {cf.prefix()}* branches)", file=sys.stderr)
+    elif cmd == "prefix":
+        print(cf.prefix())
+    elif cmd == "tag":
+        print(cf.commit_tag())
+    else:
+        print(__doc__.strip())
+        return 0 if cmd in ("help", "-h", "--help") else 2
+    return 0
+
+
+sys.exit(main(sys.argv))

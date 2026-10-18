@@ -1,0 +1,18 @@
+{
+  "name": "reporting",
+  "displayName": "optimiziramsi reporting",
+  "version": "0.1.0",
+  "description": "Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/reporting#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "reporting",
+    "output",
+    "hooks"
+  ]
+}

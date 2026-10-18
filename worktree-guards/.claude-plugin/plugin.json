@@ -1,0 +1,18 @@
+{
+  "name": "worktree-guards",
+  "displayName": "optimiziramsi worktree-guards",
+  "version": "0.1.0",
+  "description": "Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/worktree-guards#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "git",
+    "worktree",
+    "safety"
+  ]
+}

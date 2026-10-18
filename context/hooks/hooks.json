@@ -1,0 +1,27 @@
+{
+  "description": "context — say how full the context window is (read from the transcript's usage) at configurable thresholds, and at the last one that a handoff is needed; the user's 'remind me later' / 'keep going' / 'topic done' answers are honored. Kill-switch: CONTEXT_NUDGE_OFF=1.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/context-nudge.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/context-nudge.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

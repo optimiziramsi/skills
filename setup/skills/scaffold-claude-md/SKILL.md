@@ -61,7 +61,7 @@ look) and the **hard rules that bind every session**. Everything else has one ca
    - **Confirm your reading with the user** before writing — branch policy is a team convention
      that the repo's shape can only hint at.
    - Mirror the answer into the project's `.claude/settings.json` `env` when it differs from what
-     the `git` plugin would detect: `GIT_GUARD_PROTECTED_BRANCH=<protected>` (comma-separated for
+     the `git-guard` plugin would detect: `GIT_GUARD_PROTECTED_BRANCH=<protected>` (comma-separated for
      several). The guard auto-detects the repo's default branch, which is right for the
      single-branch case but not when the protected and integration branches differ.
    - **Single-branch repos also need `GIT_GUARD_INTEGRATION_BRANCH=<integration>`** in that same
@@ -106,7 +106,7 @@ restated* — fix drift at the source, never by copying it here.
   and ask. On protected branches history is append-only — no `--amend` / `rebase` / `reset` to a
   commit. Never discard uncommitted work (`clean -f`, `restore`, `checkout -- .`, `stash drop`) — it
   may hold the user's WIP.
-  *(The `git` plugin's guard hook blocks the remote/destructive/history ops mechanically.)*
+  *(The `git-guard` plugin blocks the remote/destructive/history ops mechanically.)*
 - **Commit as you go.** Small, focused commits with a terse imperative subject — don't batch into one
   final commit, don't wait to be asked. Message format: the `commit` plugin.
 - **"Done" means verified by a real run**, not by reading code. Define the success check before coding

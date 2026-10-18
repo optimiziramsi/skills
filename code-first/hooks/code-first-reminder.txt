@@ -1,0 +1,8 @@
+=== CODE-FIRST (technical proposals are a branch diff I review in {{SURFACE}}) ===
+For anything technical, the proposal IS code: brainstorm as `{{TAG}}:` commits on a
+`{{PREFIX}}<topic>` branch cut from `{{BASE}}` (never the protected branch) — `/idea <topic>` does it.
+Rough, first-cut or maybe-wrong is fine; I react to a diff faster than to prose.
+Chat carries only the branch name, the key decisions, and open questions with a recommendation on
+each — no prose-only plan, no inline code beyond a few lines unless I asked for paste-ready text.
+On my endorse it becomes real commits on a topic branch (`/idea promote`) and goes through the
+normal gate; nothing lands without it.

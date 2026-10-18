@@ -1,38 +1,137 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "optimiziramsi",
-  "description": "optimiziramsi's Claude Code toolkit — reusable skills, commands, agents, and hooks shared across projects, shipped as a single plugin.",
+  "description": "optimiziramsi's Claude Code toolkit — one plugin per concern (git safety, commit style, reporting, sessions, lessons, instructions, guards, review, planning, todo, runners, patterns, worktrees, setup …); each project enables the ones it wants.",
   "owner": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"
   },
   "plugins": [
     {
-      "name": "optimiziramsi-skills",
-      "displayName": "optimiziramsi skills",
-      "source": "./",
-      "description": "The whole toolkit in one plugin — git safety net, house commit style, lean reporting, session continuity, structured review, work-management flow (+ looper/grind runner), instruction-system upkeep, pattern registry, worktree protocol, repo utilities, and one-time scaffolds. Per-concern env kill-switches; self-gating guards.",
-      "category": "workflow",
-      "author": {
-        "name": "optimiziramsi",
-        "url": "https://github.com/optimiziramsi"
-      },
-      "homepage": "https://github.com/optimiziramsi/skills#readme",
-      "repository": "https://github.com/optimiziramsi/skills",
-      "license": "MIT",
-      "keywords": [
-        "workflow",
-        "git",
-        "commit",
-        "reporting",
-        "session",
-        "review",
-        "flow",
-        "instructions",
-        "patterns",
-        "worktree",
-        "claude-code"
-      ]
+      "name": "git-guard",
+      "source": "./git-guard",
+      "description": "Git safety net — a hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards of uncommitted work.",
+      "category": "workflow"
+    },
+    {
+      "name": "hotfix",
+      "source": "./hotfix",
+      "description": "Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch.",
+      "category": "workflow"
+    },
+    {
+      "name": "commit",
+      "source": "./commit",
+      "description": "House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge.",
+      "category": "workflow"
+    },
+    {
+      "name": "code-first",
+      "source": "./code-first",
+      "description": "Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge.",
+      "category": "workflow"
+    },
+    {
+      "name": "rename",
+      "source": "./rename",
+      "description": "Move a file and cascade every reference to it across docs, skills and config.",
+      "category": "workflow"
+    },
+    {
+      "name": "reporting",
+      "source": "./reporting",
+      "description": "Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message.",
+      "category": "workflow"
+    },
+    {
+      "name": "session",
+      "source": "./session",
+      "description": "Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot.",
+      "category": "workflow"
+    },
+    {
+      "name": "context",
+      "source": "./context",
+      "description": "Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh.",
+      "category": "workflow"
+    },
+    {
+      "name": "lessons",
+      "source": "./lessons",
+      "description": "Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug.",
+      "category": "workflow"
+    },
+    {
+      "name": "instructions",
+      "source": "./instructions",
+      "description": "Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks.",
+      "category": "workflow"
+    },
+    {
+      "name": "guards",
+      "source": "./guards",
+      "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), and ask before the agent edits Claude settings or hook scripts (file-guard).",
+      "category": "workflow"
+    },
+    {
+      "name": "review",
+      "source": "./review",
+      "description": "Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents.",
+      "category": "workflow"
+    },
+    {
+      "name": "qa-gate",
+      "source": "./qa-gate",
+      "description": "The done-gate — typecheck, unit, e2e and visual verification before any claim of done.",
+      "category": "workflow"
+    },
+    {
+      "name": "planning",
+      "source": "./planning",
+      "description": "Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/.",
+      "category": "workflow"
+    },
+    {
+      "name": "todo",
+      "source": "./todo",
+      "description": "The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with \"ALLOW TODO\").",
+      "category": "workflow"
+    },
+    {
+      "name": "runners",
+      "source": "./runners",
+      "description": "Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree.",
+      "category": "workflow"
+    },
+    {
+      "name": "patterns",
+      "source": "./patterns",
+      "description": "Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns.",
+      "category": "workflow"
+    },
+    {
+      "name": "worktree",
+      "source": "./worktree",
+      "description": "The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK. Pairs with worktree-guards.",
+      "category": "workflow"
+    },
+    {
+      "name": "worktree-guards",
+      "source": "./worktree-guards",
+      "description": "Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree.",
+      "category": "workflow"
+    },
+    {
+      "name": "setup",
+      "source": "./setup",
+      "description": "One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md.",
+      "category": "workflow"
+    },
+    {
+      "name": "upkeep",
+      "source": "./upkeep",
+      "description": "Plugin upkeep — a session-start notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins.",
+      "category": "workflow"
     }
   ]
 }

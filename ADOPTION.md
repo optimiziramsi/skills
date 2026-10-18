@@ -1,18 +1,38 @@
-# Adopting `optimiziramsi-skills` into an existing repo
+# Adopting the `optimiziramsi` plugins into an existing repo
 
-How to enable the plugin in a project, plus the non-obvious gotchas — distilled from a real
-adoption (2026-07, CCD 2.1.215, then the 11-plugin marketplace; since the 2026-07 consolidation
-(0.0.1) everything ships as the single `optimiziramsi-skills@optimiziramsi` plugin). Goal: the
-plugin owns the generic system, the repo keeps only what is repo-specific, zero overlap.
+How to enable the plugins in a project, plus the non-obvious gotchas — distilled from a real
+adoption (2026-07, CCD 2.1.215). History: an 11-plugin marketplace, consolidated in 2026-07
+(0.0.1) into the single `optimiziramsi-skills@optimiziramsi` plugin, split again in 2026-10
+(0.1.0) into one plugin per concern so each project enables only what suits it. Goal: the plugins
+own the generic system, the repo keeps only what is repo-specific, zero overlap.
+
+## Migrating from the single `optimiziramsi-skills` plugin
+
+`optimiziramsi-skills@optimiziramsi` is **gone** from the marketplace from 0.1.0 on — an install
+of it stops resolving (a short-lived bundle that depended on every plugin was dropped: updating to
+it installed its dependencies only partly, and while enabled it pinned all of them on). Per project:
+
+1. `claude plugin marketplace update optimiziramsi`
+2. `claude plugin install <plugin>@optimiziramsi --scope project` for each plugin the project
+   wants (the README's table lists them).
+3. `claude plugin uninstall optimiziramsi-skills@optimiziramsi` at the scope it was installed in,
+   and drop its key from `enabledPlugins`.
+4. Restart, then confirm with `claude plugin list` that only the chosen plugins are enabled.
+
+Two things move with the split: env switches keep their names (they now belong to the plugin that
+reads them), and the runner pointer moved to
+`<claude-config>/plugins/data/optimiziramsi-runners/current` — the `runners` plugin's SessionStart hook
+re-aims existing `.agent/bin/{loop,grind}` symlinks on its first run.
 
 Re-verified 2026-08-19 against CCD/CC 2.1.235 and the `develop`/`main` split (0.0.11): the install
 and update mechanics below still hold, and the CLI equivalents of every UI step are named inline.
 
 ## What you receive: `main`, and only `main`
 
-- **Two branches, one of them yours.** `main` is the published plugin — `.claude-plugin/`, the
-  topic folders, `lib/`, `other/`, and the public docs (this file, `README.md`, `CHANGELOG.md`).
-  The working repo — `.agent/`, `.todo*`, `CLAUDE.md`, `.claude/`, `tests.sh`, `release.sh` —
+- **Two branches, one of them yours.** `main` is the published marketplace — `.claude-plugin/`,
+  the plugin folders, `other/`, and the public docs (this file, `README.md`, `CHANGELOG.md`).
+  The working repo — `.agent/`, `.todo*`, `CLAUDE.md`, `.claude/`, `tests.sh`, `release.sh`,
+  `vendor.sh`, the root `lib/` the plugins' copies are vendored from —
   lives on `develop` and stops there. `main` is written only by the release script, as a filtered
   tree-copy rather than a merge, so each release is one commit and `main`'s history is the release
   list.
@@ -30,8 +50,10 @@ and update mechanics below still hold, and the CLI equivalents of every UI step 
   `extraKnownMarketplaces.optimiziramsi = {"source": {"source": "github", "repo": "optimiziramsi/skills"}}`
   — the `github` form takes `repo:`, not `url:`; a `git` form (`{"source": "git", "url":
   "https://github.com/optimiziramsi/skills.git"}`) also works. **Plugin enablement** lives in the
-  project's committed `.claude/settings.json` `enabledPlugins` (`"optimiziramsi-skills@optimiziramsi": true`). Never
-  enable it in global settings — enables travel with the repo.
+  project's committed `.claude/settings.json` `enabledPlugins` — one key per plugin the project
+  wants (`"git-guard@optimiziramsi": true`, …). Never enable them in global settings — enables travel
+  with the repo. A personal opt-out goes in `.claude/settings.local.json`
+  (`"<plugin>@optimiziramsi": false`), which wins over the shared file.
 - **Two sources, one name.** The registration above points at GitHub. Point it at a local
   checkout instead — `claude plugin marketplace add /path/to/skills`, or `"source": {"source":
   "directory", "path": "/path/to/skills"}` — and every project on that machine loads whatever
@@ -55,7 +77,7 @@ and update mechanics below still hold, and the CLI equivalents of every UI step 
   **"Install for project (shared)"**. That writes a `project` row AND the repo-settings enable —
   the same records CC's `/plugin` install creates. From then on, Manage Plugins shows scope
   PROJECT and the plugin-page enable switch works correctly both ways at project scope. Repeat per
-  repo (one plugin since the consolidation).
+  plugin, per repo. CLI equivalent: `claude plugin install <plugin>@optimiziramsi --scope project`.
   - The `+` beside a plugin in Browse and the plain Install button are "install for me": a global
     `user` row + a global-settings enable.
   - "Install for project (local)" installs into the project itself rather than the shared
@@ -64,7 +86,7 @@ and update mechanics below still hold, and the CLI equivalents of every UI step 
   - **Per-project (the recommended default):** install-for-project-shared in each repo; toggle via the UI
     switch or the repo settings file. Zero global traces; enables travel with the code.
   - **Global:** install-for-me once (`user` row + global enable), then hand-add
-    `"optimiziramsi-skills@optimiziramsi": false` in each repo that must NOT run it — settings
+    `"<plugin>@optimiziramsi": false` in each repo that must NOT run it — settings
     merge, so the global enable wins wherever you don't override.
   Mixing scopes for one plugin is the failure mode: settings merge and enable BOTH records, the
   list shows DOUBLE entries (one per row — a truthful render of a real dual install), the toggle
@@ -82,7 +104,7 @@ and update mechanics below still hold, and the CLI equivalents of every UI step 
   switching that picker swaps the whole `+` → Plugins view (enables, doubles, versions) for every
   open chat. Check the selected project before reading anything off the list. Tag semantics are
   asymmetric: an enable key REMOVED from settings shows DISABLED; an explicit
-  `"optimiziramsi-skills@optimiziramsi": false` DELISTS the plugin entirely.
+  `"<plugin>@optimiziramsi": false` DELISTS the plugin entirely.
 - Floor: CCD/CC >= 2.1.195. On older builds a project-only external plugin silently does NOT load
   (an install-gate, not a settings error).
 - Plugins bind at session start — restart CCD after any enable/install/marketplace change; a
@@ -99,9 +121,9 @@ marketplace — two independent things must move, then a restart:
   re-materializes its install cache when that version *changes*. A same-version code change never
   reaches you, however many times you restart — re-fetching the marketplace clone updates the clone,
   not your installed cache. (Field case: a `git-guard` `reset` block sat dead across three restarts
-  because the fix shipped without a version bump. The plugin now treats "any consumer-visible change →
-  bump `.claude-plugin/plugin.json`" as an authoring rule, so this should not recur — but verify
-  the version moved.)
+  because the fix shipped without a version bump. Every plugin now treats "any consumer-visible
+  change → bump its `<plugin>/.claude-plugin/plugin.json`" as an authoring rule, so this should not
+  recur — but verify the version moved.)
 - **You must update the install, not just the marketplace.** Even once the marketplace advances
   (e.g. `0.1.0 → 0.1.1`) and that version is materialized, `~/.claude/plugins/installed_plugins.json`
   can still pin the old version, and CCD keeps binding the old code. Update the plugin (`/plugin` →
@@ -120,10 +142,10 @@ selected), and any other repos' rows stay pinned where they were.
   Marketplaces → optimiziramsi → `⋯` → Update; CLI: `claude plugin marketplace update optimiziramsi` — refreshes the
   clone under `~/.claude/plugins/marketplaces/optimiziramsi` only, pins untouched. **Plugin update** — CCD:
   Manage plugins → plugin page → Update (offers "update to X"); CLI: `claude plugin update
-  optimiziramsi-skills@optimiziramsi` — rewrites the pin and materializes `~/.claude/plugins/cache/optimiziramsi/optimiziramsi-skills/<ver>/`.
+  <plugin>@optimiziramsi` — rewrites the pin and materializes `~/.claude/plugins/cache/optimiziramsi/<plugin>/<ver>/`.
   **Restart alone** writes nothing (no auto-refresh of marketplaces); **session start** re-resolves
   bindings in memory from settings + registry + pins.
-- Full author→consumer chain, no skippable step: bump `plugin.json` + push → marketplace update
+- Full author→consumer chain, no skippable step: bump the plugin's `plugin.json` + push → marketplace update
   (clone) → plugin update (pin) → new session / restart (bind).
 - **With a directory source there is no clone to refresh** — the marketplace reads the checkout
   live, so `marketplace update` only re-validates it and rewrites a timestamp. The install cache is

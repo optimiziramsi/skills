@@ -151,7 +151,7 @@ same commit as the pattern change**. If you edit patterns outside the Write/Edit
 the simplest manual regen is to touch any registry file **via the Write/Edit tools** (append/remove
 a trailing newline) so the hook's auto-regen fires. Alternatively run the generator directly —
 `$CLAUDE_PLUGIN_ROOT` is not reliably an exported shell variable in Bash tool sessions, so locate
-the plugin's `patterns/hooks/` dir first (e.g. from the hook's own output/config, or the plugin cache under
+the `patterns` plugin's `hooks/` dir first (e.g. from the hook's own output/config, or the plugin cache under
 `~/.claude/plugins/`) and run its `generate-pattern-routes.py` with `python3`.
 
 ## Self-questions before blessing a topic

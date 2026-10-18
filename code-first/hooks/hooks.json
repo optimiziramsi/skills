@@ -1,0 +1,40 @@
+{
+  "description": "code-first — inject the code-first contract on every prompt (per-repo override: CODE_FIRST_CONTRACT_FILE → .agent/code-first.md → .claude/code-first.md), block a final message carrying more inline code than CODE_FIRST_MAX_FENCE_LINES (Stop), and name stale idea branches at session start. Kill-switches: CODE_FIRST_OFF=1 (all), CODE_FIRST_GUARD_OFF=1 (Stop guard only).",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/inject.py\" || echo '⚠️ code-first DISARMED — hook failed to execute.'",
+            "statusMessage": "code-first",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/idea-guard.py\"",
+            "statusMessage": "idea guard",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/stale-ideas.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -3,11 +3,11 @@
 import pathlib
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, load_module  # noqa: E402
 
 check = Check()
-guard = load_module(hook("commit/hooks/commit-format.py"), "commit_format")
+guard = load_module(hook("hooks/commit-format.py"), "commit_format")
 
 
 def blocks(name, want_blocked, command):

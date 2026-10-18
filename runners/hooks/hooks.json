@@ -1,0 +1,16 @@
+{
+  "description": "runners — SessionStart re-stamps <claude-config>/plugins/data/optimiziramsi-runners/current at the running runners plugin so every repo's .agent/bin/{loop,grind} symlinks follow a plugin update; creates nothing; kill-switch FLOW_LINK_OFF=1.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/runner-link.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

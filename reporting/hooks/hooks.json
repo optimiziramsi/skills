@@ -1,12 +1,12 @@
 {
-  "description": "reporting — inject the lean-reporting output contract on every prompt, re-pulse it every Nth tool call, and block a contract-violating final message at Stop (forcing a compact rewrite). Kill-switch: REPORT_GUARD_OFF=1 (silences inject, pulse, and Stop guard).",
+  "description": "reporting — inject the lean-reporting output contract on every prompt (per-repo override: REPORT_CONTRACT_FILE → .agent/output-contract.md → .claude/output-contract.md), re-pulse it every Nth tool call, and block a contract-violating final message at Stop (forcing a compact rewrite). Kill-switch: REPORT_GUARD_OFF=1 (silences inject, pulse, and Stop guard).",
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "[ \"${REPORT_GUARD_OFF:-0}\" = \"1\" ] || cat \"${CLAUDE_PLUGIN_ROOT}/reporting/hooks/brevity-reminder.txt\" 2>/dev/null || echo '⚠️ brevity-reminder DISARMED — contract file unreadable.'",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/contract.py\" || echo '⚠️ brevity-reminder DISARMED — hook failed to execute.'",
             "statusMessage": "brevity check",
             "timeout": 10
           }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/reporting/hooks/contract-pulse.py\" 2>/dev/null || echo '{\"systemMessage\":\"⚠️ contract-pulse DISARMED — hook failed to execute.\"}'",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/contract-pulse.py\" 2>/dev/null || echo '{\"systemMessage\":\"⚠️ contract-pulse DISARMED — hook failed to execute.\"}'",
             "statusMessage": "contract pulse",
             "timeout": 10
           }
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/reporting/hooks/report-guard.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/report-guard.py\"",
             "statusMessage": "report guard",
             "timeout": 15
           }

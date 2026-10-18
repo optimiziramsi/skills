@@ -1,6 +1,6 @@
 # patterns — a pattern registry for Claude
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `patterns@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 A **per-topic pattern registry**: capture each blessed code shape once, as a full body with GOOD /
 BAD / anti-patterns / edge cases, and make the agent *consult it at the moment of editing* — so new
@@ -74,7 +74,7 @@ Config: `PATTERN_REGISTRY_DIR` (default `.agent/patterns`), `PATTERN_GUARDS_OFF=
   "extraKnownMarketplaces": {
     "optimiziramsi": { "source": { "source": "github", "repo": "optimiziramsi/skills" } }
   },
-  "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true }
+  "enabledPlugins": { "patterns@optimiziramsi": true }
 }
 ```
 

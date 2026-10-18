@@ -9,8 +9,8 @@ isn't a bare single line:
   - multiple `-m` / `--message`, or a quoted `-m` value containing a newline
 
 This is the OPINIONATED half of the old git plugin — the commit *style*, split out so a project can
-adopt the git safety net (`git` plugin's git-guard) WITHOUT this house commit format. It says nothing
-about destructive git ops; that's the `git` plugin's job.
+adopt the git safety net (the `git-guard` plugin) WITHOUT this house commit format. It says nothing
+about destructive git ops; that's the `git-guard` plugin's job.
 
 Fail-open by design: any unexpected error exits 0 so a broken hook can never brick a session.
 Escape hatch (user-set only): COMMIT_FORMAT_OFF=1.

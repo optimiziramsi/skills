@@ -1,0 +1,18 @@
+{
+  "name": "patterns",
+  "displayName": "optimiziramsi patterns",
+  "version": "0.1.0",
+  "description": "Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/patterns#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "patterns",
+    "conventions",
+    "review"
+  ]
+}

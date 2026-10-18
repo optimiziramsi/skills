@@ -104,7 +104,7 @@ If a workflow seems to require any of these, **stop and ask** the user.
 > `Co-Authored-By`, no body) is enforced by this plugin's `commit-format` hook (escape hatch
 > `COMMIT_FORMAT_OFF=1`). The *destructive git ops* (push/pull/fetch/bulk `git add`/non-FF merges/
 > protected-branch moves/`reset --hard`/discards/`--no-verify`) are enforced by the separate `git`
-> plugin's `git-guard` hook — enable the `git` plugin for that safety net (escape hatch
+> plugin's `git-guard` hook — enable the `git-guard` plugin for that safety net (escape hatch
 > `GIT_GUARD_OFF=1`; the amend guidance above is not hook-enforced by default — see that plugin's
 > `GIT_GUARD_STRICT`). Both fail open.
 

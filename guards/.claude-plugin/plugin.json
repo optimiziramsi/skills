@@ -1,0 +1,18 @@
+{
+  "name": "guards",
+  "displayName": "optimiziramsi guards",
+  "version": "0.1.0",
+  "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), and ask before the agent edits Claude settings or hook scripts (file-guard).",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/guards#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "guards",
+    "hooks",
+    "enforcement"
+  ]
+}

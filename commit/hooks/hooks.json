@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/commit/hooks/commit-format.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/commit-format.py\"",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/commit/hooks/commit-nudge.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/commit-nudge.py\"",
             "timeout": 10
           }
         ]

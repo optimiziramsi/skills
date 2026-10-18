@@ -1,0 +1,18 @@
+{
+  "name": "instructions",
+  "displayName": "optimiziramsi instructions",
+  "version": "0.1.0",
+  "description": "Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/instructions#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "instructions",
+    "claude-md",
+    "maintenance"
+  ]
+}

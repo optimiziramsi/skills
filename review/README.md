@@ -1,6 +1,6 @@
-# review — Claude Code review & quality gates
+# review — structured review
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `review@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 ## Contents
 
@@ -9,13 +9,6 @@ Part of the [`optimiziramsi-skills`](../README.md) plugin.
   purpose:
     Structured review/audit → `.agent/reviews/YYMMDD_*.md` with P0/HIGH/MED/LOW findings,
     scope-first method, verify-before-reporting, optional delegation to review subagents.
-
-- name: `qa-gate`
-  kind: skill + command
-  purpose:
-    The done-gate — typecheck → unit → e2e → **visual (read the screenshots)** before claiming
-    done. Commands stay per-project; the loop and "a red gate reported green is the one
-    unforgivable sin" don't.
 
 - name: `semantic-reviewer`
   kind: agent
@@ -27,10 +20,6 @@ Part of the [`optimiziramsi-skills`](../README.md) plugin.
   kind: agent
   purpose:
     One feature/topic: diff `.docs/` spec vs code → MATCH/PARTIAL/MISSING/EXTRA. Read-only.
-
-- name: `wireframe-vs-code`
-  kind: agent
-  purpose: Diff a wireframe's functional spec vs the implementation → gap report. Read-only.
 
 - name: `doc-auditor`
   kind: agent
@@ -48,12 +37,16 @@ Part of the [`optimiziramsi-skills`](../README.md) plugin.
     boundary validation, lifecycle races, connection revocation, token atomicity, abuse caps,
     leaks). Read-only.
 
+- name: `wireframe-vs-code`
+  kind: agent
+  purpose: Diff a wireframe's functional spec vs the implementation → gap report. Read-only.
+
 Assumes the **`.agent/` house layout** (`.agent/reviews/` for assessments, `.docs/` for specs). The
 `review` skill delegates to these agents. (A `pattern-verifier` agent lives in the `patterns`
-plugin.)
+plugin; the done-gate is [`qa-gate`](../qa-gate).)
 
 ## Enable
 
-```json
-{ "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true } }
+```bash
+claude plugin install review@optimiziramsi --scope project
 ```

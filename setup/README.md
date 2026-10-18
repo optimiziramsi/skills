@@ -1,6 +1,6 @@
-# setup — bootstrap a project for optimiziramsi-skills
+# setup — bootstrap a project for the optimiziramsi plugins
 
-Part of the [`optimiziramsi-skills`](../README.md) plugin.
+The `setup@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 A **one-time** scaffold. The plugin keeps everything it creates under `.agent/`; this makes
 that layout legible in a project, wires the entrypoint to it, and can write the entrypoint itself in
@@ -39,7 +39,7 @@ once. After that, skills discover themselves and the `session-start` hook keeps 
   "extraKnownMarketplaces": {
     "optimiziramsi": { "source": { "source": "github", "repo": "optimiziramsi/skills" } }
   },
-  "enabledPlugins": { "optimiziramsi-skills@optimiziramsi": true }
+  "enabledPlugins": { "setup@optimiziramsi": true }
 }
 ```
 

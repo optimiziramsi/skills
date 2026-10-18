@@ -1,0 +1,18 @@
+{
+  "name": "upkeep",
+  "displayName": "optimiziramsi upkeep",
+  "version": "0.1.0",
+  "description": "Plugin upkeep — a session-start notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/upkeep#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "plugins",
+    "updates",
+    "maintenance"
+  ]
+}
