@@ -1,12 +1,24 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "optimiziramsi",
-  "description": "optimiziramsi's Claude Code toolkit — one plugin per concern (git, commit, reporting, session, review, flow, instructions, patterns, worktree, repo, setup); each project enables the ones it wants.",
+  "description": "optimiziramsi's Claude Code toolkit — one plugin per concern (git safety, commit style, reporting, sessions, lessons, instructions, guards, review, planning, todo, runners, patterns, worktrees, setup …); each project enables the ones it wants.",
   "owner": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"
   },
   "plugins": [
+    {
+      "name": "git-guard",
+      "source": "./git-guard",
+      "description": "Git safety net — a hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards of uncommitted work.",
+      "category": "workflow"
+    },
+    {
+      "name": "hotfix",
+      "source": "./hotfix",
+      "description": "Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch.",
+      "category": "workflow"
+    },
     {
       "name": "commit",
       "source": "./commit",
@@ -14,33 +26,9 @@
       "category": "workflow"
     },
     {
-      "name": "flow",
-      "source": "./flow",
-      "description": "Work management — plan, milestone, scope-cut, triage-todo, feedback, plus the looper / grind / collab background runners; ships the .todo readonly guard (arm with \"ALLOW TODO\").",
-      "category": "workflow"
-    },
-    {
-      "name": "git",
-      "source": "./git",
-      "description": "Git safety net — a git-guard hook that blocks push/pull, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards; plus the hotfix skill.",
-      "category": "workflow"
-    },
-    {
-      "name": "instructions",
-      "source": "./instructions",
-      "description": "Keep the agent-instruction system alive — retro, lessons, instructions-audit, instructions-maintenance, rules-change; lesson-scout + instructions-auditor agents; caps, file-guard, meta-lint and tripwire-guard hooks.",
-      "category": "workflow"
-    },
-    {
-      "name": "patterns",
-      "source": "./patterns",
-      "description": "Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns.",
-      "category": "workflow"
-    },
-    {
-      "name": "repo",
-      "source": "./repo",
-      "description": "rename — move a file and cascade every reference across docs, skills and config.",
+      "name": "rename",
+      "source": "./rename",
+      "description": "Move a file and cascade every reference to it across docs, skills and config.",
       "category": "workflow"
     },
     {
@@ -50,15 +38,75 @@
       "category": "workflow"
     },
     {
-      "name": "review",
-      "source": "./review",
-      "description": "Structured review — review (P0/HIGH/MED/LOW → .agent/reviews/) and qa-gate skills, plus semantic, spec, wireframe, doc-drift and isolation reviewer agents.",
-      "category": "workflow"
-    },
-    {
       "name": "session",
       "source": "./session",
       "description": "Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot.",
+      "category": "workflow"
+    },
+    {
+      "name": "lessons",
+      "source": "./lessons",
+      "description": "Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug.",
+      "category": "workflow"
+    },
+    {
+      "name": "instructions",
+      "source": "./instructions",
+      "description": "Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks.",
+      "category": "workflow"
+    },
+    {
+      "name": "guards",
+      "source": "./guards",
+      "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), and ask before the agent edits Claude settings or hook scripts (file-guard).",
+      "category": "workflow"
+    },
+    {
+      "name": "review",
+      "source": "./review",
+      "description": "Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents.",
+      "category": "workflow"
+    },
+    {
+      "name": "qa-gate",
+      "source": "./qa-gate",
+      "description": "The done-gate — typecheck, unit, e2e and visual verification before any claim of done.",
+      "category": "workflow"
+    },
+    {
+      "name": "planning",
+      "source": "./planning",
+      "description": "Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/.",
+      "category": "workflow"
+    },
+    {
+      "name": "todo",
+      "source": "./todo",
+      "description": "The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with \"ALLOW TODO\").",
+      "category": "workflow"
+    },
+    {
+      "name": "runners",
+      "source": "./runners",
+      "description": "Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree.",
+      "category": "workflow"
+    },
+    {
+      "name": "patterns",
+      "source": "./patterns",
+      "description": "Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns.",
+      "category": "workflow"
+    },
+    {
+      "name": "worktree",
+      "source": "./worktree",
+      "description": "The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK. Pairs with worktree-guards.",
+      "category": "workflow"
+    },
+    {
+      "name": "worktree-guards",
+      "source": "./worktree-guards",
+      "description": "Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree.",
       "category": "workflow"
     },
     {
@@ -68,15 +116,9 @@
       "category": "workflow"
     },
     {
-      "name": "worktree",
-      "source": "./worktree",
-      "description": "Parallel isolated work — the worktree protocol (reserve → plan → review-gated slices → land) plus guards that keep edits inside the active worktree.",
-      "category": "workflow"
-    },
-    {
       "name": "optimiziramsi-skills",
       "source": "./optimiziramsi-skills",
-      "description": "Deprecated bundle — installs and enables every optimiziramsi plugin at once. Enable the individual plugins your project wants instead: while this bundle is enabled none of them can be disabled.",
+      "description": "Deprecated bundle — depends on every optimiziramsi plugin. Updating to it does not install them; install the plugins a project wants and uninstall this.",
       "category": "workflow"
     }
   ]

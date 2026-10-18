@@ -56,13 +56,13 @@ nothing to generate or re-sync afterward.
    durable knowledge like `lessons/` and `patterns/` committed even then).
 
 5. **Offer the runner links** (`.agent/bin/loop` + `.agent/bin/grind`) — optional, ask first. They
-   make the flow runners launchable as `.agent/bin/loop` from the repo root instead of a pasted
+   make the runners launchable as `.agent/bin/loop` from the repo root instead of a pasted
    absolute path into the plugin cache. They are **symlinks, machine-local, never committed** —
    each person working in the repo makes their own:
 
    ```bash
    mkdir -p .agent/bin
-   ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-flow/current"
+   ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-runners/current"
    ln -sfn "$ptr/bin/loop"  .agent/bin/loop
    ln -sfn "$ptr/bin/grind" .agent/bin/grind
    ```
@@ -70,8 +70,8 @@ nothing to generate or re-sync afterward.
    Then **gitignore them**: add `.agent/bin/` (skip if `.agent/` is ignored wholesale). Skip this
    step entirely if the project doesn't use `looper` / `grind`.
 
-   **Why the pointer and not a direct link into the cache:** `…/data/optimiziramsi-flow/current`
-   is one stable path per machine that the `flow` plugin's SessionStart hook re-stamps at whatever version
+   **Why the pointer and not a direct link into the cache:** `…/data/optimiziramsi-runners/current`
+   is one stable path per machine that the `runners` plugin's SessionStart hook re-stamps at whatever version
    is actually loaded, so the links survive plugin updates and encode no version. Committing them
    instead would publish one person's `$HOME` to everyone. A pre-existing `bin/loop` from the old
    committed-wrapper era can be deleted once these exist.
@@ -90,7 +90,7 @@ stays out of your repo root. Files/dirs appear as you use the matching skill —
 | Path | What it holds | Owned by (skill/plugin) |
 |---|---|---|
 | `handoff.md` | next-session continuity notes (≤4k) | `handoff` / session |
-| `bin/` | your own symlinks to the flow runners — machine-local, gitignored | `scaffold` / flow |
+| `bin/` | your own symlinks to the runners — machine-local, gitignored | `scaffold` / runners |
 | `FEEDBACK.md` | agent-owned ledger of processed `.todo` items | `feedback` / flow |
 | `lessons/` | durable, hard-won lessons + a README index | `lessons` / instructions |
 | `instructions-changelog.md` | tier-tagged log of instruction changes | `retro` / instructions |

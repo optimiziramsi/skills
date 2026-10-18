@@ -6,4 +6,4 @@ Versions of the `optimiziramsi-skills@optimiziramsi` plugin. History before the 
 
 ## 0.1.0 — unreleased
 
-- Now a deprecated bundle: no components of its own, `dependencies` on all eleven per-topic plugins. Updating an existing install to it does **not** install those dependencies — it loads nothing and names each missing one. Install the plugins the project wants and uninstall this; while it is enabled none of them can be disabled.
+- Now a deprecated bundle: no components of its own, `dependencies` on all eighteen per-concern plugins. Updating an existing install to it does **not** install those dependencies — it loads nothing and names each missing one. Install the plugins the project wants and uninstall this; while it is enabled none of them can be disabled.

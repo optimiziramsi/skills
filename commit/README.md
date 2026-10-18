@@ -3,10 +3,10 @@
 The `commit@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 An **opinionated** commit convention: bare imperative single-line messages, topic-close +
-pause-for-review cadence, and stage-by-name discipline. Split out from the `git` plugin on purpose —
+pause-for-review cadence, and stage-by-name discipline. Split out from the `git-guard` plugin on purpose —
 commit style is personal, so this is a separate opt-in. Want the git *safety net* (block
 push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, discards) but keep your own
-commit format? Enable [`git`](../git) and skip this.
+commit format? Enable [`git-guard`](../git-guard) and skip this.
 
 ## Contents
 
@@ -35,7 +35,7 @@ commit format? Enable [`git`](../git) and skip this.
 ## The split
 
 - **This plugin** owns the *commit message format + cadence* — the opinionated house style.
-- **The [`git`](../git) plugin** owns *git safety* — blocking destructive/remote/history operations
+- **The [`git-guard`](../git-guard) plugin** owns *git safety* — blocking destructive/remote/history operations
   (push, pull, fetch, bulk adds, non-FF merges, `reset --hard`, `clean -f`, `--no-verify`, …),
   regardless of commit style.
 

@@ -22,7 +22,7 @@ not restated.
 
 - **Git remotes are the user's.** Never `git push` / `pull` (`git fetch` is fine). The user reviews
   and pushes from their own client. History is append-only (no `--amend` / `rebase` / `reset` to a
-  commit); never discard uncommitted work. *(The `git` plugin dogfoods its own guard.)*
+  commit); never discard uncommitted work. *(The `git-guard` plugin dogfoods its own guard.)*
 - **Work on `develop`, publish to `main`.** `main` is the **published plugin only**, written
   **only** by `./release.sh` as a filtered tree-copy — never by hand, by merge, or after
   `git checkout main`. Cut one with the [`release` skill](.claude/skills/release/SKILL.md); to try
@@ -47,7 +47,7 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
   (`.claude-plugin/marketplace.json`). Each `<plugin>/` (dir name = plugin name) has its own
   `.claude-plugin/plugin.json`, `README.md`, `CHANGELOG.md`, and the default layout `skills/
   commands/ agents/ hooks/hooks.json`. A plugin reaches **nothing outside its own folder** at
-  runtime — shared code lives once in root `lib/` (and `worktree/` for flow's copy); edit the
+  runtime — shared code lives once in root `lib/` (and `worktree-guards/` for runners' copy); edit the
   source, run `./vendor.sh`, commit the copies. No `dependencies` between plugins — a project
   must be able to drop any one. Adding/removing a plugin = its folder
   **and** its `marketplace.json` entry (tests.sh checks both). `optimiziramsi-skills/` is the
@@ -71,6 +71,6 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
 - **Status writeups are prose or a `status:` field — never `[ ]` / `[x]` checkboxes.** This
   repo's `.todo` is an agent-maintained list using a `(done)` prefix (a deliberate local choice;
   consumer projects keep `.todo` user-owned — see the shipped `triage-todo` / feedback skills).
-  **When `flow@optimiziramsi` (or the bundle) is installed here (dogfooding), its `todo-readonly-guard` is live**: to
+  **When `todo@optimiziramsi` (or the bundle) is installed here (dogfooding), its `todo-readonly-guard` is live**: to
   update `.todo`, ask the user to arm the session with **"ALLOW TODO"**; unarmed deferrals go to
   `.todo-inbox`.

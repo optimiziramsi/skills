@@ -4,7 +4,7 @@ A personal [Claude Code plugin marketplace](https://docs.claude.com/en/docs/clau
 `optimiziramsi`, shipping **one plugin per concern**: reusable **skills, commands, agents, and
 hooks** shared across my projects — solve something once, get it everywhere, update it in one
 place. Each project enables only the plugins that suit it. The repo root is the marketplace
-(`.claude-plugin/marketplace.json`); every top-level concern folder (`git/ commit/ flow/ …`) is a
+(`.claude-plugin/marketplace.json`); every top-level concern folder (`git-guard/ commit/ runners/ …`) is a
 self-contained plugin with its own `.claude-plugin/plugin.json`, `skills/ commands/ agents/
 hooks/`, `README.md` and `CHANGELOG.md`.
 
@@ -18,7 +18,7 @@ claude plugin marketplace add optimiziramsi/skills
 ```
 
 ```bash
-claude plugin install git@optimiziramsi --scope project
+claude plugin install git-guard@optimiziramsi --scope project
 ```
 
 Repeat the install for each plugin the project wants, then **restart** — plugins bind at session
@@ -33,7 +33,7 @@ their machine, since an enable alone installs nothing:
 ```json
 {
   "enabledPlugins": {
-    "git@optimiziramsi": true,
+    "git-guard@optimiziramsi": true,
     "commit@optimiziramsi": true,
     "session@optimiziramsi": true
   }
@@ -45,7 +45,7 @@ their machine, since an enable alone installs nothing:
 - **Tune a plugin** with the env switches below — shared in `.claude/settings.json` `env`,
   personal in `.claude/settings.local.json` `env`.
 - **Coming from the single plugin?** `optimiziramsi-skills@optimiziramsi` is now a deprecated,
-  empty bundle that depends on all eleven. **Updating to it does not install them** — it loads
+  empty bundle that depends on all eighteen. **Updating to it does not install them** — it loads
   nothing and reports each as a missing dependency — so install the plugins the project wants,
   then uninstall the bundle (ADOPTION.md § Migrating). Floor: CC / CCD **≥ 2.1.195**.
 
@@ -53,21 +53,29 @@ Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 
 ## Plugins
 
-Eleven plugins, each a top-level folder; the id is `<folder>@optimiziramsi`.
+Eighteen plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
+together: `worktree` + `worktree-guards`; `todo` + `planning`.
 
 | Plugin | Provides |
 |---|---|
-| [`git`](git/README.md) | Git **safety net** — a `git-guard` hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, soft-resets to moving refs, `reset --hard`, `--no-verify`, and discards (rebase/amend/checkout-file pass by default for FF landing flows) — plus the **hotfix** skill (test-first, cherry-pick both ways, remotes handed to you). |
-| [`commit`](commit/README.md) | The opinionated house **commit** style — bare single-line messages, topic-close + pause-for-review cadence, safe staging, a `commit-format` guard, and a `commit-nudge`. |
-| [`setup`](setup/README.md) | One-time bootstrap — **scaffold** the `.agent/` workspace index and point CLAUDE.md/AGENTS.md at it, and **scaffold-claude-md** to write a house-style CLAUDE.md (a slim router of the hard rules). |
-| [`reporting`](reporting/README.md) | The **lean-reporting output contract**, enforced — contract injected per prompt (`brevity-reminder`), re-pulsed every Nth tool call (`contract-pulse`), and a Stop `report-guard` that blocks a narrating/over-long final message. |
-| [`session`](session/README.md) | Session continuity — **handoff** (write next-session notes, ≤4k), **continue** (boot from them), **session-summary** + a `session-start` hook. |
-| [`instructions`](instructions/README.md) | Keep the agent-instruction system alive — **retro**, **lessons**, **instructions-audit**, **instructions-maintenance**, **rules-change** skills + `lesson-scout` / `instructions-auditor` agents + `caps` and `file-guard` hooks + two config-driven engines: **meta-lint** (behind `.agent/meta-lint.json`) and **tripwire-guard** (project-owned `.agent/guards.d/` asserts, any language). |
-| [`review`](review/README.md) | Structured review — **review** (P0/HIGH/MED/LOW → `.agent/reviews/`) and **qa-gate** skills + `semantic-reviewer`, `spec-cross-checker`, `wireframe-vs-code`, `doc-auditor`, `isolation-reviewer` agents. |
-| [`repo`](repo/README.md) | **rename** — move a file and cascade every reference across docs/skills/config. |
-| [`flow`](flow/README.md) | Work management — **plan**, **milestone**, **scope-cut**, **triage-todo**, **feedback**, plus autonomous background execution: **looper** / **grind** / **collab** driven by shipped Python-3 runners, launched via gitignored `.agent/bin/{loop,grind}` symlinks. Ships the `todo-readonly-guard` — `.todo` stays user-owned (arm with "ALLOW TODO"). |
-| [`patterns`](patterns/README.md) | A per-topic **pattern registry** (`.agent/patterns/`) — **manage-patterns** + `pattern-compliance`/`pattern-verifier` agents + hooks that gate edits governed only by non-blessed patterns. Ships the system, not any project's conventions. |
-| [`worktree`](worktree/README.md) | Parallel isolated work — the **worktree** skill (reserve → plan → review-gated slices → land) + guards that keep edits inside the active worktree (mitigates [claude-code #36182](https://github.com/anthropics/claude-code/issues/36182)) + a SessionStart `worktree-detect` nudge. |
+| [`git-guard`](git-guard/README.md) | Git safety net — a hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards of uncommitted work. |
+| [`hotfix`](hotfix/README.md) | Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch. |
+| [`commit`](commit/README.md) | House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge. |
+| [`rename`](rename/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
+| [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message. |
+| [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot. |
+| [`lessons`](lessons/README.md) | Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug. |
+| [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
+| [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), and ask before the agent edits Claude settings or hook scripts (file-guard). |
+| [`review`](review/README.md) | Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents. |
+| [`qa-gate`](qa-gate/README.md) | The done-gate — typecheck, unit, e2e and visual verification before any claim of done. |
+| [`planning`](planning/README.md) | Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/. |
+| [`todo`](todo/README.md) | The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with "ALLOW TODO"). |
+| [`runners`](runners/README.md) | Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree. |
+| [`patterns`](patterns/README.md) | Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns. |
+| [`worktree`](worktree/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK. Pairs with worktree-guards. |
+| [`worktree-guards`](worktree-guards/README.md) | Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree. |
+| [`setup`](setup/README.md) | One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md. |
 
 ## Per-concern switches (env)
 
@@ -94,7 +102,7 @@ no concern is stuck on:
 | `WORKTREE_LEAK_DETECT_DISABLE=1` | the post-edit worktree leak detector |
 
 Opt-**in**, off by default: `WORKTREE_BASH_GUARD_ENABLE=1` (shell-channel worktree containment —
-false-positive-prone; the flow runners arm it for their own children in worktree mode). The flow runners take `FLOW_*` env; see [`flow`](flow/README.md).
+false-positive-prone; the runners arm it for their own children in worktree mode). The runners take `FLOW_*` env; see [`runners`](runners/README.md).
 
 **Runtime: python3 (stdlib only), nothing else.** Every hook is python over a shared
 `lib/hookio.py`, vendored into each plugin that uses it (a plugin can reach nothing outside its own
@@ -119,8 +127,8 @@ force/delete refspecs and `checkout` onto it stay blocked.
 - **One plugin per concern.** Each is a folder (`<plugin>/skills|commands|agents|hooks/`) in
   Claude Code's default plugin layout, with its own `README.md`, `CHANGELOG.md` and version.
   Plugins don't depend on each other: a skill that mentions another plugin's skill degrades to a
-  dead mention when that plugin isn't enabled, and `flow` carries its own copy of `worktree`'s
-  guards for runner confinement. A **command** (`/x`) is a thin shim that invokes a same-named **skill** which holds the actual
+  dead mention when that plugin isn't enabled, and `runners` carries its own copy of
+  `worktree-guards`' guards for runner confinement. A **command** (`/x`) is a thin shim that invokes a same-named **skill** which holds the actual
   logic (single source of truth). Commands are `disable-model-invocation: true` — they exist so you
   can *type* `/x`; the skill's own description is what Claude auto-triggers on, so nothing is
   duplicated. Claude Code namespaces plugin components as `<plugin>:<name>` in menus and

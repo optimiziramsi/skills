@@ -1,8 +1,8 @@
 {
   "name": "optimiziramsi-skills",
   "displayName": "optimiziramsi skills (bundle)",
-  "version": "0.1.0-dev.2",
-  "description": "Deprecated bundle — installs and enables every optimiziramsi plugin at once. Enable the individual plugins your project wants instead: while this bundle is enabled none of them can be disabled.",
+  "version": "0.1.0-dev.3",
+  "description": "Deprecated bundle — depends on every optimiziramsi plugin. Updating to it does not install them; install the plugins a project wants and uninstall this.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"
@@ -11,16 +11,23 @@
   "repository": "https://github.com/optimiziramsi/skills",
   "license": "MIT",
   "dependencies": [
+    "git-guard",
+    "hotfix",
     "commit",
-    "flow",
-    "git",
-    "instructions",
-    "patterns",
-    "repo",
+    "rename",
     "reporting",
-    "review",
     "session",
-    "setup",
-    "worktree"
+    "lessons",
+    "instructions",
+    "guards",
+    "review",
+    "qa-gate",
+    "planning",
+    "todo",
+    "runners",
+    "patterns",
+    "worktree",
+    "worktree-guards",
+    "setup"
   ]
 }

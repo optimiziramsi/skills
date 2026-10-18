@@ -1,0 +1,18 @@
+{
+  "name": "git-guard",
+  "displayName": "optimiziramsi git-guard",
+  "version": "0.1.0-dev.1",
+  "description": "Git safety net — a hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards of uncommitted work.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/git-guard#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "git",
+    "safety",
+    "hooks"
+  ]
+}

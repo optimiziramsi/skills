@@ -1,30 +1,11 @@
-# instructions — keep the agent instruction system alive
+# instructions — keep the agent instruction system small and true
 
 The `instructions@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
-The meta-system: capture what you learn, route it to the right store, and keep the instruction
-system consistent over time — so you fix something once and every future session inherits it.
+The rules for how CLAUDE.md, `.claude/` and `.agent/` evolve, the sweep that de-rots them, and the
+checks that keep them inside their size caps.
 
 ## Contents
-
-- name: `retro`
-  kind: skill + command
-  purpose:
-    Session-end harvest — route learnings to lessons/rules/docs, merge-don't-append, compact at
-    caps, **apply-safe / propose-risky**, changelog, commit.
-
-- name: `lessons`
-  kind: skill + command
-  purpose:
-    Capture + curate one durable lesson in `.agent/lessons/` — kebab-slug file, README index,
-    two-axis surfacing (enforced-hook / routed-doc / indexed × High/Mid/Low caps), dedup, prune,
-    fold-up.
-
-- name: `instructions-audit`
-  kind: skill + command
-  purpose:
-    De-rot sweep — broken pointers, dead/duplicate rules, truth-vs-reality drift, cap breaches,
-    enforcement drift; safe fixes applied, risky ones proposed.
 
 - name: `instructions-maintenance`
   kind: skill + command
@@ -39,10 +20,11 @@ system consistent over time — so you fix something once and every future sessi
     The sanctioned **T3-change door** — explicit approval, coherence + cap check, re-test
     enforcement, reality check, changelog. What retro/audit route approved changes through.
 
-- name: `lesson-scout`
-  kind: agent
+- name: `instructions-audit`
+  kind: skill + command
   purpose:
-    Prior-art lookup — searches `.agent/lessons/` before you re-debug something. Read-only.
+    De-rot sweep — broken pointers, dead/duplicate rules, truth-vs-reality drift, cap breaches,
+    enforcement drift; safe fixes applied, risky ones proposed.
 
 - name: `instructions-auditor`
   kind: agent
@@ -57,17 +39,9 @@ system consistent over time — so you fix something once and every future sessi
     skill/agent/rule counts). Stop — after any session that wrote files, nudge once per distinct
     breach-set on ANY breach present (pre-existing included, not only what this session bloated).
     Makes the governance caps the skills *describe* mechanical. All caps env-overridable; fails
-    open; escape hatch `CAPS_GUARD_OFF=1`; tests: `python3 instructions/tests/test_caps.py`.
+    open; escape hatch `CAPS_GUARD_OFF=1`; tests: `python3 tests/test_caps.py`.
 
-- name: `file-guard`
-  kind: hook
-  purpose:
-    PreToolUse — writes to **T3 enforcement surfaces** (`.claude/settings*.json`,
-    `.claude/hooks/`) downgrade to an **ask**: a session must not silently rewrite its own
-    guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch
-    `FILE_GUARD_OFF=1`; self-test `--test`.
-
-- name: `instructions/bin/meta-lint`
+- name: `bin/meta-lint`
   kind: engine
   purpose:
     Config-driven **instruction-system linter** — 19 mechanical checks (cross-refs, lessons
@@ -78,18 +52,8 @@ system consistent over time — so you fix something once and every future sessi
     `--stop` (exit 2) when a file-writing session leaves a size/count cap breached. Escape hatch
     `META_LINT_OFF=1`; self-test `--test`.
 
-- name: `tripwire-guard`
-  kind: hook, engine
-  purpose:
-    PreToolUse `Bash` — runs **project-owned command tripwires** from `.agent/guards.d/`
-    against every Bash command: a guard exits 2 to block (first block wins, reason fed to the
-    agent), 0 to allow, anything else becomes a loud non-blocking warning. Guards are written in
-    any language (`*.sh`, `*.py`, or any `+x` file with a shebang). No dir/guards → silent
-    no-op. One-shot escape `TRIPWIRE_SKIP=1` command prefix; kill switch `TRIPWIRE_GUARD_OFF=1`.
-    Engine tests: `python3 instructions/tests/test_tripwire.py`.
-
-The full knowledge system: **define** (`instructions-maintenance`) · **capture** (`lessons`) ·
-**harvest** (`retro`) · **maintain** (`instructions-audit`) · **change** (`rules-change`).
+Capturing and harvesting lessons is the separate [`lessons`](../lessons) plugin; project-owned
+command checks and the settings/hooks edit guard are [`guards`](../guards).
 
 ## Model
 
@@ -103,7 +67,7 @@ The full knowledge system: **define** (`instructions-maintenance`) · **capture*
 
 ## meta-lint — the config-driven instruction-system linter
 
-The ENGINE ships in this plugin (`instructions/bin/meta-lint`, python3 stdlib only); each project supplies the
+The ENGINE ships in this plugin (`bin/meta-lint`, python3 stdlib only); each project supplies the
 POLICY via **`.agent/meta-lint.json`**. No config file → silent no-op (projects opt IN). A minimal
 `{}` config lints the house layout with the default caps; everything is overridable: enabled
 `checks`, cap numbers **and units** (`lines` vs `chars`, most-specific entry wins per unit),
@@ -132,43 +96,10 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
   a full-strength real-project config (line caps per file class, 4 dup tripwires, RR counts,
   board + audit + routes checks all armed). Copy and trim for your project.
 
-## tripwire-guard — project-owned command tripwires
-
-The ENGINE is a PreToolUse `Bash` hook (`hooks/tripwire-guard.py`); the PROJECT supplies the
-guards in **`.agent/guards.d/`** (no dir → silent no-op). Each guard is executed in sorted order
-with the Bash command in `$TRIPWIRE_COMMAND` and the full tool-input JSON in `$TRIPWIRE_INPUT` +
-on stdin: **exit 2 + printed reason = block** (first block wins), exit 0 = allow, anything else =
-loud non-blocking warning.
-
-**Your guards, your language.** `*.sh` runs under `bash` and `*.py` under `python3` (no executable
-bit needed); anything else in the dir runs directly when it is `+x`, so its own shebang picks the
-interpreter — node, ruby, a compiled binary. Non-runnable files (a README, a config, a guard you
-disabled by dropping its `+x`) are ignored. The engine is python because *this plugin* is python;
-that is not a contract on the projects that install it. Self-tests are the guard's business too —
-the bash examples below define a `tripwire_test` function and gate their dispatch with
-`[ "${BASH_SOURCE[0]}" = "$0" ]` so they can be sourced and tested.
-
-Shipped, ready-to-copy examples in [`examples/guards.d/`](examples/guards.d/) — bash because
-these three are mostly `git` plumbing, not because guards must be (integration branch via
-`TRIPWIRE_INTEGRATION_BRANCH`, default `develop`):
-
-- **`land-check.sh`** — blocks a landing push (`git push . HEAD:<integration>`) when HEAD isn't
-  rebased onto the branch's *current* tip, and when the land would resurrect a board-file line
-  (`TRIPWIRE_BOARD_FILE`, default `.agent/worktrees.md`) that the integration branch deleted.
-- **`docs-drift-warn.sh`** — warn-only: a landing push that changes source
-  (`TRIPWIRE_SRC_RX`) without touching docs (`TRIPWIRE_DOCS_RX`).
-- **`cap-gate.sh`** — blocking: refuses a `git commit` while the instruction surface is over cap —
-  the enforcement complement to the nudge-only `caps` hook. Caps env-overridable (`CAP_CLAUDE` …);
-  `CAP_GATE_OFF=1` to bypass.
-
-Escape hatches: prefix the ONE false-positiving command with `TRIPWIRE_SKIP=1` (one-shot, visible
-in the transcript); `TRIPWIRE_GUARD_OFF=1` kill switch; `TRIPWIRE_GUARDS_DIR` overrides the
-discovery dir. The engine is python3 (stdlib only) — no `jq`, so it has no way to disarm itself.
-
 ## Enable
 
-```json
-{ "enabledPlugins": { "instructions@optimiziramsi": true } }
+```bash
+claude plugin install instructions@optimiziramsi --scope project
 ```
 
 > **Note:** enabling this plugin activates the `caps` hook in every project that enables it. It's a

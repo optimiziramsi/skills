@@ -1,7 +1,7 @@
 {
   "name": "commit",
   "displayName": "optimiziramsi commit",
-  "version": "0.1.0-dev.2",
+  "version": "0.1.0-dev.3",
   "description": "House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge.",
   "author": {
     "name": "optimiziramsi",

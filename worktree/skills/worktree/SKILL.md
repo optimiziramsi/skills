@@ -43,7 +43,7 @@ before landing anything**. Substitute both everywhere below.
 - **Single-branch repo** (GitHub-flow, one long-lived branch): `<integration>` **is** `<protected>`
   — the same branch is both the worktree base and the land target. Everything below still holds;
   the only differences are that the HARD GATE's fork-point compare is moot (§ Start) and that the
-  `git` plugin's guard needs `GIT_GUARD_INTEGRATION_BRANCH` set, or it blocks your landing push.
+  `git-guard` plugin needs `GIT_GUARD_INTEGRATION_BRANCH` set, or it blocks your landing push.
 
 ## Voice — terse, no narration
 

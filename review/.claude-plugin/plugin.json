@@ -1,8 +1,8 @@
 {
   "name": "review",
   "displayName": "optimiziramsi review",
-  "version": "0.1.0-dev.2",
-  "description": "Structured review — review (P0/HIGH/MED/LOW → .agent/reviews/) and qa-gate skills, plus semantic, spec, wireframe, doc-drift and isolation reviewer agents.",
+  "version": "0.1.0-dev.3",
+  "description": "Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"
@@ -12,7 +12,7 @@
   "license": "MIT",
   "keywords": [
     "review",
-    "qa",
+    "audit",
     "agents"
   ]
 }

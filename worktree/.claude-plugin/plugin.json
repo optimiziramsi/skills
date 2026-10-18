@@ -1,8 +1,8 @@
 {
   "name": "worktree",
   "displayName": "optimiziramsi worktree",
-  "version": "0.1.0-dev.2",
-  "description": "Parallel isolated work — the worktree protocol (reserve → plan → review-gated slices → land) plus guards that keep edits inside the active worktree.",
+  "version": "0.1.0-dev.3",
+  "description": "The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK. Pairs with worktree-guards.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"

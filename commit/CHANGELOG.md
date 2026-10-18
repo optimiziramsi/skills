@@ -1,9 +1,9 @@
 # commit — changelog
 
-Versions of the `commit@optimiziramsi` plugin. History before the split into one plugin per topic
+Versions of the `commit@optimiziramsi` plugin. History before the split into one plugin per concern
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
 ## 0.1.0 — unreleased
 
-- Split out of the single `optimiziramsi-skills` plugin as its own plugin; enable it per project with `claude plugin install commit@optimiziramsi --scope project`.
+- Split out of the single `optimiziramsi-skills` plugin (its `commit` topic). Enable it per project with `claude plugin install commit@optimiziramsi --scope project`.

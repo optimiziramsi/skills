@@ -9,10 +9,10 @@ own the generic system, the repo keeps only what is repo-specific, zero overlap.
 ## Migrating from the single `optimiziramsi-skills` plugin
 
 `optimiziramsi-skills@optimiziramsi` survives as a **deprecated bundle**: no components of its
-own, `dependencies` on all eleven plugins. **An update to it does not install those
+own, `dependencies` on all eighteen plugins. **An update to it does not install those
 dependencies** (observed 2026-10-18: the auto-updated install reported `dependency-unsatisfied` for
 each and loaded nothing) — it only turns "plugin gone" into an error naming what to install. And
-while it is enabled, none of the eleven can be disabled. So migrate rather than keep it, per
+while it is enabled, none of the eighteen can be disabled. So migrate rather than keep it, per
 project:
 
 1. `claude plugin marketplace update optimiziramsi`
@@ -23,8 +23,8 @@ project:
 4. Restart, then confirm with `claude plugin list` that only the chosen plugins are enabled.
 
 Two things move with the split: env switches keep their names (they now belong to the plugin that
-reads them), and the flow runner pointer moved to
-`<claude-config>/plugins/data/optimiziramsi-flow/current` — the `flow` plugin's SessionStart hook
+reads them), and the runner pointer moved to
+`<claude-config>/plugins/data/optimiziramsi-runners/current` — the `runners` plugin's SessionStart hook
 re-aims existing `.agent/bin/{loop,grind}` symlinks on its first run.
 
 Re-verified 2026-08-19 against CCD/CC 2.1.235 and the `develop`/`main` split (0.0.11): the install
@@ -54,7 +54,7 @@ and update mechanics below still hold, and the CLI equivalents of every UI step 
   — the `github` form takes `repo:`, not `url:`; a `git` form (`{"source": "git", "url":
   "https://github.com/optimiziramsi/skills.git"}`) also works. **Plugin enablement** lives in the
   project's committed `.claude/settings.json` `enabledPlugins` — one key per plugin the project
-  wants (`"git@optimiziramsi": true`, …). Never enable them in global settings — enables travel
+  wants (`"git-guard@optimiziramsi": true`, …). Never enable them in global settings — enables travel
   with the repo. A personal opt-out goes in `.claude/settings.local.json`
   (`"<plugin>@optimiziramsi": false`), which wins over the shared file.
 - **Two sources, one name.** The registration above points at GitHub. Point it at a local

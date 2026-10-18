@@ -1,0 +1,27 @@
+{
+  "description": "guards — run project-owned .agent/guards.d tripwires on Bash commands, and downgrade writes to enforcement surfaces (Claude settings, hook scripts) to an ask. Kill-switches: TRIPWIRE_GUARD_OFF=1, FILE_GUARD_OFF=1.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/file-guard.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/tripwire-guard.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

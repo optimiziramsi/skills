@@ -7,8 +7,8 @@
 # stays here — edit it there, run this, commit the copies with it:
 #
 #   lib/<module>.py      → <plugin>/lib/<module>.py for every plugin that imports <module>
-#   worktree/{hooks,tests}/*.py + their lib → flow/vendor/worktree/ (the runners' confinement
-#                          injects worktree's own guards and runs their suite; one implementation)
+#   worktree-guards/{hooks,tests}/*.py + their lib → runners/vendor/worktree-guards/ (the runners'
+#                          confinement injects those guards and runs their suite; one implementation)
 #
 #   ./vendor.sh           # sync (writes copies, removes stale ones)
 #   ./vendor.sh --check   # report drift, change nothing, exit 1 on any
@@ -55,11 +55,11 @@ for p in PLUGINS:
     for m in sorted(needed(sources(p))):
         pairs.append((f'lib/{m}.py', f'{p}/lib/{m}.py'))
 
-mirror = sorted(glob.glob('worktree/hooks/*.py') + glob.glob('worktree/tests/*.py'))
+mirror = sorted(glob.glob('worktree-guards/hooks/*.py') + glob.glob('worktree-guards/tests/*.py'))
 for src in mirror:
-    pairs.append((src, f'flow/vendor/{src}'))
+    pairs.append((src, f'runners/vendor/{src}'))
 for m in sorted(needed(mirror)):
-    pairs.append((f'lib/{m}.py', f'flow/vendor/worktree/lib/{m}.py'))
+    pairs.append((f'lib/{m}.py', f'runners/vendor/worktree-guards/lib/{m}.py'))
 
 expected = {dst for _, dst in pairs}
 existing = set()

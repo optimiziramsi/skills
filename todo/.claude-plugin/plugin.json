@@ -1,0 +1,18 @@
+{
+  "name": "todo",
+  "displayName": "optimiziramsi todo",
+  "version": "0.1.0-dev.1",
+  "description": "The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with \"ALLOW TODO\").",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/todo#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "todo",
+    "triage",
+    "workflow"
+  ]
+}
