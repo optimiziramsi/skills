@@ -20,7 +20,7 @@ import re
 import shlex
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 # A redirect counts only when it writes to a FILE: `2>/dev/null`, `2>&1` and `>&2` move file

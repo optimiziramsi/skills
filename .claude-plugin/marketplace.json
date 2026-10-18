@@ -1,38 +1,83 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "optimiziramsi",
-  "description": "optimiziramsi's Claude Code toolkit — reusable skills, commands, agents, and hooks shared across projects, shipped as a single plugin.",
+  "description": "optimiziramsi's Claude Code toolkit — one plugin per concern (git, commit, reporting, session, review, flow, instructions, patterns, worktree, repo, setup); each project enables the ones it wants.",
   "owner": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"
   },
   "plugins": [
     {
+      "name": "commit",
+      "source": "./commit",
+      "description": "House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge.",
+      "category": "workflow"
+    },
+    {
+      "name": "flow",
+      "source": "./flow",
+      "description": "Work management — plan, milestone, scope-cut, triage-todo, feedback, plus the looper / grind / collab background runners; ships the .todo readonly guard (arm with \"ALLOW TODO\").",
+      "category": "workflow"
+    },
+    {
+      "name": "git",
+      "source": "./git",
+      "description": "Git safety net — a git-guard hook that blocks push/pull, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards; plus the hotfix skill.",
+      "category": "workflow"
+    },
+    {
+      "name": "instructions",
+      "source": "./instructions",
+      "description": "Keep the agent-instruction system alive — retro, lessons, instructions-audit, instructions-maintenance, rules-change; lesson-scout + instructions-auditor agents; caps, file-guard, meta-lint and tripwire-guard hooks.",
+      "category": "workflow"
+    },
+    {
+      "name": "patterns",
+      "source": "./patterns",
+      "description": "Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns.",
+      "category": "workflow"
+    },
+    {
+      "name": "repo",
+      "source": "./repo",
+      "description": "rename — move a file and cascade every reference across docs, skills and config.",
+      "category": "workflow"
+    },
+    {
+      "name": "reporting",
+      "source": "./reporting",
+      "description": "Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message.",
+      "category": "workflow"
+    },
+    {
+      "name": "review",
+      "source": "./review",
+      "description": "Structured review — review (P0/HIGH/MED/LOW → .agent/reviews/) and qa-gate skills, plus semantic, spec, wireframe, doc-drift and isolation reviewer agents.",
+      "category": "workflow"
+    },
+    {
+      "name": "session",
+      "source": "./session",
+      "description": "Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot.",
+      "category": "workflow"
+    },
+    {
+      "name": "setup",
+      "source": "./setup",
+      "description": "One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md.",
+      "category": "workflow"
+    },
+    {
+      "name": "worktree",
+      "source": "./worktree",
+      "description": "Parallel isolated work — the worktree protocol (reserve → plan → review-gated slices → land) plus guards that keep edits inside the active worktree.",
+      "category": "workflow"
+    },
+    {
       "name": "optimiziramsi-skills",
-      "displayName": "optimiziramsi skills",
-      "source": "./",
-      "description": "The whole toolkit in one plugin — git safety net, house commit style, lean reporting, session continuity, structured review, work-management flow (+ looper/grind runner), instruction-system upkeep, pattern registry, worktree protocol, repo utilities, and one-time scaffolds. Per-concern env kill-switches; self-gating guards.",
-      "category": "workflow",
-      "author": {
-        "name": "optimiziramsi",
-        "url": "https://github.com/optimiziramsi"
-      },
-      "homepage": "https://github.com/optimiziramsi/skills#readme",
-      "repository": "https://github.com/optimiziramsi/skills",
-      "license": "MIT",
-      "keywords": [
-        "workflow",
-        "git",
-        "commit",
-        "reporting",
-        "session",
-        "review",
-        "flow",
-        "instructions",
-        "patterns",
-        "worktree",
-        "claude-code"
-      ]
+      "source": "./optimiziramsi-skills",
+      "description": "Deprecated bundle — installs and enables every optimiziramsi plugin at once. Enable the individual plugins your project wants instead: while this bundle is enabled none of them can be disabled.",
+      "category": "workflow"
     }
   ]
 }

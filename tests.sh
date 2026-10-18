@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # tests.sh — the marketplace done-gate, mechanized (CLAUDE.md § Hard rules: "Done means validated").
-# The repo root IS the single optimiziramsi-skills plugin, organized TOPIC-FIRST: one <topic>/ folder
-# per concern, each owning its skills/ commands/ agents/ hooks/. Run from the repo root:
-#   1. marketplace.json / plugin.json / every <topic>/hooks/hooks.json parse
-#   2. marketplace.json lists exactly the one root-sourced plugin, name matching plugin.json
-#   3. every path in plugin.json's skills/commands/agents/hooks arrays exists on disk
-#   4. every script a hooks.json invokes via ${CLAUDE_PLUGIN_ROOT} exists on disk
-#   5. every /command has the same-named skill it shims (CLAUDE.md § Authoring conventions)
-#   6. `claude plugin validate . --strict` (skipped when the CLI is absent)
-#   7. every hook / bin tool that ships a --test self-test passes it
-#   8. version discipline: shipped content never changes without a plugin.json version bump, and a
-#      feature branch carries its own -<branch-slug>.N series (both: the install cache is
-#      version-keyed, so an unmoved version reaches nobody)
+# The repo root is a MARKETPLACE of one plugin per topic: every <plugin>/ folder with a
+# .claude-plugin/plugin.json is a self-contained plugin (default layout: skills/ commands/ agents/
+# hooks/hooks.json). Run from the repo root:
+#   1. marketplace.json / every plugin.json / every hooks.json parse
+#   2. marketplace.json lists exactly the plugin dirs, each `./<name>`, names agreeing
+#   3. declared component paths + dependencies resolve
+#   4. every script a hooks.json invokes via ${CLAUDE_PLUGIN_ROOT} exists inside that plugin
+#   5. every /command has the same-named skill it shims, in the same plugin
+#   6. `claude plugin validate --strict` on the marketplace and each plugin (skipped without the CLI)
+#   7. every plugin test suite and every hook / bin tool that ships a --test self-test passes;
+#      every vendored copy matches its source (./vendor.sh --check)
+#   8. version discipline, per plugin: a plugin's shipped files never change without its own
+#      version moving, and on a feature branch a changed plugin carries a -<branch-slug>.N series
+#      (the install cache is version-keyed, so an unmoved version reaches nobody)
 set -u
 cd "$(dirname "$0")" || exit 1
 fails=0
@@ -19,7 +21,7 @@ note() { echo "$@"; }
 fail() { echo "FAIL  $*"; fails=$((fails + 1)); }
 
 note "=== 1. JSON validity ==="
-for f in .claude-plugin/marketplace.json .claude-plugin/plugin.json */hooks/hooks.json; do
+for f in .claude-plugin/marketplace.json */.claude-plugin/plugin.json */hooks/hooks.json; do
   if [ ! -f "$f" ]; then
     fail "$f missing"
   elif python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" 2>/dev/null; then
@@ -30,51 +32,76 @@ for f in .claude-plugin/marketplace.json .claude-plugin/plugin.json */hooks/hook
 done
 
 note ""
-note "=== 2. marketplace <-> plugin agree ==="
-if python3 - <<'EOF'
-import json, sys
-mp = json.load(open('.claude-plugin/marketplace.json'))['plugins']
-pj = json.load(open('.claude-plugin/plugin.json'))
-ok = (len(mp) == 1 and mp[0]['name'] == pj['name'] and mp[0]['source'] in ('./', '.'))
-sys.exit(0 if ok else 1)
+note "=== 2. marketplace <-> plugins agree ==="
+if out=$(python3 - <<'EOF'
+import glob, json, os, sys
+bad = []
+if os.path.exists('.claude-plugin/plugin.json'):
+    bad.append("the repo root is a marketplace only — .claude-plugin/plugin.json must not exist")
+dirs = {os.path.dirname(os.path.dirname(p)) for p in glob.glob('*/.claude-plugin/plugin.json')}
+entries = json.load(open('.claude-plugin/marketplace.json'))['plugins']
+listed = {e['name'] for e in entries}
+for e in entries:
+    if e.get('source') != f"./{e['name']}":
+        bad.append(f"marketplace entry {e['name']}: source must be ./{e['name']} (dir name = plugin name)")
+for d in sorted(dirs - listed):
+    bad.append(f"{d}/ has a plugin.json but no marketplace entry")
+for n in sorted(listed - dirs):
+    bad.append(f"marketplace lists {n} but {n}/.claude-plugin/plugin.json does not exist")
+for d in sorted(dirs):
+    name = json.load(open(f'{d}/.claude-plugin/plugin.json')).get('name')
+    if name != d:
+        bad.append(f"{d}/.claude-plugin/plugin.json: name '{name}' != dir '{d}'")
+if bad:
+    print('\n'.join(bad)); sys.exit(1)
+print(len(dirs))
 EOF
-then
-  note "ok    single root-sourced plugin, names agree"
+); then
+  note "ok    $out plugins, each listed once as ./<name>"
 else
-  fail "marketplace must list exactly one plugin, name matching plugin.json, source ./"
+  fail "marketplace and plugin dirs disagree:"
+  echo "$out"
 fi
 
 note ""
-note "=== 3. plugin.json component paths all exist ==="
-if python3 - <<'EOF'
-import json, os, sys
-pj = json.load(open('.claude-plugin/plugin.json'))
+note "=== 3. declared component paths + dependencies resolve ==="
+if out=$(python3 - <<'EOF'
+import glob, json, os, sys
 missing = []
-for key in ('skills', 'commands', 'agents', 'hooks'):
-    for p in pj.get(key, []):
-        if not os.path.exists(p):
-            missing.append(f"{key}: {p}")
+names = {os.path.dirname(os.path.dirname(p)) for p in glob.glob('*/.claude-plugin/plugin.json')}
+for pj in sorted(glob.glob('*/.claude-plugin/plugin.json')):
+    d = os.path.dirname(os.path.dirname(pj))
+    m = json.load(open(pj))
+    for key in ('skills', 'commands', 'agents', 'hooks'):
+        v = m.get(key, [])
+        for p in ([v] if isinstance(v, str) else v):
+            if isinstance(p, str) and not os.path.exists(os.path.join(d, p)):
+                missing.append(f"{pj} {key}: {p}")
+    for dep in m.get('dependencies', []):
+        n = dep if isinstance(dep, str) else dep.get('name', '')
+        if '@' not in n and n not in names:
+            missing.append(f"{pj} depends on '{n}', which is not a plugin in this marketplace")
 if missing:
     print('\n'.join(missing)); sys.exit(1)
-sys.exit(0)
 EOF
-then
-  note "ok    every skills/commands/agents/hooks path resolves"
+); then
+  note "ok    every declared path and same-marketplace dependency resolves"
 else
-  fail "plugin.json references a path that does not exist (see above)"
+  fail "a plugin.json references something that does not exist:"
+  echo "$out"
 fi
 
 note ""
-note "=== 4. hooks.json commands point at files that exist ==="
+note "=== 4. hooks.json commands point at files inside their plugin ==="
 if out=$(python3 - <<'EOF'
 import glob, json, os, re, sys
 missing = []
 seen = 0
 for f in sorted(glob.glob('*/hooks/hooks.json')):
-    blob = json.load(open(f))
-    for cmd in re.findall(r'\$\{CLAUDE_PLUGIN_ROOT\}(/[^"\\\s]+)', json.dumps(blob)):
+    plugin = f.split('/')[0]
+    for cmd in re.findall(r'\$\{CLAUDE_PLUGIN_ROOT\}(/[^"\\\s]+)', json.dumps(json.load(open(f)))):
         seen += 1
-        if not os.path.exists('.' + cmd):
+        if not os.path.exists(plugin + cmd):
             missing.append(f"{f}: {cmd}")
 if missing:
     print('\n'.join(missing)); sys.exit(1)
@@ -83,28 +110,30 @@ EOF
 ); then
   note "ok    all $out \${CLAUDE_PLUGIN_ROOT} hook targets resolve"
 else
-  fail "a hooks.json invokes a script that does not exist:"
+  fail "a hooks.json invokes a script that does not exist in its plugin:"
   echo "$out"
 fi
 
 note ""
-note "=== 5. every command shims a same-named skill ==="
+note "=== 5. every command shims a same-named skill in its own plugin ==="
 if out=$(python3 - <<'EOF'
 import glob, os, sys
 bad = []
-skills = {os.path.basename(os.path.dirname(p)) for p in glob.glob('*/skills/*/SKILL.md')}
+total = 0
 for c in sorted(glob.glob('*/commands/*.md')):
-    name = os.path.basename(c)[:-3]
-    if name not in skills:
-        bad.append(f"{c}: no skill named '{name}'")
+    plugin, name = c.split('/')[0], os.path.basename(c)[:-3]
+    if not os.path.exists(f'{plugin}/skills/{name}/SKILL.md'):
+        bad.append(f"{c}: no skill named '{name}' in {plugin}/")
 for p in sorted(glob.glob('*/skills/*/SKILL.md')):
+    total += 1
     d = os.path.basename(os.path.dirname(p))
-    head = open(p).read().split('---')[1] if open(p).read().startswith('---') else ''
+    text = open(p).read()
+    head = text.split('---')[1] if text.startswith('---') else ''
     if f"name: {d}" not in head:
         bad.append(f"{p}: frontmatter name does not match directory '{d}'")
 if bad:
     print('\n'.join(bad)); sys.exit(1)
-print(f"{len(skills)} skills")
+print(f"{total} skills")
 EOF
 ); then
   note "ok    command/skill pairing intact ($out)"
@@ -116,18 +145,21 @@ fi
 note ""
 note "=== 6. claude plugin validate --strict ==="
 if command -v claude >/dev/null 2>&1; then
-  if out=$(claude plugin validate . --strict 2>&1); then
-    note "ok    manifests pass strict validation"
-  else
-    fail "claude plugin validate --strict:"
-    echo "$out" | tail -20
-  fi
+  for target in . */.claude-plugin/plugin.json; do
+    [ "$target" = . ] || target=${target%%/.claude-plugin/plugin.json}
+    if out=$(claude plugin validate "$target" --strict 2>&1); then
+      note "ok    $target"
+    else
+      fail "claude plugin validate $target --strict:"
+      echo "$out" | tail -20
+    fi
+  done
 else
   note "skip  claude CLI not on PATH"
 fi
 
 note ""
-note "=== 7a. topic test suites (*/tests/*.py) ==="
+note "=== 7a. plugin test suites (*/tests/*.py) ==="
 for t in */tests/*.py; do
   [ -f "$t" ] || continue
   if out=$(python3 "$t" 2>&1); then
@@ -160,15 +192,24 @@ for h in */hooks/* */bin/* */examples/* */examples/*/*; do
 done
 
 note ""
-note "=== 8. version discipline ==="
+note "=== 7c. vendored copies match their source ==="
+if out=$(./vendor.sh --check 2>&1); then
+  note "ok    $out"
+else
+  fail "vendored copies drifted:"
+  echo "$out"
+fi
+
+note ""
+note "=== 8. version discipline (per plugin) ==="
 if out=$(python3 - <<'EOF'
-import json, os, re, subprocess, sys
+import glob, json, os, re, subprocess, sys
 
 def sh(*a):
     return subprocess.run(a, capture_output=True, text=True)
 
-def ver_at(ref):
-    r = sh('git', 'show', f'{ref}:.claude-plugin/plugin.json')
+def ver_at(ref, plugin):
+    r = sh('git', 'show', f'{ref}:{plugin}/.claude-plugin/plugin.json')
     if r.returncode != 0:
         return None
     try:
@@ -177,76 +218,68 @@ def ver_at(ref):
         return None
 
 def slug(branch):
-    s = re.sub(r'[^a-zA-Z0-9]+', '-', branch).strip('-').lower()
-    return s
+    return re.sub(r'[^a-zA-Z0-9]+', '-', branch).strip('-').lower()
 
-# The shipped set is "everything release.sh does NOT strip" — parsed from release.sh so the two
-# definitions cannot drift. release.sh keeps DEV_ONLY on one line for exactly this reason.
-m = re.search(r'^DEV_ONLY=\((.*)\)$', open('release.sh').read(), re.M)
-if not m:
-    print("cannot parse DEV_ONLY=( ... ) from release.sh — the version gate has no shipped-set definition")
-    sys.exit(1)
-dev_only = m.group(1).split()
+def next_dev(v):
+    m = re.match(r'^(\d+)\.(\d+)\.(\d+)(?:-(.+)\.(\d+))?$', v)
+    if not m:
+        return '?'
+    a, b, c, pre, n = m.groups()
+    return f"{a}.{b}.{c}-{pre}.{int(n) + 1}" if pre else f"{a}.{b}.{int(c) + 1}-dev.1"
 
-problems = []
+plugins = sorted(os.path.dirname(os.path.dirname(p)) for p in glob.glob('*/.claude-plugin/plugin.json'))
 branch = sh('git', 'rev-parse', '--abbrev-ref', 'HEAD').stdout.strip()
-cur = json.load(open('.claude-plugin/plugin.json'))['version']
-base_m = re.match(r'^(\d+\.\d+\.\d+)', cur)
-base = base_m.group(1) if base_m else cur
 
-# --- 8a. shipped content changed without a version bump -------------------------------------
+# what changed: the working tree when dirty, else the HEAD commit
 porcelain = [l for l in sh('git', 'status', '--porcelain').stdout.splitlines() if l.strip()]
 if porcelain:
-    scope = 'working tree'
+    scope, ref = 'working tree', 'HEAD'
     changed = set()
     for line in porcelain:
         p = line[3:]
         if ' -> ' in p:
             p = p.split(' -> ')[1]
         changed.add(p.strip().strip('"'))
-    prev = ver_at('HEAD')
 else:
-    scope = 'HEAD'
+    scope, ref = 'HEAD', 'HEAD~1'
     parents = sh('git', 'rev-list', '--parents', '-n', '1', 'HEAD').stdout.split()
-    if len(parents) != 2:          # root commit or merge — nothing single-parent to compare
-        changed, prev = set(), None
-    else:
-        changed = {p for p in sh('git', 'show', '--name-only', '--pretty=', 'HEAD').stdout.split('\n') if p}
-        prev = ver_at('HEAD~1')
+    changed = (set() if len(parents) != 2 else   # root commit or merge — nothing to compare
+               {p for p in sh('git', 'show', '--name-only', '--pretty=', 'HEAD').stdout.split('\n') if p})
 
-shipped = sorted(p for p in changed
-                 if not any(p == d or p.startswith(d.rstrip('/') + '/') for d in dev_only))
-
-if shipped and prev is not None and cur == prev:
-    listed = ', '.join(shipped[:5]) + (f" (+{len(shipped) - 5} more)" if len(shipped) > 5 else '')
-    problems.append(
-        f"shipped content changed in the {scope} but .claude-plugin/plugin.json version stayed {cur}\n"
-        f"      changed: {listed}\n"
-        f"      consumers re-materialize only on a version CHANGE — same version in, old code stays bound\n"
-        f"      (.agent/lessons/plugin-version-bump-on-edit.md). Bump it in the SAME commit.")
-
-# --- 8b. a non-develop branch must carry its own version series -----------------------------
-# The local marketplace is folder-bound: whatever branch is checked out is what every project on
-# the machine loads, and the install cache is version-keyed. A feature branch sharing develop's
-# version makes the switch invisible — the same hazard release.sh guards between develop and main.
-if branch not in ('develop', 'main', 'HEAD'):
-    want = slug(branch)
-    pre = cur.split('-', 1)[1] if '-' in cur else ''
-    first = pre.split('.')[0]
-    if first != want:
+problems, summary = [], []
+for plugin in plugins:
+    cur = json.load(open(f'{plugin}/.claude-plugin/plugin.json'))['version']
+    summary.append(f"{plugin} {cur}")
+    touched = sorted(p for p in changed if p.startswith(plugin + '/') and '__pycache__' not in p)
+    if not touched:
+        continue
+    prev = ver_at(ref, plugin)
+    if prev is not None and cur == prev:
+        listed = ', '.join(touched[:4]) + (f" (+{len(touched) - 4} more)" if len(touched) > 4 else '')
         problems.append(
-            f"on branch '{branch}' the version is {cur} — a feature branch needs its own series so a\n"
-            f"      branch switch is visible in the version-keyed install cache.\n"
-            f"      use: {base}-{want}.1   (then -{want}.2, …; back on develop, restore the -dev series)")
+            f"{plugin}: shipped content changed in the {scope} but its version stayed {cur}\n"
+            f"      changed: {listed}\n"
+            f"      consumers re-materialize only on a version CHANGE (.agent/lessons/plugin-version-bump-on-edit.md)\n"
+            f"      bump {plugin}/.claude-plugin/plugin.json to {next_dev(cur)} in the SAME commit")
+    # A feature branch must carry its own series: the local marketplace is folder-bound and the
+    # install cache version-keyed, so a branch sharing develop's version switches invisibly.
+    if branch not in ('develop', 'main', 'HEAD'):
+        want = slug(branch)
+        pre = cur.split('-', 1)[1] if '-' in cur else ''
+        if pre.split('.')[0] != want:
+            base = re.match(r'^(\d+\.\d+\.\d+)', cur)
+            problems.append(
+                f"{plugin}: on branch '{branch}' its version is {cur} — a feature branch needs its own\n"
+                f"      series so a branch switch is visible in the version-keyed install cache.\n"
+                f"      use: {base.group(1) if base else cur}-{want}.1   (back on develop, restore the -dev series)")
 
 if problems:
     print('\n'.join('    ' + p for p in problems))
     sys.exit(1)
-print(f"{cur} on {branch}")
-sys.exit(0)
+print(f"on {branch}: " + ', '.join(summary))
 EOF
 ); then
-  note "ok    version $out"
+  note "ok    $out"
 else
   fail "version discipline:"
   echo "$out"

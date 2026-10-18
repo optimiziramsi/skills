@@ -9,12 +9,12 @@ import shutil
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke, load_module  # noqa: E402
 
 check = Check()
-PULSE = hook("reporting/hooks/contract-pulse.py")
-report_guard = load_module(hook("reporting/hooks/report-guard.py"), "report_guard")
+PULSE = hook("hooks/contract-pulse.py")
+report_guard = load_module(hook("hooks/report-guard.py"), "report_guard")
 
 
 # ── report-guard: what counts as a contract violation ──────────────────────

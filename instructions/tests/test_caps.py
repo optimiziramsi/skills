@@ -6,11 +6,11 @@ import shutil
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke  # noqa: E402
 
 check = Check()
-CAPS = hook("instructions/hooks/caps.py")
+CAPS = hook("hooks/caps.py")
 WROTE = '{"message":{"content":[{"type":"tool_use","name":"Edit"}]}}\n'
 READ_ONLY = '{"message":{"content":[{"type":"tool_use","name":"Read"}]}}\n'
 

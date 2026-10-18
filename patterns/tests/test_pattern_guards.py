@@ -12,11 +12,11 @@ import sys
 import tempfile
 import uuid
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke, load_module  # noqa: E402
 
 check = Check()
-GUARD = hook("patterns/hooks/pattern-guards.py")
+GUARD = hook("hooks/pattern-guards.py")
 TSV_NAME = load_module(GUARD, "pattern_guards").TSV_NAME
 
 REGISTRY = (

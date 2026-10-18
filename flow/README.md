@@ -70,7 +70,7 @@ runs on a shared directory convention any project can adopt.
 - name: `runner-link`
   kind: hook
   purpose:
-    SessionStart: re-stamps `<claude-config>/plugins/data/optimiziramsi-skills/current` at the
+    SessionStart: re-stamps `<claude-config>/plugins/data/optimiziramsi-flow/current` at the
     plugin version actually loaded, so every repo's `.agent/bin/{loop,grind}` links follow an
     update.
     Refreshes existing links only — never creates one. Off: `FLOW_LINK_OFF=1`.
@@ -145,13 +145,13 @@ status — the runner never commits.
 
   ```bash
   mkdir -p .agent/bin
-  ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
-  ln -sfn "$ptr/flow/bin/loop"  .agent/bin/loop
-  ln -sfn "$ptr/flow/bin/grind" .agent/bin/grind
+  ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-flow/current"
+  ln -sfn "$ptr/bin/loop"  .agent/bin/loop
+  ln -sfn "$ptr/bin/grind" .agent/bin/grind
   echo '.agent/bin/' >> .gitignore
   ```
 
-  They point through `…/data/optimiziramsi-skills/current`, a single per-machine pointer the
+  They point through `…/data/optimiziramsi-flow/current`, a single per-machine pointer the
   `runner-link` hook re-stamps at every session start to the plugin version actually loaded. So one
   link survives every plugin update, no path anywhere encodes a version, and a stale copy of the
   launcher cannot exist. Each worktree that wants the short command links its own (or launch from

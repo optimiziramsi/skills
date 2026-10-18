@@ -5,11 +5,11 @@ import pathlib
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke  # noqa: E402
 
 check = Check()
-GUARD = hook("flow/hooks/todo-readonly-guard.py")
+GUARD = hook("hooks/todo-readonly-guard.py")
 SID = f"todo-guard-selftest-{os.getpid()}"
 FLAG = os.path.join(tempfile.gettempdir(), f"claude-todo-allow-{SID}")
 

@@ -32,7 +32,7 @@ class Check:
 
 
 def plugin_root():
-    """The plugin root — this file lives at <root>/lib/selftest.py."""
+    """The plugin root — this (vendored) file lives at <plugin>/lib/selftest.py."""
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 

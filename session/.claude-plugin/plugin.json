@@ -1,0 +1,18 @@
+{
+  "name": "session",
+  "displayName": "optimiziramsi session",
+  "version": "0.1.0-dev.1",
+  "description": "Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/session#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "session",
+    "handoff",
+    "continuity"
+  ]
+}

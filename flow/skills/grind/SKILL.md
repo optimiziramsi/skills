@@ -168,8 +168,8 @@ machine-local symlink, **not** a committed file. Make sure it exists first (idem
 
 ```bash
 mkdir -p .agent/bin
-ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
-ln -sfn "$ptr/flow/bin/grind" .agent/bin/grind
+ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-flow/current"
+ln -sfn "$ptr/bin/grind" .agent/bin/grind
 ```
 
 ```
@@ -182,7 +182,7 @@ ln -sfn "$ptr/flow/bin/grind" .agent/bin/grind
 .agent/bin/grind .agent/grind/{mission}.md -y         # skip the arm-confirmation
 ```
 
-`…/data/optimiziramsi-skills/current` is a per-machine pointer this plugin's SessionStart hook
+`…/data/optimiziramsi-flow/current` is a per-machine pointer this plugin's SessionStart hook
 re-stamps at the version actually loaded, so the link survives plugin updates. **Never commit it**
 — it holds an absolute `$HOME` path; `.agent/bin/` belongs in `.gitignore`.
 

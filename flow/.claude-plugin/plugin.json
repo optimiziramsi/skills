@@ -1,0 +1,19 @@
+{
+  "name": "flow",
+  "displayName": "optimiziramsi flow",
+  "version": "0.1.0-dev.1",
+  "description": "Work management — plan, milestone, scope-cut, triage-todo, feedback, plus the looper / grind / collab background runners; ships the .todo readonly guard (arm with \"ALLOW TODO\").",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/flow#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "planning",
+    "todo",
+    "automation"
+  ]
+}

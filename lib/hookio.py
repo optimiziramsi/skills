@@ -4,8 +4,10 @@ Every hook in this plugin speaks the same protocol, so it lives here once instea
 re-derived — and re-bugged — in each one. Python rather than bash+jq: jq is not installed by
 default, and a guard that disarms itself when a dependency is missing is not a guard.
 
-Import from a hook at <plugin>/<topic>/hooks/x.py:
-    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+This root `lib/` is the single source; every plugin that imports a module here carries a
+vendored copy in its own `lib/` (a plugin can reach nothing outside its own directory). Edit
+here, then run the marketplace's ./vendor.sh. Import from a hook at <plugin>/hooks/x.py:
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
     import hookio
 """
 import hashlib

@@ -161,8 +161,8 @@ exists before handing anything over (idempotent, no harm if it already does):
 
 ```bash
 mkdir -p .agent/bin
-ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
-ln -sfn "$ptr/flow/bin/loop" .agent/bin/loop
+ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-flow/current"
+ln -sfn "$ptr/bin/loop" .agent/bin/loop
 ```
 
 Then hand them:
@@ -175,7 +175,7 @@ Then hand them:
 .agent/bin/loop -y           # skip the arm-confirmation (unattended/cron)
 ```
 
-`…/data/optimiziramsi-skills/current` is a per-machine pointer this plugin's SessionStart hook
+`…/data/optimiziramsi-flow/current` is a per-machine pointer this plugin's SessionStart hook
 re-stamps at the version actually loaded, so the link never goes stale and never needs a version in
 it. **Never commit it** — it holds an absolute `$HOME` path; `.agent/bin/` belongs in `.gitignore`
 (say so if it isn't).

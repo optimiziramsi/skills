@@ -5,14 +5,14 @@ import pathlib
 import subprocess
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke, scratch_repo  # noqa: E402
 
 check = Check()
-WRITE = hook("worktree/hooks/worktree-write-guard.py")
-LEAK = hook("worktree/hooks/worktree-leak-detector.py")
-BASH = hook("worktree/hooks/worktree-bash-guard.py")
-DETECT = hook("worktree/hooks/worktree-detect.py")
+WRITE = hook("hooks/worktree-write-guard.py")
+LEAK = hook("hooks/worktree-leak-detector.py")
+BASH = hook("hooks/worktree-bash-guard.py")
+DETECT = hook("hooks/worktree-detect.py")
 ON = {"WORKTREE_BASH_GUARD_ENABLE": "1"}
 
 with scratch_repo({"f.ts": "a\n"}) as repo:

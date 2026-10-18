@@ -14,7 +14,7 @@ import re
 import shutil
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 AUDIT_STAMP = re.compile(r"Last audit: (\d{4}-\d{2}-\d{2})")

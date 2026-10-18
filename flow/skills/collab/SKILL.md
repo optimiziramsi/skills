@@ -113,8 +113,8 @@ No `.agent/bin/loop` yet? Make it first — it is a gitignored symlink, never co
 
 ```bash
 mkdir -p .agent/bin
-ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
-ln -sfn "$ptr/flow/bin/loop" .agent/bin/loop
+ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-flow/current"
+ln -sfn "$ptr/bin/loop" .agent/bin/loop
 ```
 
 Monitor via the log files and job statuses; create follow-up jobs directly — a watching loop picks

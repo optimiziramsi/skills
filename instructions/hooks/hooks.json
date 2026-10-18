@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/file-guard.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/file-guard.py\"",
             "timeout": 10
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/tripwire-guard.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/tripwire-guard.py\"",
             "timeout": 30
           }
         ]
@@ -28,12 +28,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/caps.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/caps.py\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/bin/meta-lint\" --fast || echo \"⚠️ meta-lint DISARMED — engine failed to run; instruction-system checks did NOT run this session.\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/meta-lint\" --fast || echo \"⚠️ meta-lint DISARMED — engine failed to run; instruction-system checks did NOT run this session.\"",
             "timeout": 30
           }
         ]
@@ -44,12 +44,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/hooks/caps.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/caps.py\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/instructions/bin/meta-lint\" --stop",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/meta-lint\" --stop",
             "timeout": 30
           }
         ]

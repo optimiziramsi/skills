@@ -8,11 +8,11 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke  # noqa: E402
 
 check = Check()
-START = hook("session/hooks/session-start.py")
+START = hook("hooks/session-start.py")
 
 tmp = os.path.realpath(tempfile.mkdtemp())
 try:

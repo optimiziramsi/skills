@@ -11,11 +11,11 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke  # noqa: E402
 
 check = Check()
-GUARD = hook("instructions/hooks/tripwire-guard.py")
+GUARD = hook("hooks/tripwire-guard.py")
 
 BLOCKER = 'case "${TRIPWIRE_COMMAND:-}" in *forbidden*) echo "⛔ forbidden command"; exit 2 ;; esac\n'
 WARNER = 'case "${TRIPWIRE_COMMAND:-}" in *sketchy*) echo "heads-up: sketchy move"; exit 3 ;; esac\n'
@@ -105,7 +105,7 @@ try:
           rc == 0 and "could not run" in out, f"rc={rc} out={out}")
 
     # every shipped example guard is sourceable and its tripwire_test passes
-    for example in sorted(pathlib.Path(hook("instructions/examples/guards.d")).glob("*.sh")):
+    for example in sorted(pathlib.Path(hook("examples/guards.d")).glob("*.sh")):
         if "tripwire_test" not in example.read_text():
             continue
         done = subprocess.run(

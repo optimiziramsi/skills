@@ -1,0 +1,18 @@
+{
+  "name": "worktree",
+  "displayName": "optimiziramsi worktree",
+  "version": "0.1.0-dev.1",
+  "description": "Parallel isolated work — the worktree protocol (reserve → plan → review-gated slices → land) plus guards that keep edits inside the active worktree.",
+  "author": {
+    "name": "optimiziramsi",
+    "url": "https://github.com/optimiziramsi"
+  },
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/worktree#readme",
+  "repository": "https://github.com/optimiziramsi/skills",
+  "license": "MIT",
+  "keywords": [
+    "git",
+    "worktree",
+    "parallel"
+  ]
+}

@@ -966,7 +966,7 @@ def fast_summary(findings: list[str]) -> str:
         tag = f.split("]", 1)[0].lstrip("[")
         counts[tag] = counts.get(tag, 0) + 1
     parts = ", ".join(f"{n} {tag}" for tag, n in sorted(counts.items()))
-    return f"meta: {len(findings)} finding(s) — {parts}. Run the meta-lint engine (optimiziramsi-skills plugin) for detail."
+    return f"meta: {len(findings)} finding(s) — {parts}. Run the meta-lint engine (instructions plugin) for detail."
 
 
 # Stop-hook BLOCK mode — the caps Stop contract, driven by .agent/meta-lint.json instead of the

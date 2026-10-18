@@ -4,11 +4,11 @@ import os
 import pathlib
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, load_module  # noqa: E402
 
 check = Check()
-guard = load_module(hook("instructions/hooks/file-guard.py"), "file_guard")
+guard = load_module(hook("hooks/file-guard.py"), "file_guard")
 os.environ.pop("CLAUDE_PROJECT_DIR", None)           # cases below control the anchor explicitly
 
 

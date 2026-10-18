@@ -3,17 +3,19 @@
 
 `.agent/bin/loop` and `.agent/bin/grind` are per-user symlinks: machine-local, gitignored,
 never committed. They do not point into the versioned plugin cache directly — they hop
-through ONE stable path, `<claude-config>/plugins/data/optimiziramsi-skills/current`, which this
-hook re-stamps to the running plugin on every session start. A plugin update therefore moves every
+through ONE stable path, `<claude-config>/plugins/data/optimiziramsi-flow/current`, which this
+hook re-stamps to the running flow plugin on every session start. A plugin update therefore moves every
 repo's runner links at once, and nothing on disk encodes a version.
 
 The hook resolves that version from its OWN location, not from $CLAUDE_PLUGIN_ROOT: the file
 executing IS the active plugin, which is the only answer that cannot be stale.
 
 Why not `${CLAUDE_PLUGIN_DATA}` (Claude Code's own per-plugin data dir): its name carries the
-install identity — `optimiziramsi-skills-<marketplace>` — so it moves when the plugin is installed
+install identity — `flow-<marketplace>` — so it moves when the plugin is installed
 from a differently-named marketplace or inline. A pointer every repo hardcodes has to be one
-address for all install shapes, so it uses the plugin's bare name inside that same `data/` dir.
+address for all install shapes, so it uses one fixed name inside that same `data/` dir. (Before
+the split into per-topic plugins it was `optimiziramsi-skills/current` → the whole toolkit; an
+existing repo link aimed there is re-aimed by the loop below.)
 
 Creates nothing. The `looper` / `grind` / `scaffold` skills make the links when the user asks
 for them; this only refreshes what is already there, and only when it is a symlink.
@@ -24,16 +26,16 @@ import os
 import pathlib
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 TOOLS = ("loop", "grind")
 
 
 def pointer_path():
-    """`<claude-config>/plugins/data/optimiziramsi-skills/current` — one address, every repo."""
+    """`<claude-config>/plugins/data/optimiziramsi-flow/current` — one address, every repo."""
     config = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.join(os.path.expanduser("~"), ".claude")
-    return os.path.join(config, "plugins", "data", "optimiziramsi-skills", "current")
+    return os.path.join(config, "plugins", "data", "optimiziramsi-flow", "current")
 
 
 def relink(link, target):
@@ -60,7 +62,7 @@ def relink(link, target):
 def main():
     if hookio.flag("FLOW_LINK_OFF"):
         return
-    root = str(pathlib.Path(__file__).resolve().parents[2])
+    root = str(pathlib.Path(__file__).resolve().parents[1])
     pointer = pointer_path()
     moved = relink(pointer, root)
 
@@ -70,7 +72,7 @@ def main():
     for tool in TOOLS:
         link = os.path.join(project, ".agent", "bin", tool)
         if os.path.islink(link):
-            relink(link, os.path.join(pointer, "flow", "bin", tool))
+            relink(link, os.path.join(pointer, "bin", tool))
 
     if moved:
         print(f"[flow] runner links now resolve to {root}")

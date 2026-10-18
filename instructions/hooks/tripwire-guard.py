@@ -37,7 +37,7 @@ import re
 import subprocess
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 SKIP = re.compile(r"(^|\s)TRIPWIRE_SKIP=1(\s|$)")

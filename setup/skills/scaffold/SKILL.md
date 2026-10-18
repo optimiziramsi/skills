@@ -62,16 +62,16 @@ nothing to generate or re-sync afterward.
 
    ```bash
    mkdir -p .agent/bin
-   ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-skills/current"
-   ln -sfn "$ptr/flow/bin/loop"  .agent/bin/loop
-   ln -sfn "$ptr/flow/bin/grind" .agent/bin/grind
+   ptr="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/optimiziramsi-flow/current"
+   ln -sfn "$ptr/bin/loop"  .agent/bin/loop
+   ln -sfn "$ptr/bin/grind" .agent/bin/grind
    ```
 
    Then **gitignore them**: add `.agent/bin/` (skip if `.agent/` is ignored wholesale). Skip this
    step entirely if the project doesn't use `looper` / `grind`.
 
-   **Why the pointer and not a direct link into the cache:** `…/data/optimiziramsi-skills/current`
-   is one stable path per machine that this plugin's SessionStart hook re-stamps at whatever version
+   **Why the pointer and not a direct link into the cache:** `…/data/optimiziramsi-flow/current`
+   is one stable path per machine that the `flow` plugin's SessionStart hook re-stamps at whatever version
    is actually loaded, so the links survive plugin updates and encode no version. Committing them
    instead would publish one person's `$HOME` to everyone. A pre-existing `bin/loop` from the old
    committed-wrapper era can be deleted once these exist.

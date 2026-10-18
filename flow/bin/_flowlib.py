@@ -677,17 +677,18 @@ def long_backoff_sleep(step: int) -> None:
 # The runners are cwd-relative: a child launched with cwd = a worktree does all its work there.
 # The risk is an autonomous child slipping a write into the MAIN checkout or a sibling worktree
 # (claude-code #36182). So when cwd is a linked worktree the runners (1) inject the `worktree`
-# topic's PreToolUse guards into every child via --settings and (2) PROVE they block a
+# plugin's PreToolUse guards into every child via --settings and (2) PROVE they block a
 # main-checkout write with a live leak-probe before any real work runs — refusing to continue
 # unless confinement is confirmed. In the main checkout (or outside a repo) none of this engages
 # and behavior is byte-identical to a runner that never heard of worktrees.
 #
-# The guards are the `worktree` topic's, deliberately NOT a second copy living here: one
-# implementation, one self-test, one set of edge cases. The cost is a cross-topic path
-# dependency — flow/bin/ → worktree/hooks/ — which `confine_hooks()` fails loudly on.
+# The guards are the `worktree` plugin's, VENDORED here by the marketplace's vendor.sh into
+# vendor/worktree/ (byte-identical, enforced by its tests.sh): one implementation, one self-test,
+# one set of edge cases — and no runtime dependency on which plugins a project has enabled, since a
+# plugin can reach nothing outside its own directory. `confine_hooks()` fails loudly on a gap.
 def plugin_root():
-    """…/<plugin>/flow/bin/_flowlib.py → …/<plugin>"""
-    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    """…/<plugin>/bin/_flowlib.py → …/<plugin>"""
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 sys.path.insert(0, os.path.join(plugin_root(), "lib"))
@@ -704,19 +705,19 @@ def worktree_context(cwd=None):
 
 
 CONFINE_HOOKS = (  # (relative path from the plugin root, tool matcher)
-    ("worktree/hooks/worktree-write-guard.py", "Edit|Write|MultiEdit|NotebookEdit"),
-    ("worktree/hooks/worktree-bash-guard.py", "Bash"),
+    ("vendor/worktree/hooks/worktree-write-guard.py", "Edit|Write|MultiEdit|NotebookEdit"),
+    ("vendor/worktree/hooks/worktree-bash-guard.py", "Bash"),
 )
-CONFINE_TESTS = "worktree/tests/test_worktree.py"
+CONFINE_TESTS = "vendor/worktree/tests/test_worktree.py"
 
 
 def confine_hooks():
-    """[(absolute guard path, matcher)] — dies if the `worktree` topic isn't beside us."""
+    """[(absolute guard path, matcher)] — dies if the vendored `worktree` guards are missing."""
     out = []
     for rel, matcher in CONFINE_HOOKS:
         path = os.path.join(plugin_root(), rel)
         if not os.path.exists(path):
-            die(f"worktree confinement needs the `worktree` topic's guard, which is missing:\n"
+            die(f"worktree confinement needs the vendored `worktree` guard, which is missing:\n"
                 f"  {path}\n"
                 "  Reinstall the plugin, or set FLOW_WORKTREE_UNSAFE=1 to run WITHOUT "
                 "confinement (not recommended).")

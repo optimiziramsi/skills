@@ -14,7 +14,7 @@ import re
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 ARM_PHRASE = re.compile(r"allow\s+\.?todo", re.I)

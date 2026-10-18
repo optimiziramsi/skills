@@ -11,11 +11,11 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, load_module, run_cli, write_claude_stub  # noqa: E402
 
 check = Check()
-LOOP = hook("flow/bin/loop")
+LOOP = hook("bin/loop")
 loop = load_module(LOOP, "flow_loop")
 
 

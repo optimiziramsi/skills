@@ -14,11 +14,11 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke, plugin_root  # noqa: E402
 
 check = Check()
-HOOK = hook("flow/hooks/runner-link.py")
+HOOK = hook("hooks/runner-link.py")
 ROOT = plugin_root()
 
 tmp = os.path.realpath(tempfile.mkdtemp())
@@ -27,7 +27,7 @@ try:
     project = os.path.join(tmp, "repo")
     bindir = os.path.join(project, ".agent", "bin")
     os.makedirs(bindir)
-    pointer = os.path.join(config, "plugins", "data", "optimiziramsi-skills", "current")
+    pointer = os.path.join(config, "plugins", "data", "optimiziramsi-flow", "current")
     env = {"CLAUDE_CONFIG_DIR": config, "CLAUDE_PROJECT_DIR": project}
 
     def fire(extra=None):
@@ -51,13 +51,13 @@ try:
         os.symlink(os.path.join(tmp, "somewhere", tool), link)
     fire()
     check("an existing link is re-aimed at the pointer",
-          os.readlink(os.path.join(bindir, "loop")) == os.path.join(pointer, "flow", "bin", "loop"))
+          os.readlink(os.path.join(bindir, "loop")) == os.path.join(pointer, "bin", "loop"))
     check("both runners are handled",
-          os.readlink(os.path.join(bindir, "grind")).endswith("/flow/bin/grind"))
+          os.readlink(os.path.join(bindir, "grind")).endswith("/current/bin/grind"))
 
     # a link straight into today's cache resolves to the right file but rots on the next update
     os.remove(os.path.join(bindir, "loop"))
-    os.symlink(os.path.join(ROOT, "flow", "bin", "loop"), os.path.join(bindir, "loop"))
+    os.symlink(os.path.join(ROOT, "bin", "loop"), os.path.join(bindir, "loop"))
     fire()
     check("a version-pinned link is normalized onto the pointer",
           os.readlink(os.path.join(bindir, "loop")).startswith(pointer))
@@ -78,7 +78,7 @@ try:
     for tool in ("loop", "grind"):
         link = os.path.join(bindir, tool)
         os.remove(link)
-        os.symlink(os.path.join(pointer, "flow", "bin", tool), link)
+        os.symlink(os.path.join(pointer, "bin", tool), link)
     done = subprocess.run([os.path.join(bindir, "loop"), "--help"],
                           capture_output=True, text=True, cwd=project)
     check("the runner executes through the two-hop link",

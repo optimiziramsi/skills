@@ -12,11 +12,11 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, load_module  # noqa: E402
 
 check = Check()
-guard = load_module(hook("git/hooks/git-guard.py"), "git_guard")
+guard = load_module(hook("hooks/git-guard.py"), "git_guard")
 
 ENV_KEYS = ("GIT_GUARD_ALLOW", "GIT_GUARD_ALLOW_FETCH", "GIT_GUARD_STRICT",
             "GIT_GUARD_PROTECTED_BRANCH", "GIT_GUARD_INTEGRATION_BRANCH")
