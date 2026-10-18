@@ -47,6 +47,8 @@ git diffs and LLMs mangle them.
 
 ## Single-plugin restructure — repo root IS the plugin (2026-07-22, user)
 
+> **Superseded 2026-10-18** by the split below — kept for the naming history.
+
 Naming (user, same session): plugin **`optimiziramsi-skills`**, marketplace renamed to
 **`optimiziramsi`** → install identity `optimiziramsi-skills@optimiziramsi` (the
 mattpocock-skills@mattpocock pattern).
@@ -144,3 +146,26 @@ reference, not a showcase. `other/` stays public by user call.
 Machinery: [`release.sh`](../release.sh) (filtered tree-copy → FF land → tag, no remote),
 [`.claude/skills/release/`](../.claude/skills/release/SKILL.md) (the protocol),
 [`dev-marketplace.md`](./dev-marketplace.md) (test unreleased code in other repos).
+
+## Split into one plugin per topic (2026-10-18, user)
+
+User's motive: each project picks its own plugin set and can personalize or drop any part
+(kill-switches alone were too coarse an opt-out). Details the user left to the agent; plan + the
+calls made: [plan/261018_135850_plugin-split.md](plan/261018_135850_plugin-split.md). Facts behind
+the design (CC docs + CLI 2.1.278, 2026-10-18):
+
+- **A plugin reaches nothing outside its own dir**, and a *local-path* marketplace (how develop is
+  field-tested) drops symlinks that leave the plugin (git sources dereference them). Hence real
+  vendored copies (`./vendor.sh`, checked by tests.sh 7c), not links.
+- **No inter-plugin `dependencies`**: a dependency can't be disabled while a dependent is enabled,
+  which defeats the motive. The `optimiziramsi-skills` bundle has exactly that property — it is a
+  migration shim only.
+- **`userConfig` is user/managed-settings only** (`pluginConfigs`) — never committable. Project-
+  shared values must stay `env` in `.claude/settings.json`; personal ones in `settings.local.json`.
+- **Hooks get no context-usage field**; the transcript's assistant `message.usage` does carry it
+  (input + cache_read + cache_creation). Hooks can nudge but cannot run `/compact` / `/clear`.
+- **The directory registration here has `autoUpdate: true`** — a version-bumped commit on the
+  checked-out branch reached the machine's user-scope install within ~2 minutes (observed: the
+  split commit auto-updated `optimiziramsi-skills` to the 0.1.0-dev.1 bundle, whose dependencies
+  were NOT auto-installed → `dependency-unsatisfied`, no components load). Auto-update does not
+  install new dependencies.

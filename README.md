@@ -1,59 +1,60 @@
 # optimiziramsi-skills — Claude Code toolkit
 
-A personal [Claude Code plugin marketplace](https://docs.claude.com/en/docs/claude-code/plugins)
-shipping **one plugin**: reusable **skills, commands, agents, and hooks** shared across all my
-projects — so I solve something once and get it everywhere, and update it in one place. The repo
-root *is* the plugin, organized **topic-first**: `.claude-plugin/{marketplace,plugin}.json` at
-root, then one folder per concern (`git/ commit/ flow/ …`), each owning its own
-`skills/ commands/ agents/ hooks/` — so everything for a topic is in one place. `plugin.json`
-declares the component paths, so the type dirs don't need to sit at the repo root.
+A personal [Claude Code plugin marketplace](https://docs.claude.com/en/docs/claude-code/plugins),
+`optimiziramsi`, shipping **one plugin per concern**: reusable **skills, commands, agents, and
+hooks** shared across my projects — solve something once, get it everywhere, update it in one
+place. Each project enables only the plugins that suit it. The repo root is the marketplace
+(`.claude-plugin/marketplace.json`); every top-level concern folder (`git/ commit/ flow/ …`) is a
+self-contained plugin with its own `.claude-plugin/plugin.json`, `skills/ commands/ agents/
+hooks/`, `README.md` and `CHANGELOG.md`.
 
-## Install
+## Install — per project
 
-From a `claude` session in the project you want it in:
+Register the marketplace once per machine, then pick plugins in each project. From a `claude`
+session in the project:
 
 ```bash
 claude plugin marketplace add optimiziramsi/skills
 ```
 
 ```bash
-claude plugin install optimiziramsi-skills@optimiziramsi
+claude plugin install git@optimiziramsi --scope project
 ```
 
-Then **restart** — plugins bind at session start. (`/plugin` does the same from inside a session;
-in CCD use Browse → the plugin page → **"Install for project (shared)"** so the enable travels with
-the repo.)
+Repeat the install for each plugin the project wants, then **restart** — plugins bind at session
+start. `--scope project` writes the enable into the project's committed `.claude/settings.json`,
+so it travels with the repo. (`/plugin` does the same from inside a session; in CCD use Browse →
+the plugin page → **"Install for project (shared)"**.)
 
-Declaring it in settings instead — marketplace global, enablement in the project's
-`.claude/settings.json`:
+The resulting `.claude/settings.json` carries just the enables (the marketplace registration stays
+machine-global — ADOPTION.md says why). Teammates run the same `install --scope project` once on
+their machine, since an enable alone installs nothing:
 
 ```json
 {
-  "extraKnownMarketplaces": {
-    "optimiziramsi": { "source": { "source": "github", "repo": "optimiziramsi/skills" } }
-  },
   "enabledPlugins": {
-    "optimiziramsi-skills@optimiziramsi": true
+    "git@optimiziramsi": true,
+    "commit@optimiziramsi": true,
+    "session@optimiziramsi": true
   }
 }
 ```
 
-That JSON registers and enables the plugin, but it does not by itself **load** it:
+- **Opt out personally** without touching the shared file: `"<plugin>@optimiziramsi": false` in
+  the project's `.claude/settings.local.json`.
+- **Tune a plugin** with the env switches below — shared in `.claude/settings.json` `env`,
+  personal in `.claude/settings.local.json` `env`.
+- **Coming from the single plugin?** `optimiziramsi-skills@optimiziramsi` is now a deprecated
+  bundle that pulls in all eleven — while it is enabled none of them can be disabled. Install the
+  plugins the project wants, then uninstall the bundle. Floor: CC / CCD **≥ 2.1.195**.
 
-- **Keep enablement project-only.** Put `enabledPlugins` in the project's `.claude/settings.json`,
-  not `~/.claude` — enables travel with the repo.
-- **Install + full restart binds.** Enablement isn't installation: install the plugin (`/plugin`,
-  or approve the first-load prompt) and **restart** — plugins bind at session start, never
-  mid-session. Floor: CC / CCD **≥ 2.1.195**.
+Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 
-Everything ships enabled; **projects opt out per concern via env** (below) instead of picking
-plugins. Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
+## Plugins
 
-## Concerns
+Eleven plugins, each a top-level folder; the id is `<folder>@optimiziramsi`.
 
-One plugin, eleven concerns. Each concern is a top-level folder with its own `README.md`.
-
-| Concern | Provides |
+| Plugin | Provides |
 |---|---|
 | [`git`](git/README.md) | Git **safety net** — a `git-guard` hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, soft-resets to moving refs, `reset --hard`, `--no-verify`, and discards (rebase/amend/checkout-file pass by default for FF landing flows) — plus the **hotfix** skill (test-first, cherry-pick both ways, remotes handed to you). |
 | [`commit`](commit/README.md) | The opinionated house **commit** style — bare single-line messages, topic-close + pause-for-review cadence, safe staging, a `commit-format` guard, and a `commit-nudge`. |
@@ -67,9 +68,9 @@ One plugin, eleven concerns. Each concern is a top-level folder with its own `RE
 | [`patterns`](patterns/README.md) | A per-topic **pattern registry** (`.agent/patterns/`) — **manage-patterns** + `pattern-compliance`/`pattern-verifier` agents + hooks that gate edits governed only by non-blessed patterns. Ships the system, not any project's conventions. |
 | [`worktree`](worktree/README.md) | Parallel isolated work — the **worktree** skill (reserve → plan → review-gated slices → land) + guards that keep edits inside the active worktree (mitigates [claude-code #36182](https://github.com/anthropics/claude-code/issues/36182)) + a SessionStart `worktree-detect` nudge. |
 
-## Per-concern opt-out (env kill-switches)
+## Per-concern switches (env)
 
-Guards self-gate on project config (patterns fire only with a registry, meta-lint only with
+Picking plugins is the coarse control; these are the fine one. Guards self-gate on project config (patterns fire only with a registry, meta-lint only with
 `.agent/meta-lint.json`, worktree guards only in a linked worktree, the `.todo` and handoff nudges
 only where those files exist). **Everything else has a switch** — every shipped hook honors one, so
 no concern is stuck on:
@@ -94,11 +95,12 @@ no concern is stuck on:
 Opt-**in**, off by default: `WORKTREE_BASH_GUARD_ENABLE=1` (shell-channel worktree containment —
 false-positive-prone; the flow runners arm it for their own children in worktree mode). The flow runners take `FLOW_*` env; see [`flow`](flow/README.md).
 
-**Runtime: python3 (stdlib only), nothing else.** Every hook is python over the shared
-[`lib/hookio.py`](lib/hookio.py); their tests live in `<topic>/tests/`, not inside the guards.
+**Runtime: python3 (stdlib only), nothing else.** Every hook is python over a shared
+`lib/hookio.py`, vendored into each plugin that uses it (a plugin can reach nothing outside its own
+folder); their tests live in `<plugin>/tests/`, not inside the guards.
 There is deliberately no `jq` dependency — a guard that disarms itself when a tool is missing is
 worse than no guard, and `python3` is the one interpreter a Claude Code host already needs.
-**That choice binds this plugin's own code, not yours:** the one place a project supplies
+**That choice binds these plugins' own code, not yours:** the one place a project supplies
 executable code — `.agent/guards.d/` tripwires — takes `*.sh`, `*.py`, or any executable file with
 a shebang, so your guards are written in whatever your repo already speaks.
 
@@ -113,15 +115,16 @@ force/delete refspecs and `checkout` onto it stay blocked.
 
 ## Conventions
 
-- **One plugin, topic-first.** Each concern is a folder (`<topic>/skills|commands|agents|hooks/`)
-  with its own `README.md` and its own `hooks/hooks.json`; `plugin.json` lists the component paths.
-  A **command** (`/x`) is a thin shim that invokes a same-named **skill** which holds the actual
+- **One plugin per concern.** Each is a folder (`<plugin>/skills|commands|agents|hooks/`) in
+  Claude Code's default plugin layout, with its own `README.md`, `CHANGELOG.md` and version.
+  Plugins don't depend on each other: a skill that mentions another plugin's skill degrades to a
+  dead mention when that plugin isn't enabled, and `flow` carries its own copy of `worktree`'s
+  guards for runner confinement. A **command** (`/x`) is a thin shim that invokes a same-named **skill** which holds the actual
   logic (single source of truth). Commands are `disable-model-invocation: true` — they exist so you
   can *type* `/x`; the skill's own description is what Claude auto-triggers on, so nothing is
-  duplicated. Invocation names come from frontmatter/filename, so the folder grouping is
-  organizational only — no `<topic>:` prefix appears in a skill/command/agent name. Claude Code
-  namespaces plugin components as `optimiziramsi-skills:<name>` in menus and autocomplete; the bare
-  `/<name>` invokes them too (CC ≥ 2.1.216).
+  duplicated. Claude Code namespaces plugin components as `<plugin>:<name>` in menus and
+  autocomplete (`git:hotfix`, `review:doc-auditor`); the bare `/<name>` invokes them too
+  (CC ≥ 2.1.216).
 - **House layout.** Everything the toolkit creates lives under **`.agent/`** — `handoff.md`,
   `lessons/`, `worktrees.md`, `milestones.md`, `plan/`, `milestone/`, `loop/`, `grind/`,
   `patterns/`, `reviews/` — so it never clutters your repo root. Your `.docs/` and root `.todo`
@@ -129,11 +132,12 @@ force/delete refspecs and `checkout` onto it stay blocked.
   a project doesn't use it.
 - **Commits:** bare imperative single line; default cadence is commit at **topic close, then pause
   for review** (opt into commit-as-you-go per session).
-- **Versioning:** any consumer-visible change bumps the single `.claude-plugin/plugin.json`
-  `version` in the same commit — CCD only re-materializes on a version change. Release notes:
+- **Versioning:** per plugin — any consumer-visible change to a plugin bumps its own
+  `<plugin>/.claude-plugin/plugin.json` `version` in the same commit (CCD only re-materializes on
+  a version change). Release notes: `<plugin>/CHANGELOG.md`; history before the split:
   [CHANGELOG.md](CHANGELOG.md).
 
-`other/` is not part of the plugin — it holds standalone recipes (currently a machine-agnostic
+`other/` is not a plugin — it holds standalone recipes (currently a machine-agnostic
 guide to anchoring the Claude usage window on a schedule).
 
 ---

@@ -35,6 +35,10 @@ production copy.
   at all — it validates the source and rewrites `lastUpdated`, nothing more.
 - **Plugins bind at session start.** Restart CCD after a branch switch; a resumed session keeps the
   old binding.
+- **`autoUpdate` is on for this registration** (`known_marketplaces.json`), so a version bump
+  committed on the checked-out branch reaches every install on the machine within minutes — no
+  `claude plugin update` needed — and binds at the next session start. It updates installed
+  plugins only: a plugin the update newly depends on is not installed (observed 2026-10-18).
 
 ## Consequences worth knowing before you leave `develop` checked out for days
 

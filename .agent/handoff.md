@@ -1,58 +1,46 @@
 # Handoff
 
-_Last updated:_ 2026-07-29 — session 12: **0.0.9 reviewed + pushed; 0.0.10 committed, unpushed.**
+_Last updated:_ 2026-10-18 — session 13: **split into one plugin per topic (phase 1 of
+[plugin-split](plan/261018_135850_plugin-split.md)) — committed on `develop`, unreleased.**
 
-`main` is the only branch and there are no worktrees left — the `slim` branch and both worktrees
-(checkout + `_integration`) are gone, so the checkout now sits on `main` itself. The user squashed
-this session's 0.0.9 review fixup into `f4fefc7` and pushed it. **`27ffcbf` (0.0.10, doc-only) is
-one commit ahead of `origin/main` and is the user's to push.** `./tests.sh` ALL GREEN (7 checks,
-466 tests).
+`develop`: 11 per-topic plugins + the deprecated `optimiziramsi-skills` bundle, all `0.1.0-dev.N`.
+`main` still ships the single plugin 0.0.13. `./tests.sh` ALL GREEN (14 suites, 5 self-tests, 13
+`validate --strict` targets, 21 vendored copies). `./release.sh --dry-run` lists all 12 as shipping
+and blocks only on their `-dev` versions — correct.
 
-## Session 12 (2026-07-29) — reviewing 0.0.9, then 0.0.10 on a consumer report
+## Machine state the user must act on
 
-Release notes: [CHANGELOG.md](../CHANGELOG.md) § 0.0.9. What a cold session can't re-derive:
+The directory registration has `autoUpdate: true`, so the split reached this machine's user-scope
+install within minutes: `optimiziramsi-skills@optimiziramsi` is now the 0.1.0-dev.1 bundle with
+`dependency-unsatisfied` errors — **from the next session on, no optimiziramsi component loads in
+any project here** until the per-topic plugins are installed. Per project:
+`claude plugin install <plugin>@optimiziramsi --scope project`, then uninstall the bundle
+(ADOPTION.md § Migrating). This repo's own dogfood set is the user's to pick too.
 
-- **0.0.9 shipped with a bug that undercut its own fix.** The rewritten `worktree-bash-guard`
-  resolves write paths instead of grepping for them, but it started resolving from `wt_root`
-  rather than the hook payload's `cwd`. The Bash tool's cwd persists across calls, so a session
-  standing in a worktree *subdirectory* was off by one hop per level — it let the exact escape
-  class 0.0.9 exists to close straight through, and denied writes that never left the worktree.
-  Fixed in `4512ac7`; 6 regression tests pin it (reverting the one-line fix fails 4 of them).
-- **The fix folded into 0.0.9 rather than cutting 0.0.10** — 0.0.9 was unpushed and materialized
-  in no cache (the local one tops out at 0.0.8), so no consumer could have seen it. Same reasoning
-  applies to anything else caught before this push.
-- **0.0.10 came from a consumer repo (rabbit-run) field-testing 0.0.9** — doc-only, `27ffcbf`. The
-  `worktree` skill's fourth "Known failure mode" claimed a write-guard false-positive on the
-  worktree's own nested `.claude/**`: fixed since 0.0.6, re-verified false here in both layouts.
-  Its workaround had become an instruction to route around the guard 0.0.9 hardened. Generalized
-  into a lesson: [doc-fixes-must-not-become-bypasses](lessons/doc-fixes-must-not-become-bypasses.md).
-- **Verify a consumer's claims before landing them.** Both of rabbit-run's held up, but the fix
-  they proposed (just drop the item) needed a replacement they hadn't scoped.
+## What a cold session can't re-derive
 
-## Machine-local (not repo)
-
-`optimiziramsi-skills@optimiziramsi` **0.0.8** is installed; caches 0.0.4–0.0.8 on disk plus a
-legacy `opsi/…/0.0.1` under the old marketplace name, all harmless. After the push:
-`claude plugin marketplace update optimiziramsi` → `plugin update` → **restart**.
-Tracked `.claude/settings.json` sets `GIT_GUARD_{PROTECTED,INTEGRATION}_BRANCH` = `main`.
-Committing on `main` is not blocked; git-guard blocks bulk staging (`git add -A`) — stage by name.
+- Shared code is **vendored** (`./vendor.sh`; root `lib/` is the source): local-path marketplaces
+  drop symlinks that leave a plugin. `flow/vendor/worktree/` mirrors worktree's guards + suite for
+  the runners' confinement, so flow needs no dependency on worktree.
+- No inter-plugin `dependencies` on purpose — a dependency can't be disabled while its dependent
+  is enabled. The bundle is migration-only for that reason.
+- `release.sh` now ships every plugin whose tree differs from `main`, tags `<plugin>--v<version>`,
+  and opens no dev series (tests.sh § 8 forces a plugin's next edit onto `X.Y.(Z+1)-dev.1`).
+- Runner pointer moved to `<claude-config>/plugins/data/optimiziramsi-flow/current` → the flow
+  plugin root; `runner-link` re-aims existing `.agent/bin/{loop,grind}` links.
 
 ## Next up
 
-1. Still open from earlier sessions — **the live leak-probe test** (USER, plain terminal): run
-   `loop` from a worktree and read the verdict. `confined` = PreToolUse hooks DO fire under
-   `--dangerously-skip-permissions`; `leak` = they don't, and the fallback is the OS sandbox
-   (`sandbox.filesystem.allowWrite` **plus a git-dir carve-out** — a worktree commit writes into
-   the shared main `/.git`). Doubles as the runners' never-done live smoke test.
-2. Not yet slimmed: `instructions/bin/meta-lint` is still 1332 lines / 19 checks (user confirmed
-   they use it). `flow/bin/_flowlib.py` (908) and the runners are justified by what they do.
-3. `.todo` carries two open design questions the user raised: making `loop`/`grind` worktree-aware,
-   and landing a worktree into a branch that isn't checked out.
+1. Phase 2 of the plan — config convention: one `hookio` resolver (env > `CLAUDE_PLUGIN_OPTION_*`
+   > default); `userConfig` only for machine-wide personal defaults (it can't live in a project).
+2. Phase 3 — `upkeep` plugin (update-available + new-plugin nudges, `/upkeep` runs the updates).
+3. Phase 4 — `context` plugin (transcript-usage threshold nudge + `/repack`).
+4. Open questions in the plan: skills-maintenance scope; a separate `optimiziramsi-dev`
+   marketplace name vs this checkout's branch being what every project loads.
+5. Still open from before: the looper/grinder live test (USER, plain terminal; `.todo`).
 
 ## Standing context
 
-`init-marketplace`, `single-plugin`, `topic-first`, `publish-readiness` = retained build history.
-Done-gate `./tests.sh` (7 checks). `.todo`: plain bullets, `(done)` prefix, no checkboxes; the
-`todo-readonly-guard` is live here, so `.todo` edits need "ALLOW TODO" and unarmed deferrals go to
-`.todo-inbox`. Commits single-line (guard live). History append-only. Tests live in
-`<topic>/tests/*.py`, never inside a shipped file. Worktree board is `.agent/worktrees.md`.
+Done-gate `./tests.sh`. `.todo`: plain bullets, `(done)` prefix, no checkboxes; edits need
+"ALLOW TODO" while the flow plugin's guard is live, unarmed deferrals go to `.todo-inbox`. Commits
+single-line (commit-format guard). History append-only. Tests live in `<plugin>/tests/*.py`.

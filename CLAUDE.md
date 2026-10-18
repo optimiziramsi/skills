@@ -1,9 +1,9 @@
 # CLAUDE.md — optimiziramsi-skills (this marketplace)
 
 This repo **is** [`optimiziramsi-skills`](README.md) — the `optimiziramsi` Claude Code plugin
-marketplace, shipping ONE plugin (`optimiziramsi-skills`) whose root is this repo, organized
-**topic-first** (one `<topic>/` folder per concern): reusable skills, commands, agents, and hooks
-shared across projects.
+marketplace, shipping **one plugin per concern** (one `<plugin>/` folder each, id
+`<plugin>@optimiziramsi`): reusable skills, commands, agents, and hooks that each project enables
+à la carte. Active plan: [`.agent/plan/261018_135850_plugin-split.md`](.agent/plan/261018_135850_plugin-split.md).
 It *ships* the house conventions — so it must **exemplify** them. Written in the house
 slim-router style: routing + the hard rules that bind every session; everything else is linked,
 not restated.
@@ -33,10 +33,11 @@ not restated.
   `commit` plugin's own house style, dogfooded here. Don't batch into one final commit; don't wait
   to be asked.
 - **"Done" means validated**, not just written: run **`./tests.sh`** (JSON validity, marketplace ↔
-  plugin manifests agree, declared component paths resolve, every `${CLAUDE_PLUGIN_ROOT}` hook
-  target exists, every `/command` has its same-named skill, `claude plugin validate . --strict`,
-  hook self-tests, version discipline) and check **no project-specific content leaked in** — the
-  plugin ships the *system*, never any one project's conventions.
+  plugin dirs agree, declared paths + dependencies resolve, every `${CLAUDE_PLUGIN_ROOT}` hook
+  target exists inside its plugin, every `/command` has its same-named skill, `claude plugin
+  validate --strict` on the marketplace and each plugin, test suites + self-tests, vendored copies
+  in sync, per-plugin version discipline) and check **no project-specific content leaked in** —
+  the plugins ship the *system*, never any one project's conventions.
 - **Lean reporting.** No narration, no tool-output dumps. Report once at the end: outcome → a few
   terse bullets → questions grouped by topic. Assume an expert reader.
 - **Minimum, surgical change.** Every changed line traces to the request; nothing speculative.
@@ -46,14 +47,16 @@ not restated.
 
 Full overview + rationale: [README.md](README.md). The load-bearing rules:
 
-- **One plugin, topic-first.** The repo root is the plugin: `.claude-plugin/{marketplace,plugin}.json`
-  + one `<topic>/` folder per concern, each owning its `skills/ commands/ agents/ hooks/` (+ `bin/
-  examples/ README.md` where used). Everything for a topic is co-located — find it, update it,
-  replace it as a unit. `plugin.json` declares every component path: `skills`/`commands` as
-  per-topic directories, `agents` as explicit `.md` files (the validator rejects agent dirs),
-  `hooks` as one `hooks.json` per topic (they merge). Adding/removing a topic = add/remove its
-  folder **and** its plugin.json path entries (tests.sh checks both). Merged for one-install /
-  one-version updates, grouped for legibility — not blended.
+- **One plugin per concern, self-contained.** The repo root is the marketplace only
+  (`.claude-plugin/marketplace.json`). Each `<plugin>/` (dir name = plugin name) has its own
+  `.claude-plugin/plugin.json`, `README.md`, `CHANGELOG.md`, and the default layout `skills/
+  commands/ agents/ hooks/hooks.json` (+ `bin/ examples/ tests/` where used). A plugin reaches
+  **nothing outside its own folder** at runtime — shared code lives once in root `lib/` and
+  `./vendor.sh` copies it into each plugin that imports it (`flow/vendor/worktree/` likewise
+  mirrors `worktree`'s guards); edit the source, re-run, commit the copies. No `dependencies`
+  between plugins — a project must be able to drop any one. Adding/removing a plugin = its folder
+  **and** its `marketplace.json` entry (tests.sh checks both). `optimiziramsi-skills/` is the
+  deprecated all-in bundle kept for migration.
 - **`/command` = a thin shim → the same-named `skill`.** The skill's `SKILL.md` is the single
   source of the logic; the command wrapper carries none — not steps, and **not a duplicated
   description**. Every command carries `disable-model-invocation: true`: inside a plugin a command
@@ -62,19 +65,18 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
   The command's own terse description is for the `/` menu only. New command → ship the flag.
 - **Opinionated behavior must be switchable.** Every hook either self-gates on project config or
   honors an env kill-switch (README table); a new hook ships with one or the other.
-- **Bump the version on any consumer-visible change.** Any edit to shipped content (skill,
-  command, agent, hook, bin, manifest) bumps [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)
-  `version` in the **same commit** — CCD only re-materializes an installed plugin on a version
-  *change*, so a same-version edit never reaches consumers
+- **Bump the plugin's version on any consumer-visible change.** Any edit under `<plugin>/`
+  bumps that plugin's `<plugin>/.claude-plugin/plugin.json` `version` in the **same commit** (`-dev.N`
+  → `-dev.N+1`; first edit after a release → `X.Y.(Z+1)-dev.1`) — CCD only re-materializes an
+  installed plugin on a version *change*, so a same-version edit never reaches consumers
   ([why](.agent/lessons/plugin-version-bump-on-edit.md)). Repo-meta files (CLAUDE.md, `.agent/`,
-  `.todo*`, tests.sh) don't require a bump.
-- **Runtime output lives under the consumer's `.agent/`** — the plugin never clutters a project's
-  root.
+  `.todo*`, tests.sh, release.sh, vendor.sh, root `lib/` until vendored) don't require a bump.
+- **Runtime output lives under the consumer's `.agent/`** — no plugin clutters a project's root.
 - **Ships the system, not conventions.** No product, stack, or deploy specifics baked in; a
   project's own rules stay in that project.
 - **Status writeups are prose or a `status:` field — never `[ ]` / `[x]` checkboxes.** This
   repo's `.todo` is an agent-maintained list using a `(done)` prefix (a deliberate local choice;
   consumer projects keep `.todo` user-owned — see the shipped `triage-todo` / feedback skills).
-  **When `optimiziramsi-skills@optimiziramsi` is installed here (dogfooding), its `todo-readonly-guard` is live**: to
+  **When `flow@optimiziramsi` (or the bundle) is installed here (dogfooding), its `todo-readonly-guard` is live**: to
   update `.todo`, ask the user to arm the session with **"ALLOW TODO"**; unarmed deferrals go to
   `.todo-inbox`.
