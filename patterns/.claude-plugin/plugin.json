@@ -1,7 +1,7 @@
 {
   "name": "patterns",
   "displayName": "optimiziramsi patterns",
-  "version": "0.1.0-dev.2",
+  "version": "0.1.0-dev.3",
   "description": "Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns.",
   "author": {
     "name": "optimiziramsi",
