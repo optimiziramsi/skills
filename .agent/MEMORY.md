@@ -158,8 +158,14 @@ the design (CC docs + CLI 2.1.278, 2026-10-18):
   field-tested) drops symlinks that leave the plugin (git sources dereference them). Hence real
   vendored copies (`./vendor.sh`, checked by tests.sh 7c), not links.
 - **No inter-plugin `dependencies`**: a dependency can't be disabled while a dependent is enabled,
-  which defeats the motive. The `optimiziramsi-skills` bundle has exactly that property — it is a
-  migration shim only.
+  which defeats the motive. The `optimiziramsi-skills` bundle had exactly that property and was
+  dropped (2026-10-18, user).
+- **Two marketplace names** (2026-10-18, user): the working tree's manifest says
+  `optimiziramsi-dev` (this checkout, dogfood + field-testing), `release.sh` publishes it as
+  `optimiziramsi` (GitHub `main`). One name per source is what lets a machine carry both.
+- **Every plugin knob is an env var** read via `hookio.setting` — set in a settings.json `env`
+  block at user / project / local scope (CC merges them). Text a repo can replace (the `reporting`
+  and `code-first` contracts) is a project file looked up in `.agent/` then `.claude/`.
 - **`userConfig` is user/managed-settings only** (`pluginConfigs`) — never committable. Project-
   shared values must stay `env` in `.claude/settings.json`; personal ones in `settings.local.json`.
 - **Hooks get no context-usage field**; the transcript's assistant `message.usage` does carry it
@@ -167,5 +173,6 @@ the design (CC docs + CLI 2.1.278, 2026-10-18):
 - **The directory registration here has `autoUpdate: true`, and it reads the WORKING TREE** — a
   version bump reaches the machine's installs within minutes, committed or not (observed: the
   manifests of the split, still uncommitted at 14:01, auto-updated `optimiziramsi-skills` to the
-  0.1.0-dev.1 bundle five minutes before the split commit). Auto-update does not install new
-  dependencies → `dependency-unsatisfied`, no components load.
+  0.1.0-dev.1 bundle five minutes before the split commit). That update left the bundle's
+  dependencies uninstalled (`dependency-unsatisfied`); later updates auto-installed only some of
+  them (rows marked `"auto": true`). Don't rely on dependency auto-install.

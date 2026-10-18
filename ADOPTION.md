@@ -10,7 +10,7 @@ own the generic system, the repo keeps only what is repo-specific, zero overlap.
 
 `optimiziramsi-skills@optimiziramsi` is **gone** from the marketplace from 0.1.0 on — an install
 of it stops resolving (a short-lived bundle that depended on every plugin was dropped: updating to
-it did not install its dependencies, and while enabled it pinned all of them on). Per project:
+it installed its dependencies only partly, and while enabled it pinned all of them on). Per project:
 
 1. `claude plugin marketplace update optimiziramsi`
 2. `claude plugin install <plugin>@optimiziramsi --scope project` for each plugin the project

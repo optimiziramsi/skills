@@ -50,7 +50,8 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
   runtime — shared code lives once in root `lib/` (and `worktree-guards/` for runners' copy); edit the
   source, run `./vendor.sh`, commit the copies. No `dependencies` between plugins — a project
   must be able to drop any one. Adding/removing a plugin = its folder
-  **and** its `marketplace.json` entry (tests.sh checks both).
+  **and** its `marketplace.json` entry (tests.sh checks both) — the order of steps is the
+  repo-local [`skills-maintenance`](.claude/skills/skills-maintenance/SKILL.md) skill.
 - **`/command` = a thin shim → the same-named `skill`.** The skill's `SKILL.md` is the single
   source of the logic; the command wrapper carries none — not steps, and **not a duplicated
   description**. Every command carries `disable-model-invocation: true`: inside a plugin a command
