@@ -3,8 +3,7 @@
 This repo **is** [`optimiziramsi-skills`](README.md) — the `optimiziramsi` Claude Code plugin
 marketplace, shipping **one plugin per concern** (one `<plugin>/` folder each, id
 `<plugin>@optimiziramsi`): reusable skills, commands, agents, and hooks that each project enables
-à la carte. Active plan: [`.agent/plan/261018_135850_plugin-split.md`](.agent/plan/261018_135850_plugin-split.md).
-It *ships* the house conventions — so it must **exemplify** them. Written in the house
+à la carte. It *ships* the house conventions — so it must **exemplify** them. Written in the house
 slim-router style: routing + the hard rules that bind every session; everything else is linked,
 not restated.
 
@@ -32,12 +31,9 @@ not restated.
 - **Commit as you go.** Small, focused commits, terse imperative single-line subject — the
   `commit` plugin's own house style, dogfooded here. Don't batch into one final commit; don't wait
   to be asked.
-- **"Done" means validated**, not just written: run **`./tests.sh`** (JSON validity, marketplace ↔
-  plugin dirs agree, declared paths + dependencies resolve, every `${CLAUDE_PLUGIN_ROOT}` hook
-  target exists inside its plugin, every `/command` has its same-named skill, `claude plugin
-  validate --strict` on the marketplace and each plugin, test suites + self-tests, vendored copies
-  in sync, per-plugin version discipline) and check **no project-specific content leaked in** —
-  the plugins ship the *system*, never any one project's conventions.
+- **"Done" means validated**, not just written: **`./tests.sh`** ALL GREEN (its header lists the
+  checks), and **no project-specific content leaked in** — the plugins ship the *system*, never
+  any one project's conventions.
 - **Lean reporting.** No narration, no tool-output dumps. Report once at the end: outcome → a few
   terse bullets → questions grouped by topic. Assume an expert reader.
 - **Minimum, surgical change.** Every changed line traces to the request; nothing speculative.
@@ -50,11 +46,10 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
 - **One plugin per concern, self-contained.** The repo root is the marketplace only
   (`.claude-plugin/marketplace.json`). Each `<plugin>/` (dir name = plugin name) has its own
   `.claude-plugin/plugin.json`, `README.md`, `CHANGELOG.md`, and the default layout `skills/
-  commands/ agents/ hooks/hooks.json` (+ `bin/ examples/ tests/` where used). A plugin reaches
-  **nothing outside its own folder** at runtime — shared code lives once in root `lib/` and
-  `./vendor.sh` copies it into each plugin that imports it (`flow/vendor/worktree/` likewise
-  mirrors `worktree`'s guards); edit the source, re-run, commit the copies. No `dependencies`
-  between plugins — a project must be able to drop any one. Adding/removing a plugin = its folder
+  commands/ agents/ hooks/hooks.json`. A plugin reaches **nothing outside its own folder** at
+  runtime — shared code lives once in root `lib/` (and `worktree/` for flow's copy); edit the
+  source, run `./vendor.sh`, commit the copies. No `dependencies` between plugins — a project
+  must be able to drop any one. Adding/removing a plugin = its folder
   **and** its `marketplace.json` entry (tests.sh checks both). `optimiziramsi-skills/` is the
   deprecated all-in bundle kept for migration.
 - **`/command` = a thin shim → the same-named `skill`.** The skill's `SKILL.md` is the single
@@ -66,11 +61,10 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
 - **Opinionated behavior must be switchable.** Every hook either self-gates on project config or
   honors an env kill-switch (README table); a new hook ships with one or the other.
 - **Bump the plugin's version on any consumer-visible change.** Any edit under `<plugin>/`
-  bumps that plugin's `<plugin>/.claude-plugin/plugin.json` `version` in the **same commit** (`-dev.N`
-  → `-dev.N+1`; first edit after a release → `X.Y.(Z+1)-dev.1`) — CCD only re-materializes an
-  installed plugin on a version *change*, so a same-version edit never reaches consumers
-  ([why](.agent/lessons/plugin-version-bump-on-edit.md)). Repo-meta files (CLAUDE.md, `.agent/`,
-  `.todo*`, tests.sh, release.sh, vendor.sh, root `lib/` until vendored) don't require a bump.
+  bumps that plugin's `.claude-plugin/plugin.json` `version` in the **same commit** — CCD only
+  re-materializes an installed plugin on a version *change*
+  ([why](.agent/lessons/plugin-version-bump-on-edit.md)). Repo-meta outside the plugin dirs
+  needs no bump.
 - **Runtime output lives under the consumer's `.agent/`** — no plugin clutters a project's root.
 - **Ships the system, not conventions.** No product, stack, or deploy specifics baked in; a
   project's own rules stay in that project.
