@@ -23,7 +23,7 @@ project scope from `optimiziramsi` (GitHub); this repo dogfoods all 21 from `opt
 ## Per-repo installs (uncommitted in each repo — the user's to commit)
 
 `.claude/settings.json` gained `enabledPlugins` in: kupimkuham, app-example, games, hub,
-homelab, ai-shopping-list-app (rabbit-run-single-instance shows clean — check it was committed).
+homelab, ai-shopping-list-app (rabbit-run-single-instance committed).
 `commit-commands@claude-plugins-official` was removed from games (project scope);
 ai-shopping-list-app already had it disabled. Plugin sets per repo: see `claude plugin list`.
 
@@ -44,4 +44,4 @@ bump it to `0.1.1-dev.1` (tests.sh § 8 enforces).
 ## Suggested next topic
 
 Work through the user's review comments. Alternatives: live-test `upkeep` by bumping one plugin
-in a dev install; check `hub-session.sh` vs `session-start` overlap.
+in a dev install.
