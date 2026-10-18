@@ -1,39 +1,48 @@
 ---
 name: release
-description: Cut a public release of this marketplace — bump the version, write the CHANGELOG entry, validate, and land a filtered plugin-only tree on `main` via ./release.sh. Use when the user says "cut a release", "make a release", "publish", "ship it", "release vX.Y.Z", or when develop has consumer-visible changes ready to go public. Repo-local — this is NOT shipped to consumers.
+description: Cut a public release of this marketplace — finalize the version of every changed plugin, write their CHANGELOG entries, validate, and land a filtered plugins-only tree on `main` via ./release.sh. Use when the user says "cut a release", "make a release", "publish", "ship it", "release <plugin> vX.Y.Z", or when develop has consumer-visible changes ready to go public. Repo-local — this is NOT shipped to consumers.
 ---
 
 # Release this marketplace
 
 Two branches, one repo:
 
-- **`develop`** — the working branch. Everything: plugin content, `.agent/`, `.todo`, `CLAUDE.md`,
-  `tests.sh`, `release.sh`. All work happens here (or on feature branches off it).
-- **`main`** — what the world installs. The plugin and its public docs, nothing else. Written
-  **only** by `./release.sh`, never by hand, never by merge.
+- **`develop`** — the working branch. Everything: the plugins, `.agent/`, `.todo`, `CLAUDE.md`,
+  `tests.sh`, `release.sh`, `vendor.sh`, root `lib/`. All work happens here (or on feature
+  branches off it).
+- **`main`** — what the world installs. The marketplace, its plugins and their public docs,
+  nothing else. Written **only** by `./release.sh`, never by hand, never by merge.
 
 A consumer's marketplace clone is shallow and tracks `main` alone, so `develop` is invisible to
 them — the filter exists so nobody browsing or grepping their plugin cache has to guess which
 files are the plugin and which are this repo's own workbench.
 
+**Plugins version independently.** A release ships every plugin whose tree differs from `main`
+and nothing else; an unchanged plugin keeps its version.
+
 ## Cutting one
 
-1. **Confirm the scope.** `git log main..develop --oneline` — everything there ships. If any of it
-   isn't ready, it doesn't get released; land it later.
-2. **Bump `.claude-plugin/plugin.json` `version`** off the `-dev` series to a final `X.Y.Z`.
-   Consumers only re-materialize on a version *change*
+1. **Confirm the scope.** `./release.sh --dry-run --skip-tests` lists the plugins that would ship
+   and what blocks each. `git log main..develop --oneline -- <plugin>/` shows what is in one. If
+   any of it isn't ready, it doesn't get released; land it later.
+2. **Finalize each shipping plugin's version** in `<plugin>/.claude-plugin/plugin.json` — off its
+   `-dev` series to a final `X.Y.Z`. Consumers only re-materialize on a version *change*
    ([lesson](../../../.agent/lessons/plugin-version-bump-on-edit.md)). Patch for fixes, minor for
-   new components. A release that trims or moves shipped files **is** consumer-visible — bump for
-   it. `release.sh` refuses any `-dev`/`-rc` version, and refuses one `main` already ships.
-3. **Write the `CHANGELOG.md` section.** `## <version> — <date>` at the top, in the existing
-   voice: what changed, and *why it mattered*. `release.sh` refuses to run without this heading.
+   new components. A release that trims or moves shipped files **is** consumer-visible.
+   `release.sh` refuses any pre-release version and any version `main` already ships.
+3. **Write each shipping plugin's `<plugin>/CHANGELOG.md` section.** `## <version> — <date>` at
+   the top, in the existing voice: what changed, and *why it mattered*. `release.sh` refuses a
+   plugin without its heading.
 4. **`./tests.sh`** — must be ALL GREEN. `release.sh` re-runs it and refuses on red.
-5. **Commit** the bump + changelog on `develop` (house style: terse imperative subject).
+5. **Commit** the bumps + changelogs on `develop` (house style: terse imperative subject).
 6. **`./release.sh --dry-run`** — read the top-level entry list it prints. Anything on it that
-   isn't plugin content or public docs means `DEV_ONLY` in `release.sh` needs a new entry.
-7. **`./release.sh`** — lands the filtered tree on `main`, tags `vX.Y.Z` locally, and opens the
-   next `0.0.N-dev.1` on `develop` (`--no-open` to skip). The dev suffix is not cosmetic: the local
-   marketplace is folder-bound, so `develop` and `main` must never carry the same version.
+   isn't a plugin, the marketplace manifest or public docs means `DEV_ONLY` in `release.sh` needs
+   a new entry.
+7. **`./release.sh`** — lands the filtered tree on `main` and tags each shipped plugin
+   `<plugin>--v<version>` locally (the tag shape Claude Code resolves versioned plugin
+   dependencies against). It opens no dev series: a plugin's next edit on `develop` is forced onto
+   `X.Y.(Z+1)-dev.1` by `tests.sh` § 8, so `develop` and `main` never carry one version for two
+   different trees.
 8. **Hand the push to the user.** Remotes are theirs; print the commands and stop.
 
 ## Rules

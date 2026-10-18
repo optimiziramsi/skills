@@ -11,8 +11,9 @@ leave it there.
 claude plugin marketplace remove optimiziramsi && claude plugin marketplace add "$(git rev-parse --show-toplevel)"
 ```
 
-Restart CCD. Projects that already have `optimiziramsi-skills@optimiziramsi` installed now resolve
-it from disk. The github registration is gone — `main` in this checkout is the production copy.
+Restart CCD. Projects that already have one of its plugins installed (`<plugin>@optimiziramsi`)
+now resolve it from disk. The github registration is gone — `main` in this checkout is the
+production copy.
 
 ## What makes the branch switch actually take
 
@@ -22,11 +23,12 @@ it from disk. The github registration is gone — `main` in this checkout is the
 - **The install cache is version-keyed**:
   `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` holds a real copy, verified
   byte-identical for a directory source — it is not a symlink to your tree
-  ([lesson](lessons/plugin-version-bump-on-edit.md)). So **`develop`'s version must never equal
-  `main`'s**, or switching branches would be invisible. `release.sh` enforces this from both ends:
-  it refuses to publish a `-dev`/`-rc` version, and after landing a release it opens the next
-  `0.0.N-dev.1` on `develop`.
-- **Iterating within `develop`** bumps the dev counter — `0.0.12-dev.1` → `-dev.2` → … Treat "same
+  ([lesson](lessons/plugin-version-bump-on-edit.md)). So **a plugin whose tree differs from
+  `main`'s must never carry `main`'s version**, or switching branches would be invisible. Each
+  plugin versions on its own: `tests.sh` § 8 forces a bump in the same commit as any edit under
+  `<plugin>/` (first edit after a release → `X.Y.(Z+1)-dev.1`), and `release.sh` refuses to
+  publish a pre-release. An untouched plugin keeps `main`'s version — same tree, nothing to see.
+- **Iterating within `develop`** bumps that plugin's dev counter — `0.1.1-dev.1` → `-dev.2` → … Treat "same
   version, new content rebinds" as unproven until you have watched it happen. The proven cycle
   (verified 2026-08-19 across `-dev.1` → `-dev.2` → `-dev.3`): bump + commit → `claude plugin
   update` → restart CCD. `claude plugin marketplace update` was verified NOT to move the install
@@ -41,15 +43,16 @@ it from disk. The github registration is gone — `main` in this checkout is the
   marketplace advertises; the installed plugin runs from its version-keyed cache copy. So
   uncommitted edits here are *not* live anywhere until you bump + `claude plugin update` + restart.
 - **`main` has no workbench.** Checking it out removes `.agent/`, `.todo*`, `CLAUDE.md`,
-  `.claude/`, `tests.sh`, `release.sh` from disk — they are simply not tracked there. They come
+  `.claude/`, `tests.sh`, `release.sh`, `vendor.sh`, root `lib/` from disk — they are simply not tracked there. They come
   back on `git checkout develop`. Gitignored things (`.agent/loop/`, `.claude/worktrees/`,
   `.idea/`) survive the switch untouched.
 - **No agent does the switching.** `main` is the protected branch; `git checkout main` is yours.
 
 ## Feature branches carry their own series
 
-`tests.sh` § 8 enforces it: on any branch other than `develop` / `main`, the version must be
-`X.Y.Z-<branch-slug>.N` — `feat/abc-branch` → `0.0.12-feat-abc-branch.1`, then `.2`, `.3`. Same
+`tests.sh` § 8 enforces it: on any branch other than `develop` / `main`, every plugin the branch
+changes must be on `X.Y.Z-<branch-slug>.N` — `feat/abc-branch` → `0.1.1-feat-abc-branch.1`, then
+`.2`, `.3`. Same
 reason the `-dev` counter exists: the install cache is version-keyed, so a branch sharing
 `develop`'s version would switch invisibly, and reverting would look like nothing happened. Drop
 back to the `-dev` series when you return to `develop`. `release.sh` refuses to publish ANY
@@ -57,17 +60,19 @@ pre-release, so a branch series can never reach `main`.
 
 ## The loop
 
-1. Edit on `develop` (or a feature branch off it), bump the `-dev` counter, commit. `tests.sh` § 8 fails the gate if shipped content moved and the version did not.
+1. Edit on `develop` (or a feature branch off it), bump the edited plugin's `-dev` counter,
+   commit. `tests.sh` § 8 fails the gate if a plugin's content moved and its version did not.
 2. Update the install, then restart CCD — a **marketplace** update alone never moves the pin
    (`installed_plugins.json` keeps the old version and CCD keeps binding it):
 
    ```bash
-   claude plugin update optimiziramsi-skills@optimiziramsi --scope user
+   claude plugin update <plugin>@optimiziramsi --scope project
    ```
 
    CCD equivalent: Manage plugins → the plugin page → Update. Mechanics and the per-scope pin rules
    live in [ADOPTION.md](../ADOPTION.md) § "Updating the plugin".
 3. Exercise it in the test project. Leave it for as long as you want.
-4. When it holds up: bump to the final `0.0.N`, write the `CHANGELOG.md` section, and cut the
-   release ([`release` skill](../.claude/skills/release/SKILL.md)).
+4. When it holds up: bump each changed plugin to its final `X.Y.Z`, write its
+   `<plugin>/CHANGELOG.md` section, and cut the release
+   ([`release` skill](../.claude/skills/release/SKILL.md)).
 5. `git checkout main` when you want the machine back on production.

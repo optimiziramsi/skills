@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# release.sh — cut a public release of the plugin from `develop` onto `main`.
+# release.sh — cut a public release of the marketplace from `develop` onto `main`.
 #
 # `main` is what the world installs: the marketplace clone a consumer gets is SHALLOW and tracks
 # `main` only (refspec +refs/heads/main:refs/remotes/origin/main), so `develop` never reaches
-# them. `main` therefore carries the PLUGIN and nothing else — no `.agent/`, no `.todo`, no
+# them. `main` therefore carries the PLUGINS and nothing else — no `.agent/`, no `.todo`, no
 # CLAUDE.md, no test harness — while `develop` keeps the full working repo.
+#
+# Plugins version independently. A release ships every plugin whose tree differs from `main`;
+# each of those must carry a final version `main` doesn't already ship and a `## <version>`
+# section in its own <plugin>/CHANGELOG.md, and gets the tag `<plugin>--v<version>` — the shape
+# Claude Code resolves version-constrained plugin dependencies against. An unchanged plugin keeps
+# its version; its next edit is forced onto a fresh -dev series by tests.sh § 8.
 #
 # Mechanism: a filtered TREE-COPY, never a merge. A merge between a branch that keeps the dev
 # files and one that deletes them re-conflicts on those paths at every release, forever. Instead
@@ -17,9 +23,8 @@
 # git-guard, which inspects Bash tool calls and not a script's internals; every git call below is
 # deliberately one the guard would permit anyway.)
 #
-#   ./release.sh --dry-run   # show the tree that would land, change nothing
-#   ./release.sh             # cut it, then open the next -dev series on develop
-#   ./release.sh --no-open   # cut it and leave develop's version alone
+#   ./release.sh --dry-run   # show what would ship and the tree that would land, change nothing
+#   ./release.sh             # cut it
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -27,18 +32,16 @@ DEV_BRANCH=develop
 PUB_BRANCH=main
 
 # Development-only paths — present on $DEV_BRANCH, never on $PUB_BRANCH. Everything else is
-# SHIPPED content; tests.sh § 8 parses this one line to know which is which, so keep it one line.
-DEV_ONLY=(.agent .claude .todo .todo-inbox CLAUDE.md tests.sh release.sh .gitignore)
+# SHIPPED content. (Root lib/ is the source vendor.sh copies into each plugin — the copies ship.)
+DEV_ONLY=(.agent .claude .todo .todo-inbox CLAUDE.md tests.sh release.sh vendor.sh lib .gitignore)
 
 DRY_RUN=0
 SKIP_TESTS=0
-OPEN_NEXT=1
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --skip-tests) SKIP_TESTS=1 ;;
-    --no-open) OPEN_NEXT=0 ;;
-    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,26p' "$0"; exit 0 ;;
     *) echo "release: unknown argument '$arg'" >&2; exit 2 ;;
   esac
 done
@@ -51,23 +54,49 @@ HEAD_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [ -z "$(git status --porcelain)" ] || die "working tree is dirty — commit first"
 git rev-parse --verify --quiet "$PUB_BRANCH" >/dev/null || die "no local $PUB_BRANCH branch"
 
-VERSION=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
-TAG="v$VERSION"
-case "$VERSION" in
-  # ANY pre-release series — -dev.N on develop, -<branch-slug>.N on a feature branch, -rc.N —
-  # is local-only by construction and must never land on $PUB_BRANCH. tests.sh § 8 is the other
-  # half of this: it keeps those series distinct per branch.
-  *-*) die "version $VERSION is a pre-release series — bump to a final version first" ;;
-esac
-if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
-  die "tag $TAG already exists — bump the version in .claude-plugin/plugin.json"
+# Which plugins ship: every <plugin>/ whose tree differs from $PUB_BRANCH's (or is new there).
+# One line per plugin: "<name> <version> <version on $PUB_BRANCH, or ->".
+SHIPPING=$(python3 - "$PUB_BRANCH" <<'PY'
+import glob, json, os, subprocess, sys
+pub = sys.argv[1]
+def git(*a):
+    return subprocess.run(['git', *a], capture_output=True, text=True)
+for pj in sorted(glob.glob('*/.claude-plugin/plugin.json')):
+    d = os.path.dirname(os.path.dirname(pj))
+    if git('rev-parse', f'HEAD:{d}').stdout == git('rev-parse', f'{pub}:{d}').stdout:
+        continue
+    cur = json.load(open(pj))['version']
+    r = git('show', f'{pub}:{pj}')
+    old = json.loads(r.stdout)['version'] if r.returncode == 0 else '-'
+    print(d, cur, old)
+PY
+)
+[ -n "$SHIPPING" ] || die "no plugin differs from $PUB_BRANCH — nothing to release"
+
+TAGS=()
+PROBLEMS=()
+while read -r name version old; do
+  case "$version" in
+    # ANY pre-release series — -dev.N on develop, -<branch-slug>.N on a feature branch, -rc.N —
+    # is local-only by construction and must never land on $PUB_BRANCH.
+    *-*) PROBLEMS+=("$name is $version, a pre-release series — bump it to a final version"); continue ;;
+  esac
+  # Consumers re-materialize only on a version CHANGE — shipping a new tree under the version
+  # already on $PUB_BRANCH reaches nobody. .agent/lessons/plugin-version-bump-on-edit.md
+  [ "$version" != "$old" ] || PROBLEMS+=("$name changed but $PUB_BRANCH already ships $version — bump it")
+  tag="$name--v$version"
+  ! git rev-parse --verify --quiet "refs/tags/$tag" >/dev/null || PROBLEMS+=("tag $tag already exists — bump $name")
+  grep -q "^## $version" "$name/CHANGELOG.md" || PROBLEMS+=("$name/CHANGELOG.md has no '## $version' section")
+  TAGS+=("$tag")
+done <<<"$SHIPPING"
+echo "release: shipping —"
+while read -r name version old; do echo "  $name $old → $version"; done <<<"$SHIPPING"
+if [ "${#PROBLEMS[@]}" -gt 0 ]; then
+  printf 'release: %s\n' "${PROBLEMS[@]}" >&2
+  [ "$DRY_RUN" -eq 1 ] || die "${#PROBLEMS[@]} problem(s) above — nothing released"
 fi
-# Consumers re-materialize only on a version CHANGE — shipping a new tree under the version
-# already on $PUB_BRANCH reaches nobody. .agent/lessons/plugin-version-bump-on-edit.md
-PUB_VERSION=$(git show "$PUB_BRANCH:.claude-plugin/plugin.json" |
-  python3 -c "import json,sys; print(json.load(sys.stdin)['version'])")
-[ "$VERSION" != "$PUB_VERSION" ] || die "$PUB_BRANCH already ships $VERSION — bump the version in .claude-plugin/plugin.json"
-grep -q "^## $VERSION" CHANGELOG.md || die "CHANGELOG.md has no '## $VERSION' section"
+SUBJECT="release $(while read -r name version _; do printf '%s %s, ' "$name" "$version"; done <<<"$SHIPPING")"
+SUBJECT=${SUBJECT%, }
 
 if [ "$SKIP_TESTS" -eq 0 ]; then
   ./tests.sh >/dev/null || die "tests.sh is not green — nothing ships red"
@@ -75,8 +104,8 @@ if [ "$SKIP_TESTS" -eq 0 ]; then
 fi
 
 # --- build the filtered tree on a temp branch off $PUB_BRANCH -------------------------------
-TMP_BRANCH="release/$TAG"
-WORKTREE=$(mktemp -d "${TMPDIR:-/tmp}/release-$VERSION-XXXX")
+TMP_BRANCH="release/$(date +%Y%m%d-%H%M%S)"
+WORKTREE=$(mktemp -d "${TMPDIR:-/tmp}/release-XXXX")
 cleanup() {
   git worktree remove --force "$WORKTREE" 2>/dev/null || true
   git branch -D "$TMP_BRANCH" >/dev/null 2>&1 || true
@@ -114,7 +143,7 @@ IGNORE
 )
 
 # --- report / land -------------------------------------------------------------------------
-echo "release: $TAG — what changes on $PUB_BRANCH:"
+echo "release: what changes on $PUB_BRANCH:"
 git -C "$WORKTREE" diff --cached --stat "$PUB_BRANCH" | tail -6
 echo "release: resulting top-level entries:"
 (cd "$WORKTREE" && git ls-files | cut -d/ -f1 | sort -u | sed 's/^/  /')
@@ -128,34 +157,11 @@ if git -C "$WORKTREE" diff --cached --quiet "$PUB_BRANCH"; then
   die "no difference from $PUB_BRANCH — nothing to release"
 fi
 
-git -C "$WORKTREE" commit -q -m "release $TAG"
+git -C "$WORKTREE" commit -q -m "$SUBJECT"
 git push -q . "$TMP_BRANCH:$PUB_BRANCH"          # local fast-forward land; no remote involved
-git tag "$TAG" "$PUB_BRANCH"
+for tag in "${TAGS[@]}"; do git tag "$tag" "$PUB_BRANCH"; done
 
-echo "release: $PUB_BRANCH is now $(git rev-parse --short "$PUB_BRANCH"), tagged $TAG"
-
-# Open the next development series. The local marketplace is folder-bound, so switching this
-# checkout between branches switches what every project on this machine loads — and the install
-# cache is version-keyed. If develop and main ever carried the SAME version, the switch would be
-# invisible. A -dev suffix keeps them distinct, and release.sh refuses to publish one.
-if [ "$OPEN_NEXT" -eq 1 ]; then
-  NEXT=$(python3 - "$VERSION" <<'PY'
-import sys
-major, minor, patch = (sys.argv[1].split('.') + ['0', '0'])[:3]
-print(f"{major}.{minor}.{int(patch) + 1}-dev.1")
-PY
-)
-  python3 - "$NEXT" <<'PY'
-import json, re, sys
-p = '.claude-plugin/plugin.json'
-s = open(p).read()
-open(p, 'w').write(re.sub(r'("version":\s*")[^"]+(")', r'\g<1>' + sys.argv[1] + r'\g<2>', s, count=1))
-assert json.load(open(p))['version'] == sys.argv[1]
-PY
-  git add .claude-plugin/plugin.json
-  git commit -q -m "open $NEXT"
-  echo "release: $DEV_BRANCH opened at $NEXT"
-fi
-
+echo "release: $PUB_BRANCH is now $(git rev-parse --short "$PUB_BRANCH") — $SUBJECT"
+echo "release: tagged ${TAGS[*]}"
 echo "release: yours to publish —"
-echo "  git push origin $PUB_BRANCH && git push origin $TAG && git push origin $DEV_BRANCH"
+echo "  git push origin $PUB_BRANCH ${TAGS[*]} && git push origin $DEV_BRANCH"
