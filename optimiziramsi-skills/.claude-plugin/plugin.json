@@ -1,7 +1,7 @@
 {
   "name": "optimiziramsi-skills",
   "displayName": "optimiziramsi skills (bundle)",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0-dev.2",
   "description": "Deprecated bundle — installs and enables every optimiziramsi plugin at once. Enable the individual plugins your project wants instead: while this bundle is enabled none of them can be disabled.",
   "author": {
     "name": "optimiziramsi",

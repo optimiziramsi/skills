@@ -44,9 +44,10 @@ their machine, since an enable alone installs nothing:
   the project's `.claude/settings.local.json`.
 - **Tune a plugin** with the env switches below — shared in `.claude/settings.json` `env`,
   personal in `.claude/settings.local.json` `env`.
-- **Coming from the single plugin?** `optimiziramsi-skills@optimiziramsi` is now a deprecated
-  bundle that pulls in all eleven — while it is enabled none of them can be disabled. Install the
-  plugins the project wants, then uninstall the bundle. Floor: CC / CCD **≥ 2.1.195**.
+- **Coming from the single plugin?** `optimiziramsi-skills@optimiziramsi` is now a deprecated,
+  empty bundle that depends on all eleven. **Updating to it does not install them** — it loads
+  nothing and reports each as a missing dependency — so install the plugins the project wants,
+  then uninstall the bundle (ADOPTION.md § Migrating). Floor: CC / CCD **≥ 2.1.195**.
 
 Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 
