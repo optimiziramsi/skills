@@ -1,6 +1,29 @@
 {
   "env": {
     "GIT_GUARD_PROTECTED_BRANCH": "main",
-    "GIT_GUARD_INTEGRATION_BRANCH": "main"
+    "GIT_GUARD_INTEGRATION_BRANCH": "develop"
+  },
+  "enabledPlugins": {
+    "git-guard@optimiziramsi-dev": true,
+    "hotfix@optimiziramsi-dev": true,
+    "commit@optimiziramsi-dev": true,
+    "code-first@optimiziramsi-dev": true,
+    "rename@optimiziramsi-dev": true,
+    "reporting@optimiziramsi-dev": true,
+    "session@optimiziramsi-dev": true,
+    "context@optimiziramsi-dev": true,
+    "lessons@optimiziramsi-dev": true,
+    "instructions@optimiziramsi-dev": true,
+    "guards@optimiziramsi-dev": true,
+    "review@optimiziramsi-dev": true,
+    "qa-gate@optimiziramsi-dev": true,
+    "planning@optimiziramsi-dev": true,
+    "todo@optimiziramsi-dev": true,
+    "runners@optimiziramsi-dev": true,
+    "patterns@optimiziramsi-dev": true,
+    "worktree@optimiziramsi-dev": true,
+    "worktree-guards@optimiziramsi-dev": true,
+    "setup@optimiziramsi-dev": true,
+    "upkeep@optimiziramsi-dev": true
   }
 }
