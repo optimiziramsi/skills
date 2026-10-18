@@ -12,3 +12,5 @@ Versions of the `runners@optimiziramsi` plugin. History before the split into on
 - The runner pointer moved to `<claude-config>/plugins/data/optimiziramsi-runners/current` and
   targets this plugin itself; links are `…/current/bin/{loop,grind}`. `runner-link` re-aims existing
   `.agent/bin/{loop,grind}` symlinks on the next session start.
+- `grind --status` no longer executes the mission's `done-check` — it shows the command instead.
+  The arm prompt now shows the `done-check` too, so the shell it will run is approved with the run.

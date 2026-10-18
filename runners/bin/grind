@@ -291,8 +291,9 @@ def print_status(mission_path, job_dir, meta, iteration, attempt, mem_log):
             f"iteration #{iteration} as a retry (continuation prompt)"))
     dc = meta.get("done-check", "")
     if dc:
-        passed = run_done_check(dc)
-        fl.info(f"  done-check:     {'PASS (complete)' if passed else 'not yet'}  [{dc}]")
+        # Shown, never run: --status is a read, and the command is shell from a mission file the
+        # agent may have written — it executes only in an armed run.
+        fl.info(f"  done-check:     {dc}  (not run by --status)")
     try:
         with open(mem_log, encoding="utf-8") as fh:
             tail = fh.read().splitlines()[-20:]
@@ -312,6 +313,8 @@ def arm_or_exit(opts, mission_path, meta):
         f"\n⚠ Mission '{meta.get('title', os.path.basename(mission_path))}' will run "
         f"UNATTENDED with full tool permissions ({fl.DEFAULT_PERMISSION_MODE}) — the agent "
         "edits files and runs git/shell commands with no prompts, looping until done."))
+    if meta.get("done-check"):
+        fl.info(fl.yellow(f"  done-check (runs as shell before each iteration): {meta['done-check']}"))
     if not sys.stdin.isatty():
         fl.die("not a TTY and -y not given — refusing to run unattended without explicit --yes.")
     try:
