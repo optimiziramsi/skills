@@ -114,12 +114,6 @@
       "source": "./setup",
       "description": "One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md.",
       "category": "workflow"
-    },
-    {
-      "name": "optimiziramsi-skills",
-      "source": "./optimiziramsi-skills",
-      "description": "Deprecated bundle — depends on every optimiziramsi plugin. Updating to it does not install them; install the plugins a project wants and uninstall this.",
-      "category": "workflow"
     }
   ]
 }

@@ -8,12 +8,9 @@ own the generic system, the repo keeps only what is repo-specific, zero overlap.
 
 ## Migrating from the single `optimiziramsi-skills` plugin
 
-`optimiziramsi-skills@optimiziramsi` survives as a **deprecated bundle**: no components of its
-own, `dependencies` on all eighteen plugins. **An update to it does not install those
-dependencies** (observed 2026-10-18: the auto-updated install reported `dependency-unsatisfied` for
-each and loaded nothing) — it only turns "plugin gone" into an error naming what to install. And
-while it is enabled, none of the eighteen can be disabled. So migrate rather than keep it, per
-project:
+`optimiziramsi-skills@optimiziramsi` is **gone** from the marketplace from 0.1.0 on — an install
+of it stops resolving (a short-lived bundle that depended on every plugin was dropped: updating to
+it did not install its dependencies, and while enabled it pinned all of them on). Per project:
 
 1. `claude plugin marketplace update optimiziramsi`
 2. `claude plugin install <plugin>@optimiziramsi --scope project` for each plugin the project

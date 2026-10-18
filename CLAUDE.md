@@ -50,8 +50,7 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
   runtime — shared code lives once in root `lib/` (and `worktree-guards/` for runners' copy); edit the
   source, run `./vendor.sh`, commit the copies. No `dependencies` between plugins — a project
   must be able to drop any one. Adding/removing a plugin = its folder
-  **and** its `marketplace.json` entry (tests.sh checks both). `optimiziramsi-skills/` is the
-  deprecated all-in bundle kept for migration.
+  **and** its `marketplace.json` entry (tests.sh checks both).
 - **`/command` = a thin shim → the same-named `skill`.** The skill's `SKILL.md` is the single
   source of the logic; the command wrapper carries none — not steps, and **not a duplicated
   description**. Every command carries `disable-model-invocation: true`: inside a plugin a command
@@ -71,6 +70,6 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
 - **Status writeups are prose or a `status:` field — never `[ ]` / `[x]` checkboxes.** This
   repo's `.todo` is an agent-maintained list using a `(done)` prefix (a deliberate local choice;
   consumer projects keep `.todo` user-owned — see the shipped `triage-todo` / feedback skills).
-  **When `todo@optimiziramsi` (or the bundle) is installed here (dogfooding), its `todo-readonly-guard` is live**: to
+  **When `todo@optimiziramsi-dev` is installed here (dogfooding), its `todo-readonly-guard` is live**: to
   update `.todo`, ask the user to arm the session with **"ALLOW TODO"**; unarmed deferrals go to
   `.todo-inbox`.
