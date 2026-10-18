@@ -23,8 +23,11 @@ import json
 import os
 import re
 import shlex
-import subprocess
 import sys
+import pathlib
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+import hookio  # noqa: E402
 
 
 def deny(reason: str):
@@ -70,68 +73,25 @@ def env_tokens(name: str):
     return {t.strip() for t in os.environ.get(name, "").split(",") if t.strip()}
 
 
-_DETECT_CACHE = {}
+# Branch detection lives in the shared hookio (vendored into this plugin) so git-guard and
+# code-first can never disagree about which branch is the default / protected / integration one.
+_DETECT_CACHE = hookio._DEFAULT_BRANCH   # memo per cwd; tests clear it between fixture repos
 
 
 def detected_default_branch():
-    """The repo's OWN default branch, so `main` is never assumed.
-
-    Order: origin's HEAD symref (what the remote calls default) → the first of
-    main/master/develop/trunk that actually EXISTS as a local branch → a repo-local
-    `init.defaultBranch`. Returns None when nothing resolves (not a repo, no branches yet).
-
-    Deliberately never reads GLOBAL `init.defaultBranch`: that is a property of the user's
-    machine, not of the project, and would make every repo on the box look like `main`.
-    Any git failure returns None; this must never raise inside a PreToolUse hook.
-
-    Memoized per cwd: this costs several `git` subprocesses (~30 ms), and the hook runs on
-    EVERY Bash tool call. Callers must also reach it lazily — see `check()`.
-    """
-    key = os.getcwd()
-    if key in _DETECT_CACHE:
-        return _DETECT_CACHE[key]
-    _DETECT_CACHE[key] = value = _detect_default_branch_uncached()
-    return value
-
-
-def _detect_default_branch_uncached():
-    def run(*args):
-        try:
-            return subprocess.run(("git",) + args, capture_output=True, text=True, timeout=2)
-        except Exception:
-            return None
-
-    def out(*args):
-        r = run(*args)
-        return r.stdout.strip() if r is not None and r.returncode == 0 else ""
-
-    def ok(*args):
-        r = run(*args)
-        return r is not None and r.returncode == 0
-
-    if out("rev-parse", "--is-inside-work-tree") != "true":
-        return None
-    ref = out("symbolic-ref", "--short", "refs/remotes/origin/HEAD")
-    if ref.startswith("origin/"):
-        return ref[len("origin/"):]
-    for cand in ("main", "master", "develop", "trunk"):
-        if ok("show-ref", "--verify", "--quiet", f"refs/heads/{cand}"):
-            return cand
-    return out("config", "--local", "--get", "init.defaultBranch") or None
+    """The repo's OWN default branch (see `hookio.default_branch`). Runs on EVERY Bash tool
+    call, so it is memoized per cwd and callers reach it lazily — see `check()`."""
+    return hookio.default_branch()
 
 
 def protected_branches():
-    """Protected branch names: the explicit env wins; otherwise detect this repo's default.
+    """Protected branch names: GIT_GUARD_PROTECTED_BRANCH wins, else this repo's default.
 
     Projects that work on `develop`, `trunk`, or anything else get the right answer without
     configuring anything — a hardcoded `main` would silently protect a branch they don't use
     while leaving their real integration branch open.
     """
-    env = os.environ.get("GIT_GUARD_PROTECTED_BRANCH")
-    if env is not None:
-        return {b.strip() for b in env.split(",") if b.strip()}
-    detected = detected_default_branch()
-    return {detected} if detected else {"main", "master"}
+    return hookio.protected_branches()
 
 
 def integration_branch():
@@ -142,7 +102,7 @@ def integration_branch():
     into. Without this the protected-branch rule blocks the worktree protocol's own
     `git push . HEAD:<integration>` and no slice can ever land.
     """
-    return os.environ.get("GIT_GUARD_INTEGRATION_BRANCH", "").strip()
+    return hookio.integration_branch()
 
 
 # safe soft-reset targets: nothing (defaults HEAD), HEAD~N/HEAD^-style, or a sha

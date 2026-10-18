@@ -54,6 +54,69 @@ def tool_paths(data):
     return found
 
 
+# ── settings ────────────────────────────────────────────────────────────────
+# Every plugin knob is an env var, so it is set in a settings.json `env` block at whichever scope
+# fits — `~/.claude/settings.json` (personal, every project), the project's `.claude/settings.json`
+# (shared), or its `.claude/settings.local.json` (personal, this project). Claude Code merges them
+# local > project > user before a hook ever runs. A plugin `userConfig` option of the same name
+# (exported as CLAUDE_PLUGIN_OPTION_<NAME>) is the fallback.
+
+
+def setting(name, default=""):
+    """A plugin knob: env `name`, else `CLAUDE_PLUGIN_OPTION_<name>`, else `default`."""
+    value = os.environ.get(name)
+    if value is None:
+        value = os.environ.get("CLAUDE_PLUGIN_OPTION_" + name)
+    return default if value is None else value
+
+
+def setting_int(name, default):
+    """`setting` as an int; a missing or malformed value falls back to `default`."""
+    try:
+        return int(str(setting(name, default)).strip())
+    except ValueError:
+        return default
+
+
+def project_dir(data=None):
+    """The project root: $CLAUDE_PROJECT_DIR, else the payload's cwd, else the process cwd."""
+    return (os.environ.get("CLAUDE_PROJECT_DIR") or (data or {}).get("cwd") or os.getcwd())
+
+
+def override_text(env_name, candidates, shipped, project):
+    """Text from the first of: $env_name, each project-relative candidate, the shipped file.
+
+    Returns (text, warning). The env path is explicit, so a missing one warns; a candidate that
+    does not exist is simply skipped; an override that exists but cannot be read warns and
+    returns None — a broken override never silently falls through to the default.
+    """
+    explicit = os.environ.get(env_name, "").strip()
+    chain = []
+    if explicit:
+        chain.append((explicit if os.path.isabs(explicit) else os.path.join(project, explicit), True))
+    chain += [(os.path.join(project, c), False) for c in candidates]
+    for path, must_exist in chain:
+        if not os.path.exists(path):
+            if must_exist:
+                return None, f"{env_name}={explicit} does not exist"
+            continue
+        try:
+            with open(path, encoding="utf-8") as handle:
+                return handle.read(), None
+        except OSError as e:
+            return None, f"{path} is unreadable ({e.__class__.__name__})"
+    try:
+        with open(shipped, encoding="utf-8") as handle:
+            return handle.read(), None
+    except OSError:
+        return None, f"shipped default {os.path.basename(shipped)} is unreadable"
+
+
+def render(text, values):
+    """Substitute `{{KEY}}` placeholders from `values`; unknown ones are left as written."""
+    return re.sub(r"\{\{([A-Z_]+)\}\}", lambda m: str(values.get(m.group(1), m.group(0))), text)
+
+
 # ── output ──────────────────────────────────────────────────────────────────
 
 
@@ -171,6 +234,51 @@ def worktree(cwd):
         "branch": git(cwd, "rev-parse", "--abbrev-ref", "HEAD") or "?",
         "is_linked": os.path.realpath(gitdir) != common,
     }
+
+
+_DEFAULT_BRANCH = {}
+
+
+def default_branch(cwd=None):
+    """The repo's OWN default branch, so `main` is never assumed. Memoized per cwd.
+
+    Order: origin's HEAD symref (what the remote calls default) → the first of
+    main/master/develop/trunk that exists as a local branch → a repo-local `init.defaultBranch`.
+    None when nothing resolves (not a repo, no branches yet). Deliberately never reads the
+    GLOBAL `init.defaultBranch`: that is the machine's taste, not the project's. Shared by
+    git-guard and code-first so the two can never disagree about which branch is which.
+    """
+    key = os.path.realpath(cwd or os.getcwd())
+    if key not in _DEFAULT_BRANCH:
+        _DEFAULT_BRANCH[key] = _detect_default_branch(key)
+    return _DEFAULT_BRANCH[key]
+
+
+def _detect_default_branch(cwd):
+    if git(cwd, "rev-parse", "--is-inside-work-tree") != "true":
+        return None
+    ref = git(cwd, "symbolic-ref", "--short", "refs/remotes/origin/HEAD") or ""
+    if ref.startswith("origin/"):
+        return ref[len("origin/"):]
+    for cand in ("main", "master", "develop", "trunk"):
+        if git(cwd, "show-ref", "--verify", "--quiet", f"refs/heads/{cand}") is not None:
+            return cand
+    return git(cwd, "config", "--local", "--get", "init.defaultBranch") or None
+
+
+def protected_branches(cwd=None):
+    """GIT_GUARD_PROTECTED_BRANCH (comma-separated; empty protects nothing), else the detected
+    default branch, else {main, master}."""
+    env = os.environ.get("GIT_GUARD_PROTECTED_BRANCH")
+    if env is not None:
+        return {b.strip() for b in env.split(",") if b.strip()}
+    detected = default_branch(cwd)
+    return {detected} if detected else {"main", "master"}
+
+
+def integration_branch():
+    """GIT_GUARD_INTEGRATION_BRANCH — the one branch day-to-day work lands into — or ""."""
+    return os.environ.get("GIT_GUARD_INTEGRATION_BRANCH", "").strip()
 
 
 def linked_worktree(cwd):

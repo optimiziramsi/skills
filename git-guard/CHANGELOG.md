@@ -7,3 +7,5 @@ Versions of the `git-guard@optimiziramsi` plugin. History before the split into 
 ## 0.1.0 — unreleased
 
 - Split out of the single `optimiziramsi-skills` plugin (the `git-guard` hook of its `git` topic). Enable it per project with `claude plugin install git-guard@optimiziramsi --scope project`.
+- Branch detection (default / protected / integration) moved into the shared `lib/hookio.py`, so
+  `code-first` resolves branches exactly as this guard does. No behavior change.

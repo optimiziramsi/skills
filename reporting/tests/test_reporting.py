@@ -14,6 +14,7 @@ from selftest import Check, hook, invoke, load_module  # noqa: E402
 
 check = Check()
 PULSE = hook("hooks/contract-pulse.py")
+CONTRACT = hook("hooks/contract.py")
 report_guard = load_module(hook("hooks/report-guard.py"), "report_guard")
 
 
@@ -61,6 +62,33 @@ try:
           "additionalContext" in fire(f"{sid}-f", times=10, env={"REPORT_PULSE_EVERY": "junk"}))
     check("counters are per session",
           fire(f"{sid}-g", times=5) == "" and fire(f"{sid}-h", times=5) == "")
+    check("REPORT_PULSE_TEXT replaces the one-liner",
+          "say less" in fire(f"{sid}-i", times=10, env={"REPORT_PULSE_TEXT": "say less"}))
+
+    # ── the injected contract and its per-repo override chain ───────────────
+    project = os.path.join(tmp, "proj")
+    os.makedirs(os.path.join(project, ".agent"))
+    os.makedirs(os.path.join(project, ".claude"))
+
+    def contract(env=None):
+        return invoke(CONTRACT, {"cwd": project}, env={"CLAUDE_PROJECT_DIR": project, **(env or {})})[1]
+
+    check("no override → the shipped contract", "OUTPUT CONTRACT" in contract())
+    pathlib.Path(project, ".claude", "output-contract.md").write_text("claude-dir contract\n")
+    check(".claude/output-contract.md overrides the shipped one", contract().strip() == "claude-dir contract")
+    pathlib.Path(project, ".agent", "output-contract.md").write_text("agent-dir contract\n")
+    check(".agent/output-contract.md wins over .claude/", contract().strip() == "agent-dir contract")
+    pathlib.Path(project, "mine.md").write_text("explicit contract\n")
+    check("REPORT_CONTRACT_FILE wins over both",
+          contract({"REPORT_CONTRACT_FILE": "mine.md"}).strip() == "explicit contract")
+    check("a missing REPORT_CONTRACT_FILE is a loud DISARM, not a silent fallback",
+          "DISARMED" in contract({"REPORT_CONTRACT_FILE": "nope.md"}))
+    unreadable = pathlib.Path(project, ".agent", "output-contract.md")
+    unreadable.chmod(0)
+    if not os.access(unreadable, os.R_OK):   # root ignores modes; skip there
+        check("an unreadable override is a loud DISARM", "DISARMED" in contract())
+    unreadable.chmod(0o644)
+    check("REPORT_GUARD_OFF=1 silences the contract", contract({"REPORT_GUARD_OFF": "1"}) == "")
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

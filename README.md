@@ -77,7 +77,14 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 
 ## Per-concern switches (env)
 
-Picking plugins is the coarse control; these are the fine one. Guards self-gate on project config (patterns fire only with a registry, meta-lint only with
+Picking plugins is the coarse control; these are the fine one. **Every knob is an env var**, so it
+goes in a settings.json `env` block at the scope that fits — `~/.claude/settings.json` (personal,
+every project), the project's `.claude/settings.json` (shared with the team), or its
+`.claude/settings.local.json` (personal, this project only); Claude Code merges them local >
+project > user. Hooks read their own process env, so an inline `FOO=1 git …` prefix on a command
+does not reach them. Where a plugin's text can be replaced per repo (the `reporting` contract, the
+`code-first` contract) the override is a file in the project, looked up in `.agent/` then
+`.claude/`. Guards self-gate on project config (patterns fire only with a registry, meta-lint only with
 `.agent/meta-lint.json`, worktree guards only in a linked worktree, the `.todo` and handoff nudges
 only where those files exist). **Everything else has a switch** — every shipped hook honors one, so
 no concern is stuck on:

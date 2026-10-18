@@ -4,7 +4,7 @@
 The UserPromptSubmit reminder decays over a long agentic turn; this keeps it in force for
 almost no tokens (fires 1-in-REPORT_PULSE_EVERY).
 
-Config: REPORT_PULSE_EVERY (default 10) · off: REPORT_GUARD_OFF=1 (disables the pulse too)
+Config: REPORT_PULSE_EVERY (default 10), REPORT_PULSE_TEXT (replaces the one-liner) · off: REPORT_GUARD_OFF=1 (disables the pulse too)
 """
 import json
 import os
@@ -36,7 +36,8 @@ def main():
     counter.write_text(str(count))
     if count % every == 0:
         print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PostToolUse", "additionalContext": REMINDER}}))
+            "hookEventName": "PostToolUse",
+            "additionalContext": hookio.setting("REPORT_PULSE_TEXT", "") or REMINDER}}))
 
 
 hookio.guard(main)
