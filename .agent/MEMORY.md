@@ -164,8 +164,8 @@ the design (CC docs + CLI 2.1.278, 2026-10-18):
   shared values must stay `env` in `.claude/settings.json`; personal ones in `settings.local.json`.
 - **Hooks get no context-usage field**; the transcript's assistant `message.usage` does carry it
   (input + cache_read + cache_creation). Hooks can nudge but cannot run `/compact` / `/clear`.
-- **The directory registration here has `autoUpdate: true`** — a version-bumped commit on the
-  checked-out branch reached the machine's user-scope install within ~2 minutes (observed: the
-  split commit auto-updated `optimiziramsi-skills` to the 0.1.0-dev.1 bundle, whose dependencies
-  were NOT auto-installed → `dependency-unsatisfied`, no components load). Auto-update does not
-  install new dependencies.
+- **The directory registration here has `autoUpdate: true`, and it reads the WORKING TREE** — a
+  version bump reaches the machine's installs within minutes, committed or not (observed: the
+  manifests of the split, still uncommitted at 14:01, auto-updated `optimiziramsi-skills` to the
+  0.1.0-dev.1 bundle five minutes before the split commit). Auto-update does not install new
+  dependencies → `dependency-unsatisfied`, no components load.

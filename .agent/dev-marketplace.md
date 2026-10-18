@@ -35,9 +35,9 @@ production copy.
   at all — it validates the source and rewrites `lastUpdated`, nothing more.
 - **Plugins bind at session start.** Restart CCD after a branch switch; a resumed session keeps the
   old binding.
-- **`autoUpdate` is on for this registration** (`known_marketplaces.json`), so a version bump
-  committed on the checked-out branch reaches every install on the machine within minutes — no
-  `claude plugin update` needed — and binds at the next session start. It updates installed
+- **`autoUpdate` is on for this registration** (`known_marketplaces.json`), so a version bump in
+  the checked-out **working tree — committed or not** — reaches every install on the machine
+  within minutes, no `claude plugin update` needed, and binds at the next session start. It updates installed
   plugins only: a plugin the update newly depends on is not installed (observed 2026-10-18).
 
 ## Consequences worth knowing before you leave `develop` checked out for days
@@ -45,7 +45,8 @@ production copy.
 - **The working tree is what the marketplace reads — but not what an installed plugin runs.**
   The branch you leave checked out decides which `marketplace.json` and which version the
   marketplace advertises; the installed plugin runs from its version-keyed cache copy. So
-  uncommitted edits here are *not* live anywhere until you bump + `claude plugin update` + restart.
+  an edit here is live nowhere until its plugin's version moves — and then auto-update installs
+  the working tree as-is, committed or not; it binds at the next session start.
 - **`main` has no workbench.** Checking it out removes `.agent/`, `.todo*`, `CLAUDE.md`,
   `.claude/`, `tests.sh`, `release.sh`, `vendor.sh`, root `lib/` from disk — they are simply not tracked there. They come
   back on `git checkout develop`. Gitignored things (`.agent/loop/`, `.claude/worktrees/`,
