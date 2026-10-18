@@ -37,7 +37,8 @@ bump it to `0.1.1-dev.1` (tests.sh § 8 enforces).
 - The user's review comments on the split and the three new plugins.
 - Live behavior unverified in real sessions: `context` thresholds (it did fire at 50% and 60%
   here), `upkeep` notice after a version bump, `code-first` Stop guard on inline code.
-- `hub` runs its own `hub-session.sh` beside the `session` plugin — may duplicate.
+- `hub-session.sh` checked: additive only (handoff focus text, ../gitops state), no overlap with
+  `session-start`; its header comment still says `session@opsi` (hub's file, user's to fix).
 - Looper/grinder live test (USER, plain terminal; `.todo`).
 
 ## Suggested next topic
