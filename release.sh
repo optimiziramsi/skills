@@ -31,6 +31,12 @@ cd "$(dirname "$0")"
 DEV_BRANCH=develop
 PUB_BRANCH=main
 
+# The marketplace is named per branch: develop registers locally as the dev marketplace, so a
+# machine can carry it beside the published one (names key marketplaces globally); the release
+# renames it in the published tree.
+DEV_MARKETPLACE=optimiziramsi-dev
+PUB_MARKETPLACE=optimiziramsi
+
 # Development-only paths — present on $DEV_BRANCH, never on $PUB_BRANCH. Everything else is
 # SHIPPED content. (Root lib/ is the source vendor.sh copies into each plugin — the copies ship.)
 DEV_ONLY=(.agent .claude .todo .todo-inbox CLAUDE.md tests.sh release.sh vendor.sh lib .gitignore)
@@ -53,6 +59,8 @@ HEAD_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [ "$HEAD_BRANCH" = "$DEV_BRANCH" ] || die "run from $DEV_BRANCH (on $HEAD_BRANCH)"
 [ -z "$(git status --porcelain)" ] || die "working tree is dirty — commit first"
 git rev-parse --verify --quiet "$PUB_BRANCH" >/dev/null || die "no local $PUB_BRANCH branch"
+MP_NAME=$(python3 -c "import json; print(json.load(open('.claude-plugin/marketplace.json'))['name'])")
+[ "$MP_NAME" = "$DEV_MARKETPLACE" ] || die "marketplace.json is named '$MP_NAME' on $DEV_BRANCH — it must be '$DEV_MARKETPLACE'"
 
 # Which plugins ship: every <plugin>/ whose tree differs from $PUB_BRANCH's (or is new there).
 # One line per plugin: "<name> <version> <version on $PUB_BRANCH, or ->".
@@ -133,7 +141,17 @@ git worktree add --quiet -b "$TMP_BRANCH" "$WORKTREE" "$PUB_BRANCH"
     rm -rf -- "$p"
   done
 
-  # 4. a .gitignore that matches what the public tree can actually accumulate
+  # 4. the published marketplace name
+  python3 - "$PUB_MARKETPLACE" <<'PY'
+import json, sys
+p = '.claude-plugin/marketplace.json'
+m = json.load(open(p))
+m['name'] = sys.argv[1]
+open(p, 'w').write(json.dumps(m, indent=2, ensure_ascii=False) + '\n')
+PY
+  git add .claude-plugin/marketplace.json
+
+  # 5. a .gitignore that matches what the public tree can actually accumulate
   cat > .gitignore <<'IGNORE'
 __pycache__/
 *.pyc

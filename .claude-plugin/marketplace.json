@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "optimiziramsi",
+  "name": "optimiziramsi-dev",
   "description": "optimiziramsi's Claude Code toolkit — one plugin per concern (git safety, commit style, reporting, sessions, lessons, instructions, guards, review, planning, todo, runners, patterns, worktrees, setup …); each project enables the ones it wants.",
   "owner": {
     "name": "optimiziramsi",

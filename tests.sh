@@ -36,6 +36,9 @@ note "=== 2. marketplace <-> plugins agree ==="
 if out=$(python3 - <<'EOF'
 import glob, json, os, sys
 bad = []
+mp_name = json.load(open('.claude-plugin/marketplace.json')).get('name')
+if mp_name != 'optimiziramsi-dev':
+    bad.append(f"marketplace.json is named '{mp_name}' — the working tree carries 'optimiziramsi-dev' (release.sh publishes it as 'optimiziramsi')")
 if os.path.exists('.claude-plugin/plugin.json'):
     bad.append("the repo root is a marketplace only — .claude-plugin/plugin.json must not exist")
 dirs = {os.path.dirname(os.path.dirname(p)) for p in glob.glob('*/.claude-plugin/plugin.json')}

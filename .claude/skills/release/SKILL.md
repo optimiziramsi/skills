@@ -58,6 +58,7 @@ and nothing else; an unchanged plugin keeps its version.
 
 ## Testing before you release
 
-Never cut a release to try something. The machine's only marketplace is sourced from this
-checkout's **folder**, so whatever branch is checked out is what every project here loads —
-`.agent/dev-marketplace.md` has the model and its consequences.
+Never cut a release to try something. This checkout is the `optimiziramsi-dev` marketplace:
+projects that enable `<plugin>@optimiziramsi-dev` run the working tree, `@optimiziramsi` projects
+run the release — [`.agent/dev-marketplace.md`](../../../.agent/dev-marketplace.md) has the model.
+`release.sh` renames the marketplace to `optimiziramsi` in the published tree.
