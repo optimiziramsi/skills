@@ -1,12 +1,11 @@
 # Handoff
 
 _Last updated:_ 2026-10-18 — session 13: **marketplace split into 21 per-concern plugins, all
-built on `develop`, unreleased** ([plan](plan/261018_135850_plugin-split.md)).
+released locally as 0.1.0** (`main` ebe981a, tags `<plugin>--v0.1.0`; push is the user's) ([plan](plan/261018_135850_plugin-split.md)).
 
-`develop`: 21 plugins at `0.1.0-dev.N` — the user's 18 + `code-first`, `context`, `upkeep`.
+`develop` = `main`: 21 plugins at `0.1.0` — the user's 18 + `code-first`, `context`, `upkeep`.
 The old `optimiziramsi-skills` bundle is gone. The working tree's marketplace is
-`optimiziramsi-dev`; `release.sh` publishes it as `optimiziramsi`. `main` still ships the
-single plugin 0.0.13 — nothing released or pushed.
+`optimiziramsi-dev`; `release.sh` publishes it as `optimiziramsi`.
 
 ## Machine state
 
@@ -27,7 +26,7 @@ per-project installs once `main` is released + pushed (ADOPTION.md § Migrating)
 
 ## Next up
 
-1. The user reviews the work; then the first release (0.1.0 for every plugin) — `release` skill.
+1. The user pushes `main` + the 21 tags + `develop`, then comes back with review comments.
 2. Live-test the new hooks in a real session: `context` (needs a long session), `upkeep`
    (after a bump), `code-first` Stop guard.
 3. Still open from before: the looper/grinder live test (USER, plain terminal; `.todo`).
