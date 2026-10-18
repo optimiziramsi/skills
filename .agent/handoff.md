@@ -1,38 +1,46 @@
 # Handoff
 
-_Last updated:_ 2026-10-18 — session 13: **marketplace split into 21 per-concern plugins, all
-released locally as 0.1.0** (`main` ebe981a, tags `<plugin>--v0.1.0`; push is the user's) ([plan](plan/261018_135850_plugin-split.md)).
+_Last updated:_ 2026-10-18 — session 13: split into 21 plugins, 0.1.0 released + pushed, installed per repo.
 
-`develop` = `main`: 21 plugins at `0.1.0` — the user's 18 + `code-first`, `context`, `upkeep`.
-The old `optimiziramsi-skills` bundle is gone. The working tree's marketplace is
-`optimiziramsi-dev`; `release.sh` publishes it as `optimiziramsi`.
+## Where we left off
 
-## Machine state
+`develop` = `main` = 0.1.0 for all 21 plugins; `main`, `develop` and the 21 `<plugin>--v0.1.0`
+tags are on GitHub. The machine-wide install is gone: every repo now installs its own set at
+project scope from `optimiziramsi` (GitHub); this repo dogfoods all 21 from `optimiziramsi-dev`
+(this checkout). The user is about to review the work and come back with comments.
 
-See [dev-marketplace.md](dev-marketplace.md). This repo dogfoods `<plugin>@optimiziramsi-dev`
-at project scope. Other projects on the machine: the old `optimiziramsi` registration (this
-checkout) is removed; they need `claude plugin marketplace add optimiziramsi/skills` and
-per-project installs once `main` is released + pushed (ADOPTION.md § Migrating).
+## This session's arc
 
-## What a cold session can't re-derive
+- Split the single plugin into the user's 18 groups + new `code-first`, `context`, `upkeep`
+  ([plan](plan/261018_135850_plugin-split.md), decisions log there).
+- Shared code vendored from root `lib/` by `./vendor.sh`; branch detection + `hookio.setting`
+  (env-only knobs) + override-file chain live in `hookio`.
+- `reporting` contract and pulse text overridable per repo; `grind --status` no longer runs `done-check`.
+- Bundle dropped; working-tree marketplace is `optimiziramsi-dev`, `release.sh` publishes `optimiziramsi`.
+- Repo-local `skills-maintenance` skill added.
+- Machine cleanup: old global installs, caches, data dirs and failed clones removed.
 
-- Shared code is **vendored** (`./vendor.sh`; root `lib/` is the source) — local-path
-  marketplaces drop symlinks leaving a plugin. `runners/vendor/worktree-guards/` mirrors those
-  guards for the runners' confinement. Branch detection (default/protected/integration) lives in
-  `hookio` so `git-guard` and `code-first` agree.
-- No inter-plugin `dependencies` on purpose. Every knob is env via `hookio.setting`.
-- `autoUpdate` installs the WORKING TREE of this checkout into dev installs, committed or not.
-- `release.sh` ships every plugin whose tree differs from `main`, tags `<plugin>--v<version>`.
+## Per-repo installs (uncommitted in each repo — the user's to commit)
 
-## Next up
+`.claude/settings.json` gained `enabledPlugins` in: kupimkuham, app-example, games, hub,
+homelab, ai-shopping-list-app (rabbit-run-single-instance shows clean — check it was committed).
+`commit-commands@claude-plugins-official` was removed from games (project scope);
+ai-shopping-list-app already had it disabled. Plugin sets per repo: see `claude plugin list`.
 
-1. The user pushes `main` + the 21 tags + `develop`, then comes back with review comments.
-2. Live-test the new hooks in a real session: `context` (needs a long session), `upkeep`
-   (after a bump), `code-first` Stop guard.
-3. Still open from before: the looper/grinder live test (USER, plain terminal; `.todo`).
+## Build state
 
-## Standing context
+`./tests.sh` ALL GREEN at 381317f. Every plugin is at 0.1.0 — the next edit to any plugin must
+bump it to `0.1.1-dev.1` (tests.sh § 8 enforces).
 
-Done-gate `./tests.sh`. Adding/changing components: the repo-local `skills-maintenance` skill.
-`.todo`: plain bullets, `(done)` prefix; edits need "ALLOW TODO" while the todo plugin's guard is
-live. Commits single-line. History append-only. Tests live in `<plugin>/tests/*.py`.
+## Outstanding
+
+- The user's review comments on the split and the three new plugins.
+- Live behavior unverified in real sessions: `context` thresholds (it did fire at 50% and 60%
+  here), `upkeep` notice after a version bump, `code-first` Stop guard on inline code.
+- `hub` runs its own `hub-session.sh` beside the `session` plugin — may duplicate.
+- Looper/grinder live test (USER, plain terminal; `.todo`).
+
+## Suggested next topic
+
+Work through the user's review comments. Alternatives: live-test `upkeep` by bumping one plugin
+in a dev install; check `hub-session.sh` vs `session-start` overlap.
