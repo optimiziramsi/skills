@@ -26,6 +26,12 @@
       "category": "workflow"
     },
     {
+      "name": "code-first",
+      "source": "./code-first",
+      "description": "Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge.",
+      "category": "workflow"
+    },
+    {
       "name": "rename",
       "source": "./rename",
       "description": "Move a file and cascade every reference to it across docs, skills and config.",

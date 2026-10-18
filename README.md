@@ -51,7 +51,7 @@ Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 
 ## Plugins
 
-Eighteen plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
+Nineteen plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
 together: `worktree` + `worktree-guards`; `todo` + `planning`.
 
 | Plugin | Provides |
@@ -59,6 +59,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`git-guard`](git-guard/README.md) | Git safety net — a hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards of uncommitted work. |
 | [`hotfix`](hotfix/README.md) | Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch. |
 | [`commit`](commit/README.md) | House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge. |
+| [`code-first`](code-first/README.md) | Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge. |
 | [`rename`](rename/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
 | [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message. |
 | [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot. |
@@ -95,6 +96,7 @@ no concern is stuck on:
 | `COMMIT_FORMAT_OFF=1` | the single-line commit-message guard |
 | `STOP_NUDGE_OFF=1` | the end-of-session commit nudge (`COMMIT_NUDGE_EXTRA_DIRS` widens it) |
 | `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_PULSE_EVERY`, `REPORT_GUARD_MAX_LINES` tune it |
+| `CODE_FIRST_OFF=1` | the whole code-first plugin (`CODE_FIRST_GUARD_OFF=1` drops only its Stop guard on inline code) |
 | `SESSION_START_OFF=1` | the SessionStart state snapshot + freshness nudges |
 | `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
 | `FLOW_LINK_OFF=1` | re-stamping the runner-link pointer (`.agent/bin/{loop,grind}` then keep their current target) |
