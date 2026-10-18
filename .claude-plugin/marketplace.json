@@ -126,6 +126,12 @@
       "source": "./setup",
       "description": "One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md.",
       "category": "workflow"
+    },
+    {
+      "name": "upkeep",
+      "source": "./upkeep",
+      "description": "Plugin upkeep — a session-start notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins.",
+      "category": "workflow"
     }
   ]
 }

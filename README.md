@@ -51,7 +51,7 @@ Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 
 ## Plugins
 
-Twenty plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
+Twenty-one plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
 together: `worktree` + `worktree-guards`; `todo` + `planning`.
 
 | Plugin | Provides |
@@ -76,6 +76,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`worktree`](worktree/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK. Pairs with worktree-guards. |
 | [`worktree-guards`](worktree-guards/README.md) | Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree. |
 | [`setup`](setup/README.md) | One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md. |
+| [`upkeep`](upkeep/README.md) | Plugin upkeep — a session-start notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins. |
 
 ## Per-concern switches (env)
 
@@ -100,6 +101,7 @@ no concern is stuck on:
 | `CODE_FIRST_OFF=1` | the whole code-first plugin (`CODE_FIRST_GUARD_OFF=1` drops only its Stop guard on inline code) |
 | `SESSION_START_OFF=1` | the SessionStart state snapshot + freshness nudges |
 | `CONTEXT_NUDGE_OFF=1` | the context-window nudges (`CONTEXT_WINDOW_TOKENS`, `CONTEXT_NUDGE_AT`, `CONTEXT_SNOOZE_PCT` tune them) |
+| `UPKEEP_OFF=1` | the plugin-update / new-plugin notice and its background refresh (`UPKEEP_REFRESH_HOURS=0` keeps the notice, drops the refresh) |
 | `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
 | `FLOW_LINK_OFF=1` | re-stamping the runner-link pointer (`.agent/bin/{loop,grind}` then keep their current target) |
 | `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard (`FILE_GUARD_EXTRA` adds prefixes) |
