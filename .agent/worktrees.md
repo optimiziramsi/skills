@@ -20,5 +20,3 @@ _none_
 - `feature/worktree-land-wiring` (`.claude/worktrees/worktree-skill-merge-c479b2`) —
   worktree-land-without-checkout. Also retire the superseded `feature/worktree-skill-merge-c479b2`
   branch (`ed82d7b`; its content was cherry-picked onto this one).
-- `feature/relay-watch-help-phrases-416fb8` (`.claude/worktrees/relay-watch-help-phrases-416fb8`) —
-  relay-watch-help-phrases (landed `f0afa14`).
