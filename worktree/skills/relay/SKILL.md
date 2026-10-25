@@ -49,7 +49,8 @@ for everything in flight — never a list of the sub chats' pending questions.
    say so in one line; the human picks the model in the app. **Run at the highest effort the list
    allows**: a sub chat can be started only at or below the primary's own model/effort.
 3. **Write `.agent/relay.md`** in the shared worktree (create or resume): the topic, `<relay-branch>`,
-   `<integration>`, a `## Topics` table — `slug · session · branch · status · files`, and
+   `<integration>`, a `## Topics` table — `slug · session · branch · status · files` (status:
+   `proposed` / `in flight` / `landed` / `done`), and
    `## Watcher` (state dir, armed-until). Stage it like the human's edits; it is never committed
    and never landed — it dies with the branch.
 4. **Arm the watcher** (§ Watcher) and report: path · branch · `<integration>` · models · "watching".
@@ -149,12 +150,20 @@ parent's branch.
 `start_session` — `context: "fresh"`, `use_worktree: true`, **`source_branch: <integration>`**,
 `branch_name: <slug>`, `title: "Relay: <slug>"`, `name: <slug>` (≤ 24 chars, truncate), `model` +
 `effort` = the first entry of `RELAY_SUB_MODELS` this chat may grant, `prompt` = the brief,
-`background` = the relay context (topic, shared branch, what already landed). If the app clamped the
-model or effort (the result says, or the sub chat's first message shows it), call
-`set_session_model` / `set_session_effort` on the new session — the human confirms. Then: **annotate**
-every file the topic covers — one line beside the comments, `// addressed in <slug> worktree chat`
-(the comment syntax of that file) — update `.agent/relay.md` (`in flight`), stage, report
-`<slug> → <session link>` in one line.
+`background` = the relay context (topic, shared branch, what already landed). **A card
+(`own_initiative`) ignores `branch_name` and `source_branch`**: the app names the worktree and
+branch itself and cuts from this session's base — which is `<integration>` only because the primary
+was itself cut off it (another reason the brief names `<integration>` explicitly). Take the real
+branch and worktree from the linked-sessions note once it starts; the slug lives in the title.
+If the app clamped the model or effort (the result says, or the sub chat's first message shows it),
+call `set_session_model` / `set_session_effort` on the new session — the human confirms.
+
+**Record state at every step** in `.agent/relay.md` — `proposed` (card up, not started) →
+`in flight` (session running; add its id, branch, worktree) → `landed` → `done`. On `in flight`,
+**annotate** every file the topic covers — one line beside the comments, `// addressed in <slug>
+worktree chat` (the comment syntax of that file) — stage, and report `<slug> → <session link>` in
+one line. A proposed card that the human never starts stays `proposed`; a second TRIGGER on the
+same file is not a second card — point at the existing one.
 
 ### Hands off
 

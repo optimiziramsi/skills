@@ -7,7 +7,8 @@
 #                               NOW YOU, DO IT, GO AHEAD, YOUR TURN, SCHEDULED, PICK IT UP; case-insensitive)
 #   QUIET <file>: <n> new comment line(s), untouched <age>s — candidate for pickup
 #                               a file with new comment lines nobody has touched for QUIET_SECS
-# Each event fires once (state dir keeps what was seen); a changed comment set fires again.
+# Each event fires once (state dir keeps what was seen); a changed comment set fires again. A file
+# whose TRIGGER fired is not also QUIET-reported for the same comment set.
 # Skips `.agent/`, `.todo*`, `*.md`, and the primary's own `// addressed in <slug> worktree` notes.
 #
 #   relay-watch <worktree> <state-dir> [quiet-secs=600] [poll-secs=10]   loop — run it via Monitor
@@ -40,7 +41,10 @@ tick() {  # $1 worktree, $2 state dir, $3 quiet secs
   scan "$wt" "$state/cur"
   grep -iE "$TRIGGER" "$state/cur" | while IFS=$'\t' read -r f s; do
     key=$(printf '%s\t%s' "$f" "$s" | digest)
-    grep -q "$key" "$state/seen_trigger" || { echo "TRIGGER $f: $s"; echo "$key" >> "$state/seen_trigger"; }
+    grep -q "$key" "$state/seen_trigger" && continue
+    echo "TRIGGER $f: $s"; echo "$key" >> "$state/seen_trigger"
+    # a handed-over file is spoken for: mute QUIET for its current comment set
+    grep -F "$(printf '%s\t' "$f")" "$state/cur" | digest >> "$state/seen_quiet"
   done
   now=$(date +%s)
   cut -f1 "$state/cur" | sort -u | while read -r f; do
@@ -73,6 +77,8 @@ selftest() {
   grep -q '^TRIGGER x.py: # rename this, RELAY$' <<<"$out" && pass "trigger fires" || fail "trigger fires" "$out"
   out=$("$0" --once "$wt" "$st" 600)
   [ -z "$out" ] && pass "trigger fires once" || fail "trigger fires once" "$out"
+  out=$("$0" --once "$wt" "$st" 0)
+  [ -z "$out" ] && pass "no QUIET for a file already handed over" || fail "no QUIET for a file already handed over" "$out"
   # 2. a plain comment is quiet-reported only after QUIET_SECS, once per content
   printf 'a = 1\n# rename this, RELAY\n# and drop b\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 600)
