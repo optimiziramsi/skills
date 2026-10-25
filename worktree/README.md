@@ -96,8 +96,9 @@ nowhere; the push then fast-forwards with no config at all.*
 | `RELAY_PRIMARY_MODELS` | `claude-opus-4-8@max,claude-fable-5-1@high,claude-opus-5-5@xhigh,claude-opus-5-5@max` | the primary's preference list (reported; the human picks the model) |
 | `RELAY_QUIET_SECS` | `600` | seconds a comment file must stay untouched before the primary asks about it |
 
-A sub chat can only be started at or below the primary's own model and effort — run the primary
-at the top of its list.
+A sub chat starts at or below the primary's own model and effort, silently clamped; the skill then
+lifts it with `set_session_effort` / `set_session_model` (one confirmation by the human per sub
+chat). Running the primary at the top of its list avoids the confirmations.
 
 ## Enable
 

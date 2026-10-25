@@ -47,7 +47,8 @@ for everything in flight — never a list of the sub chats' pending questions.
    `RELAY_SUB_MODELS` for sub chats — both `model@effort` lists, first available wins (`echo
    $RELAY_SUB_MODELS`; defaults in § Settings). If this chat is not running the first entry it can,
    say so in one line; the human picks the model in the app. **Run at the highest effort the list
-   allows**: a sub chat can be started only at or below the primary's own model/effort.
+   allows**: a sub chat starts at or below the primary's own model/effort, and lifting it afterwards
+   (§ Spawn) costs the human one confirmation per sub chat.
 3. **Write `.agent/relay.md`** in the shared worktree (create or resume): the topic, `<relay-branch>`,
    `<integration>`, a `## Topics` table — `slug · session · branch · status · files` (status:
    `proposed` / `in flight` / `landed` / `done`), and
@@ -155,8 +156,13 @@ parent's branch.
 branch itself and cuts from this session's base — which is `<integration>` only because the primary
 was itself cut off it (another reason the brief names `<integration>` explicitly). Take the real
 branch and worktree from the linked-sessions note once it starts; the slug lives in the title.
-If the app clamped the model or effort (the result says, or the sub chat's first message shows it),
-call `set_session_model` / `set_session_effort` on the new session — the human confirms.
+**The spawn clamps silently**: `start_session` grants at most the primary's own model family and
+effort, and its result does not say when it clamped (a Fable-HIGH primary asking for Opus-MAX gets
+Opus-HIGH). So **right after every spawn, lift the sub chat explicitly**: read your own effort
+(`echo $CLAUDE_EFFORT`) and model (your system prompt); whenever the entry you want is above either,
+call `set_session_effort` / `set_session_model` on the new session id at once — the app asks the
+human to confirm, and the level applies from the sub chat's next turn (its first turn is only the
+gate + claim row). The result names the level that will apply — record it in `.agent/relay.md`.
 
 **Record state at every step** in `.agent/relay.md` — `proposed` (card up, not started) →
 `in flight` (session running; add its id, branch, worktree) → `landed` → `done`. On `in flight`,
