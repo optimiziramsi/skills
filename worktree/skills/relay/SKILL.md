@@ -54,7 +54,12 @@ for everything in flight — never a list of the sub chats' pending questions.
    `proposed` / `in flight` / `landed` / `done`), and
    `## Watcher` (state dir, armed-until). Stage it like the human's edits; it is never committed
    and never landed — it dies with the branch.
-4. **Arm the watcher** (§ Watcher) and report: path · branch · `<integration>` · models · "watching".
+4. **Check the landing wiring once**: `git worktree list` — if `<integration>` is checked out in the
+   **main checkout**, every sub chat's land is refused the moment that checkout is dirty, and the
+   primary can do nothing about it but report. Say so in one line (the fix is the worktree skill's
+   one-time `_integration` worktree); a sub chat blocked on a dirty `<integration>` checkout is a
+   one-line report to the human, never a reason to touch that tree.
+5. **Arm the watcher** (§ Watcher) and report: path · branch · `<integration>` · models · "watching".
 
 ## The shared branch — staged, never committed
 
@@ -180,7 +185,11 @@ brief item here**: then `SendMessage` the correction to the sub chat **the momen
 
 ## After each land — the primary's duties
 
-A sub chat's land note (or the human saying "X landed") triggers, in order:
+A sub chat's land note triggers the duties below — **but the note may never arrive**: after several
+event-driven turns with no human message the app queues notes for the primary's next turn. So the
+human's "X landed" is the fallback trigger, and **on every turn of yours** (a tick, a note, a human
+message) first run `git log --oneline <last-seen>..<integration>` — a topic's land you were not
+told about is handled the same way. Then, in order:
 
 1. **Rebase** the shared branch (§ Rebase trick). Verify staged-and-uncommitted afterwards.
 2. **Strip** every comment of the human's that the topic addressed, and the primary's own
@@ -211,6 +220,8 @@ worth keeping (it is reference only), and tell the human: archive this session a
 
 - **Never commit the human's edits to "carry" them** — it kills their IDE review view. The
   temp-commit → rebase → soft-reset trick is the only exception and must end re-staged.
+- **Land notes can be queued**, not delivered — check `<integration>`'s log on every turn, and
+  accept the human's "X landed".
 - **The app names the shared branch** (`feature/<slug>-<hash>`), not the skill — the gate checks
   what the branch is *not*, never its spelling.
 - **Event turns cannot start sessions** — a Monitor tick or a sub chat's note → card, never a
