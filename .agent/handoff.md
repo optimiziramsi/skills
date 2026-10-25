@@ -1,12 +1,14 @@
 # Handoff
 
-_Last updated:_ 2026-10-26 — session 14: `relay` skill + `model-guard` hook added, live-tested end to end.
+_Last updated:_ 2026-10-26 — session 14: `relay` skill + `model-guard` hook added, live-tested, released as worktree 0.1.1 + guards 0.1.1.
 
 ## Where we left off
 
-`develop` ahead of `main` (0.1.0) with two plugins on a dev series: `worktree` 0.1.1-dev.6
-(`relay` skill, `/relay`, `bin/relay-watch`) and `guards` 0.1.1-dev.3 (`model-guard` hook,
-`MODEL_GUARD_TAIL_KB`). `./tests.sh` ALL GREEN at caa4527. Nothing pushed.
+Released locally: `main` @ f9b20d4 = worktree 0.1.1 (`relay` skill, `/relay`, `bin/relay-watch`) +
+guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1`, `guards--v0.1.1`.
+`develop` @ aece961, `./tests.sh` ALL GREEN. **Remote sync pending (user):** publish `main`, both
+tags and `develop` to origin — `release.sh` printed the exact command. The user will review the
+released version and come back with comments.
 
 ## This session's arc
 
@@ -38,4 +40,5 @@ _Last updated:_ 2026-10-26 — session 14: `relay` skill + `model-guard` hook ad
 
 ## Suggested next topic
 
-Cut 0.1.1 for `worktree` + `guards` once the user has reviewed the relay skill text in their IDE.
+Work through the user's comments on relay 0.1.1; then a second live relay in a real project with an
+Opus 4.8 MAX primary (the log-check-every-turn and effort-lift text has not run live yet).
