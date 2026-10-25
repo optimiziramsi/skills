@@ -6,7 +6,7 @@ The `worktree` skill is the protocol; this file is only the board.
 
 | # | Status | Branch | Worktree | Brief |
 |---|---|---|---|---|
-| _none_ | | | | |
+| relay-model-guard-tail-knob | active | `feature/mystifying-meninsky-53e3d5` | `.claude/worktrees/mystifying-meninsky-53e3d5` | Make model-guard's transcript tail size a knob: `MODEL_GUARD_TAIL_KB` (via `hookio.setting_int`, default 512) controls the seek in `transcript_model`. Cover default/custom/malformed in tests; name the knob in guards README, root switches row, guards CHANGELOG; bump guards to 0.1.1-dev.3. touches: `guards/` only + root `README.md` switches row. |
 
 ## Open
 
