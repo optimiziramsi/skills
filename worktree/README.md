@@ -23,7 +23,7 @@ together with [`worktree-guards`](../worktree-guards), which keeps the edits ins
   event: `/relay`, or relay-mode triggers ("relay mode", "pick up my comments", "start topic X")
   purpose:
     **Pair-programming by worktree.** The human and the primary chat share ONE worktree on a
-    `relay/<topic>` branch cut off the integration branch; the human edits and leaves comments
+    branch cut off the integration branch (any name the app gives it); the human edits and leaves comments
     there (staged, never committed — reference only, never landed). The primary turns comments
     into topics, spawns one `worktree`-skill sub chat per topic (fresh session, own worktree off
     the integration branch, title `Relay: <slug>`, self-contained brief with the project's hard

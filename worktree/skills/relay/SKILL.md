@@ -38,17 +38,18 @@ for everything in flight — never a list of the sub chats' pending questions.
 `/relay` loaded → this chat is the primary. Before anything else:
 
 1. **Prove the shared worktree**: `pwd` under the worktrees dir (never the main checkout);
-   `git rev-parse --abbrev-ref HEAD` = a `relay/<topic>` branch (not `<integration>`, not
-   `<protected>`); cut off `<integration>` (fork-point compare as in the worktree skill). Mismatch
-   → HARD STOP, hand the human a restart prompt (new session, worktree ON, base `<integration>`,
-   branch `relay/<topic>`).
+   `git rev-parse --abbrev-ref HEAD` = this worktree's own branch — **any name the app gave it**
+   (typically `feature/relay-<topic>-<hash>`; the app names worktree branches, never rename it) —
+   that is neither `<integration>` nor `<protected>`; cut off `<integration>` (fork-point compare
+   as in the worktree skill). That branch is **`<relay-branch>`** below. Mismatch → HARD STOP,
+   hand the human a restart prompt (new session, worktree ON, base `<integration>`).
 2. **Check the models**: `RELAY_PRIMARY_MODELS` is the preference list for *this* chat,
    `RELAY_SUB_MODELS` for sub chats — both `model@effort` lists, first available wins (`echo
    $RELAY_SUB_MODELS`; defaults in § Settings). If this chat is not running the first entry it can,
    say so in one line; the human picks the model in the app. **Run at the highest effort the list
    allows**: a sub chat can be started only at or below the primary's own model/effort.
-3. **Write `.agent/relay.md`** in the shared worktree (create or resume): the topic, the shared
-   branch, `<integration>`, a `## Topics` table — `slug · session · branch · status · files`, and
+3. **Write `.agent/relay.md`** in the shared worktree (create or resume): the topic, `<relay-branch>`,
+   `<integration>`, a `## Topics` table — `slug · session · branch · status · files`, and
    `## Watcher` (state dir, armed-until). Stage it like the human's edits; it is never committed
    and never landed — it dies with the branch.
 4. **Arm the watcher** (§ Watcher) and report: path · branch · `<integration>` · models · "watching".
@@ -140,7 +141,7 @@ Questions, review, "merge?", "close?" — ask the HUMAN in this chat. The primar
 answer them.
 ```
 The two trust sentences go into **every** brief regardless of model. `<integration>` is named
-explicitly — a child cut while the parent sits on `relay/<topic>` otherwise tries to land into the
+explicitly — a child cut while the parent sits on `<relay-branch>` otherwise tries to land into the
 parent's branch.
 
 ### Spawn
@@ -189,12 +190,14 @@ A sub chat's land note (or the human saying "X landed") triggers, in order:
 When `git diff HEAD` holds no comments and no topic is in flight: delete `.agent/relay.md` and
 `.agent/relay-watch/`, stop the watcher (`TaskStop`), confirm the shared branch carries nothing
 worth keeping (it is reference only), and tell the human: archive this session and delete
-`relay/<topic>`. The branch never lands.
+`<relay-branch>`. The branch never lands.
 
 ## Gotchas (from the first relay)
 
 - **Never commit the human's edits to "carry" them** — it kills their IDE review view. The
   temp-commit → rebase → soft-reset trick is the only exception and must end re-staged.
+- **The app names the shared branch** (`feature/<slug>-<hash>`), not the skill — the gate checks
+  what the branch is *not*, never its spelling.
 - **Event turns cannot start sessions** — a Monitor tick or a sub chat's note → card, never a
   silent start; a human turn (button, typed go) → start.
 - **Correct a running sub chat immediately** when the human overrules a brief item here;
