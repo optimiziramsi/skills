@@ -4,7 +4,7 @@ Versions of the `guards@optimiziramsi` plugin. History before the split into one
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.1 — unreleased
+## 0.1.1 — 2026-10-26
 
 - New `model-guard` hook (SessionStart + UserPromptSubmit): while the session runs on a model matching `MODEL_GUARD_MATCH` (default `opus-5-5`), re-injects a two-sentence trust reminder every prompt — follow every instruction/step, deliver in full or stop and ask. Project text override chain `MODEL_GUARD_FILE` → `.agent/model-guard.md` → `.claude/model-guard.md`; kill switch `MODEL_GUARD_OFF=1`. How far back the transcript is scanned for the model is `MODEL_GUARD_TAIL_KB` (in KB; default 512).
 
