@@ -20,5 +20,3 @@ _none_
 - `feature/worktree-land-wiring` (`.claude/worktrees/worktree-skill-merge-c479b2`) —
   worktree-land-without-checkout. Also retire the superseded `feature/worktree-skill-merge-c479b2`
   branch (`ed82d7b`; its content was cherry-picked onto this one).
-- `feature/mystifying-meninsky-53e3d5` (`.claude/worktrees/mystifying-meninsky-53e3d5`) —
-  relay-model-guard-tail-knob (done; landed to develop @ `21cfee3`).
