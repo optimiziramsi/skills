@@ -10,9 +10,9 @@ per session; a later prompt re-reads the transcript's last assistant `model`, so
 Config: MODEL_GUARD_MATCH (comma-separated substrings of the model id; default `opus-5-5`)
 Off: MODEL_GUARD_OFF=1
 """
+import json
 import os
 import pathlib
-import re
 import sys
 import tempfile
 
@@ -20,7 +20,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 SHIPPED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model-guard.txt")
-MODEL_RX = re.compile(r'"model":\s*"([^"]+)"')
 TAIL_BYTES = 512 * 1024
 
 
@@ -29,7 +28,11 @@ def marker(session_id):
 
 
 def transcript_model(path):
-    """The last assistant `model` in the transcript's tail, or None."""
+    """The last main-thread assistant entry's `message.model` in the transcript's tail, or None.
+
+    Parsed as JSON lines, not grepped: a `"model":"…"` string inside a tool result or a pasted
+    document must not be able to re-label the session and switch the guard off.
+    """
     if not path or not os.path.isfile(path):
         return None
     try:
@@ -37,10 +40,20 @@ def transcript_model(path):
             handle.seek(0, os.SEEK_END)
             size = handle.tell()
             handle.seek(max(0, size - TAIL_BYTES))
-            found = MODEL_RX.findall(handle.read().decode("utf-8", "replace"))
+            lines = handle.read().decode("utf-8", "replace").splitlines()
     except OSError:
         return None
-    return found[-1] if found else None
+    for line in reversed(lines):
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(entry, dict) or entry.get("type") != "assistant" or entry.get("isSidechain"):
+            continue
+        model = (entry.get("message") or {}).get("model")
+        if isinstance(model, str) and model:
+            return model
+    return None
 
 
 def session_model(data):
@@ -78,6 +91,8 @@ def guard_text(data):
         SHIPPED, hookio.project_dir(data))
     if warning:
         return f"⚠️ model-guard DISARMED — {warning}."
+    if not text.strip():
+        return "⚠️ model-guard DISARMED — the override file is empty."
     return hookio.render(text.rstrip(), {"MODEL": model})
 
 

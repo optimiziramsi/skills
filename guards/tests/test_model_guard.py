@@ -46,6 +46,12 @@ check("transcript fallback reads the LAST model", guard.guard_text(prompt("s3", 
 with open(transcript, "a") as handle:
     handle.write(json.dumps({"type": "assistant", "message": {"model": "claude-fable-5-1"}}) + "\n")
 check("a /model switch away is honored", guard.guard_text(prompt("s3", transcript)) is None)
+with open(transcript, "a") as handle:
+    handle.write(json.dumps({"type": "assistant", "message": {"model": "claude-opus-5-5"}}) + "\n")
+    handle.write(json.dumps({"type": "user", "message": {"content": '{"model":"claude-fable-5-1"}'}}) + "\n")
+    handle.write(json.dumps({"type": "assistant", "isSidechain": True, "message": {"model": "claude-fable-5-1"}}) + "\n")
+    handle.write('not json {"model":"claude-fable-5-1"}\n')
+check("a model string in user/tool/sidechain content cannot disarm", guard.guard_text(prompt("s3", transcript)) is not None)
 
 os.environ["MODEL_GUARD_MATCH"] = "sonnet, haiku-5"
 check("MODEL_GUARD_MATCH: listed model injects", guard.guard_text(start("s4", "claude-haiku-5-5")) is not None)
@@ -56,6 +62,11 @@ os.makedirs(os.path.join(tmp, ".agent"), exist_ok=True)
 with open(os.path.join(tmp, ".agent", "model-guard.md"), "w") as handle:
     handle.write("custom {{MODEL}} text\n")
 check("project override wins", guard.guard_text(start("s6", "claude-opus-5-5")) == "custom claude-opus-5-5 text")
+with open(os.path.join(tmp, ".agent", "model-guard.md"), "w") as handle:
+    handle.write("  \n")
+text = guard.guard_text(start("s6b", "claude-opus-5-5"))
+check("an empty override is loud, not silent", text is not None and "DISARMED" in text)
+os.remove(os.path.join(tmp, ".agent", "model-guard.md"))
 os.environ["MODEL_GUARD_FILE"] = "missing.md"
 text = guard.guard_text(start("s7", "claude-opus-5-5"))
 check("a missing explicit override is loud, not silent", text is not None and "DISARMED" in text)
