@@ -105,7 +105,7 @@ no concern is stuck on:
 | `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
 | `FLOW_LINK_OFF=1` | re-stamping the runner-link pointer (`.agent/bin/{loop,grind}` then keep their current target) |
 | `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard (`FILE_GUARD_EXTRA` adds prefixes) |
-| `MODEL_GUARD_OFF=1` | the untrusted-model trust reminder (`MODEL_GUARD_MATCH` picks the models, default `opus-5-5`; `MODEL_GUARD_FILE` the text) |
+| `MODEL_GUARD_OFF=1` | the untrusted-model trust reminder (`MODEL_GUARD_MATCH` picks the models, default `opus-5-5`; `MODEL_GUARD_FILE` the text; `MODEL_GUARD_TAIL_KB` the transcript tail scanned, default 512) |
 | `CAPS_GUARD_OFF=1` | instruction-surface size caps |
 | `META_LINT_OFF=1` | the meta-lint engine (already inert without `.agent/meta-lint.json`) |
 | `TRIPWIRE_GUARD_OFF=1` | project tripwires (`TRIPWIRE_SKIP=1` = one-shot) |

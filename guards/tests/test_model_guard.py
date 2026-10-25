@@ -9,7 +9,7 @@ import tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 from selftest import Check, hook, invoke, load_module  # noqa: E402
 
-for knob in ("MODEL_GUARD_OFF", "MODEL_GUARD_MATCH", "MODEL_GUARD_FILE", "CLAUDE_PROJECT_DIR"):
+for knob in ("MODEL_GUARD_OFF", "MODEL_GUARD_MATCH", "MODEL_GUARD_FILE", "MODEL_GUARD_TAIL_KB", "CLAUDE_PROJECT_DIR"):
     os.environ.pop(knob, None)                        # fixtures must not inherit the developer's knobs
 
 check = Check()
@@ -52,6 +52,26 @@ with open(transcript, "a") as handle:
     handle.write(json.dumps({"type": "assistant", "isSidechain": True, "message": {"model": "claude-fable-5-1"}}) + "\n")
     handle.write('not json {"model":"claude-fable-5-1"}\n')
 check("a model string in user/tool/sidechain content cannot disarm", guard.guard_text(prompt("s3", transcript)) is not None)
+
+# MODEL_GUARD_TAIL_KB — how far back the model is read. An assistant `model` line near the top,
+# then > 1 KB of non-assistant padding, so a 1 KB tail can't reach the line above it.
+far = os.path.join(tmp, "far.jsonl")
+with open(far, "w") as handle:
+    handle.write(json.dumps({"type": "assistant", "message": {"model": "claude-opus-5-5"}}) + "\n")
+    for _ in range(40):
+        handle.write(json.dumps({"type": "user", "message": {"content": "x" * 40}}) + "\n")
+check("tail knob: the default 512 KB window reads a model past 1 KB", guard.transcript_model(far) == "claude-opus-5-5")
+os.environ["MODEL_GUARD_TAIL_KB"] = "1"
+check("tail knob: a 1 KB tail hides a model beyond the window", guard.transcript_model(far) is None)
+near = os.path.join(tmp, "near.jsonl")
+with open(near, "w") as handle:
+    for _ in range(40):
+        handle.write(json.dumps({"type": "user", "message": {"content": "x" * 40}}) + "\n")
+    handle.write(json.dumps({"type": "assistant", "message": {"model": "claude-opus-5-5"}}) + "\n")
+check("tail knob: a model inside the 1 KB tail is still read", guard.transcript_model(near) == "claude-opus-5-5")
+os.environ["MODEL_GUARD_TAIL_KB"] = "garbage"
+check("tail knob: a malformed value falls back to the default window", guard.transcript_model(far) == "claude-opus-5-5")
+del os.environ["MODEL_GUARD_TAIL_KB"]
 
 os.environ["MODEL_GUARD_MATCH"] = "sonnet, haiku-5"
 check("MODEL_GUARD_MATCH: listed model injects", guard.guard_text(start("s4", "claude-haiku-5-5")) is not None)

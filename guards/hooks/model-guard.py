@@ -8,6 +8,7 @@ per session; a later prompt re-reads the transcript's last assistant `model`, so
 → the shipped hooks/model-guard.txt (`{{MODEL}}` = the matched model id).
 
 Config: MODEL_GUARD_MATCH (comma-separated substrings of the model id; default `opus-5-5`)
+        MODEL_GUARD_TAIL_KB (transcript tail scanned for the model, in KB; default 512)
 Off: MODEL_GUARD_OFF=1
 """
 import json
@@ -20,7 +21,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 SHIPPED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model-guard.txt")
-TAIL_BYTES = 512 * 1024
+TAIL_KB_DEFAULT = 512
+
+
+def tail_bytes():
+    """How much of the transcript tail to scan, in bytes. MODEL_GUARD_TAIL_KB (in KB; default
+    512) read at call time, not import, so a test can flip it between checks."""
+    return hookio.setting_int("MODEL_GUARD_TAIL_KB", TAIL_KB_DEFAULT) * 1024
 
 
 def marker(session_id):
@@ -39,7 +46,7 @@ def transcript_model(path):
         with open(path, "rb") as handle:
             handle.seek(0, os.SEEK_END)
             size = handle.tell()
-            handle.seek(max(0, size - TAIL_BYTES))
+            handle.seek(max(0, size - tail_bytes()))
             lines = handle.read().decode("utf-8", "replace").splitlines()
     except OSError:
         return None

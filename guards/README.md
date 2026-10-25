@@ -37,7 +37,8 @@ model you do not trust to follow instructions in full.
     TODO / follow-up. The model comes from the SessionStart payload, then the transcript's last
     assistant `model` (so a `/model` switch is honored). Text override: `MODEL_GUARD_FILE` →
     `.agent/model-guard.md` → `.claude/model-guard.md` → the shipped `hooks/model-guard.txt`
-    (`{{MODEL}}` = the matched id). Kill switch `MODEL_GUARD_OFF=1`. Tests:
+    (`{{MODEL}}` = the matched id). How far back the transcript is read for the model is
+    `MODEL_GUARD_TAIL_KB` (in KB; default 512). Kill switch `MODEL_GUARD_OFF=1`. Tests:
     `python3 tests/test_model_guard.py`.
 
 ## tripwire-guard — project-owned command tripwires

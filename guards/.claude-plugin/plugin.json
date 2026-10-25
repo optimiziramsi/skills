@@ -1,7 +1,7 @@
 {
   "name": "guards",
   "displayName": "optimiziramsi guards",
-  "version": "0.1.1-dev.2",
+  "version": "0.1.1-dev.3",
   "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a trust reminder while the session runs on an untrusted model (model-guard).",
   "author": {
     "name": "optimiziramsi",
