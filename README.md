@@ -66,14 +66,14 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`context`](context/README.md) | Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh. |
 | [`lessons`](lessons/README.md) | Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug. |
 | [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
-| [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), and ask before the agent edits Claude settings or hook scripts (file-guard). |
+| [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a trust reminder while the session runs on an untrusted model (model-guard). |
 | [`review`](review/README.md) | Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents. |
 | [`qa-gate`](qa-gate/README.md) | The done-gate — typecheck, unit, e2e and visual verification before any claim of done. |
 | [`planning`](planning/README.md) | Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/. |
 | [`todo`](todo/README.md) | The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with "ALLOW TODO"). |
 | [`runners`](runners/README.md) | Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree. |
 | [`patterns`](patterns/README.md) | Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns. |
-| [`worktree`](worktree/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK. Pairs with worktree-guards. |
+| [`worktree`](worktree/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK; plus relay, the pair-programming-by-worktree primary that turns your comments into worktree sub chats. Pairs with worktree-guards. |
 | [`worktree-guards`](worktree-guards/README.md) | Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree. |
 | [`setup`](setup/README.md) | One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md. |
 | [`upkeep`](upkeep/README.md) | Plugin upkeep — a session-start notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins. |
@@ -105,6 +105,7 @@ no concern is stuck on:
 | `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
 | `FLOW_LINK_OFF=1` | re-stamping the runner-link pointer (`.agent/bin/{loop,grind}` then keep their current target) |
 | `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard (`FILE_GUARD_EXTRA` adds prefixes) |
+| `MODEL_GUARD_OFF=1` | the untrusted-model trust reminder (`MODEL_GUARD_MATCH` picks the models, default `opus-5-5`; `MODEL_GUARD_FILE` the text) |
 | `CAPS_GUARD_OFF=1` | instruction-surface size caps |
 | `META_LINT_OFF=1` | the meta-lint engine (already inert without `.agent/meta-lint.json`) |
 | `TRIPWIRE_GUARD_OFF=1` | project tripwires (`TRIPWIRE_SKIP=1` = one-shot) |

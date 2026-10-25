@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# relay-watch — the `relay` skill's comment watcher (on PATH while the worktree plugin is enabled).
+#
+# Watches the shared relay worktree for NEW comment lines in the user's uncommitted edits (staged or
+# not: `git diff HEAD`) and prints one event line per:
+#   TRIGGER <file>: <line>      a new comment line carrying a handover phrase (RELAY, READY, TAKE OVER,
+#                               NOW YOU, DO IT, GO AHEAD, YOUR TURN, SCHEDULED, PICK IT UP; case-insensitive)
+#   QUIET <file>: <n> new comment line(s), untouched <age>s — candidate for pickup
+#                               a file with new comment lines nobody has touched for QUIET_SECS
+# Each event fires once (state dir keeps what was seen); a changed comment set fires again.
+# Skips `.agent/`, `.todo*`, `*.md`, and the primary's own `// addressed in <slug> worktree` notes.
+#
+#   relay-watch <worktree> <state-dir> [quiet-secs=600] [poll-secs=10]   loop — run it via Monitor
+#   relay-watch --once <worktree> <state-dir> [quiet-secs]               one scan, then exit
+#   relay-watch --test                                                   self-test
+#
+# Portable: macOS (`md5 -q`, `stat -f %m`) and Linux (`md5sum`, `stat -c %Y`).
+set -u
+
+TRIGGER='(^|[^A-Za-z-])(RELAY|READY|TAKE ?OVER|NOW YOU|DO IT|GO AHEAD|SCHEDULED|YOUR TURN|PICK (THIS|IT) UP)([^A-Za-z-]|$)'
+EXCLUDE_RX='addressed in [a-z0-9-]+ worktree'
+
+digest() {  # stdin → hex digest
+  if command -v md5 >/dev/null 2>&1; then md5 -q; else md5sum | cut -d' ' -f1; fi
+}
+
+mtime() {  # file → epoch seconds
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null
+}
+
+scan() {  # $1 worktree → writes "<file>\t<comment line>" rows to $2
+  git -C "$1" diff HEAD -U0 --no-color -- . ':!.agent' ':!.todo*' ':!*.md' 2>/dev/null \
+    | awk '/^\+\+\+ b\//{f=substr($0,7); next}
+           /^\+/{ s=substr($0,2); if (s ~ /^[[:space:]]*(\/\/|#|\/\*|\*|<!--)/) print f "\t" s }' \
+    | grep -vE "$EXCLUDE_RX" > "$2" || true
+}
+
+tick() {  # $1 worktree, $2 state dir, $3 quiet secs
+  local wt="$1" state="$2" quiet="$3" f s key h n m age now
+  scan "$wt" "$state/cur"
+  grep -iE "$TRIGGER" "$state/cur" | while IFS=$'\t' read -r f s; do
+    key=$(printf '%s\t%s' "$f" "$s" | digest)
+    grep -q "$key" "$state/seen_trigger" || { echo "TRIGGER $f: $s"; echo "$key" >> "$state/seen_trigger"; }
+  done
+  now=$(date +%s)
+  cut -f1 "$state/cur" | sort -u | while read -r f; do
+    [ -n "$f" ] && [ -f "$wt/$f" ] || continue
+    m=$(mtime "$wt/$f"); age=$((now - m)); [ "$age" -ge "$quiet" ] || continue
+    h=$(grep -F "$(printf '%s\t' "$f")" "$state/cur" | digest)
+    grep -q "$h" "$state/seen_quiet" && continue
+    n=$(grep -cF "$(printf '%s\t' "$f")" "$state/cur")
+    echo "QUIET $f: $n new comment line(s), untouched ${age}s — candidate for pickup"
+    echo "$h" >> "$state/seen_quiet"
+  done
+}
+
+prepare() {  # $1 worktree, $2 state dir
+  git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "relay-watch: $1 is not a git worktree" >&2; exit 1; }
+  mkdir -p "$2" && touch "$2/seen_trigger" "$2/seen_quiet"
+}
+
+selftest() {
+  local tmp wt st out fails=0
+  tmp=$(mktemp -d) && wt="$tmp/wt" && st="$tmp/state"
+  pass() { echo "PASS  $1"; }
+  fail() { echo "FAIL  $1: $2"; fails=$((fails + 1)); }
+  git init -q "$wt" && git -C "$wt" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  printf 'a = 1\n' > "$wt/x.py"; printf 'ok\n' > "$wt/notes.md"
+  git -C "$wt" add -A && git -C "$wt" -c user.name=t -c user.email=t@t commit -q -m base
+  # 1. a handover phrase fires TRIGGER once
+  printf 'a = 1\n# rename this, RELAY\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 600)
+  grep -q '^TRIGGER x.py: # rename this, RELAY$' <<<"$out" && pass "trigger fires" || fail "trigger fires" "$out"
+  out=$("$0" --once "$wt" "$st" 600)
+  [ -z "$out" ] && pass "trigger fires once" || fail "trigger fires once" "$out"
+  # 2. a plain comment is quiet-reported only after QUIET_SECS, once per content
+  printf 'a = 1\n# rename this, RELAY\n# and drop b\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 600)
+  [ -z "$out" ] && pass "fresh edit is not yet quiet" || fail "fresh edit is not yet quiet" "$out"
+  out=$("$0" --once "$wt" "$st" 0)
+  grep -q '^QUIET x.py: 2 new comment line(s), untouched [0-9]*s' <<<"$out" && pass "quiet reports" || fail "quiet reports" "$out"
+  out=$("$0" --once "$wt" "$st" 0)
+  [ -z "$out" ] && pass "quiet reports once" || fail "quiet reports once" "$out"
+  # 3. markdown, .agent and the primary's annotations are ignored; staged edits count
+  printf 'ok\n<!-- DO IT -->\n' > "$wt/notes.md"
+  mkdir -p "$wt/.agent" && printf '# RELAY\n' > "$wt/.agent/relay.md" && git -C "$wt" add -A
+  printf 'a = 1\n# rename this, RELAY\n# and drop b\n// addressed in relay-x worktree chat\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 0)
+  [ -z "$out" ] && pass "md/.agent/annotations ignored" || fail "md/.agent/annotations ignored" "$out"
+  # 4. phrase inside a word does not fire
+  printf 'a = 1\n# unready path\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 600)
+  [ -z "$out" ] && pass "no trigger inside a word" || fail "no trigger inside a word" "$out"
+  rm -rf "$tmp"
+  [ "$fails" -eq 0 ] && echo "all tests passed" || echo "$fails FAILED"
+  return "$fails"
+}
+
+case "${1:-}" in
+  --test) selftest; exit $? ;;
+  --once) shift; [ $# -ge 2 ] || { echo "usage: relay-watch --once <worktree> <state-dir> [quiet-secs]" >&2; exit 1; }
+          prepare "$1" "$2"; tick "$1" "$2" "${3:-600}"; exit 0 ;;
+  ""|-h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+esac
+[ $# -ge 2 ] || { echo "usage: relay-watch <worktree> <state-dir> [quiet-secs] [poll-secs]" >&2; exit 1; }
+prepare "$1" "$2"
+while true; do tick "$1" "$2" "${3:-600}"; sleep "${4:-10}"; done

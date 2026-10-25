@@ -70,7 +70,7 @@
     {
       "name": "guards",
       "source": "./guards",
-      "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), and ask before the agent edits Claude settings or hook scripts (file-guard).",
+      "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a trust reminder while the session runs on an untrusted model (model-guard).",
       "category": "workflow"
     },
     {
@@ -112,7 +112,7 @@
     {
       "name": "worktree",
       "source": "./worktree",
-      "description": "The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK. Pairs with worktree-guards.",
+      "description": "The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK; plus relay, the pair-programming-by-worktree primary that turns your comments into worktree sub chats. Pairs with worktree-guards.",
       "category": "workflow"
     },
     {
