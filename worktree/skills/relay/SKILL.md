@@ -201,7 +201,8 @@ told about is handled the same way. Then, in order:
    brief's Done line, "finish it") — or restart the topic if the session is gone. **"Offloaded
    for later" is a failure, not a completion.** Only a land that meets Done moves on.
 5. **Close + teardown** once the human closed the topic in the sub chat (its Pending-cleanup line
-   is on `<integration>`): `archive_session` (the app removes its worktree) → `git branch -D
+   is on `<integration>`): `archive_session`, then `git worktree prune` and, if the worktree dir is still there
+   (observed: it stays as a detached HEAD), `git worktree remove <path>` → `git branch -D
    <topic branch>` (+ its `backup/*`) → strike its Pending-cleanup line in `.agent/worktrees.md`
    on `<integration>` — from the materialized integration tree (`git -C <integration-tree>`:
    edit, commit `board: <slug> cleaned`); no such tree → tell the human the line to strike. Update
