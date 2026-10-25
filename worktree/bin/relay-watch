@@ -3,8 +3,8 @@
 #
 # Watches the shared relay worktree for NEW comment lines in the user's uncommitted edits (staged or
 # not: `git diff HEAD`) and prints one event line per:
-#   TRIGGER <file>: <line>      a new comment line carrying a handover phrase (RELAY, READY, TAKE OVER,
-#                               NOW YOU, DO IT, GO AHEAD, YOUR TURN, SCHEDULED, PICK IT UP; case-insensitive)
+#   TRIGGER <file>: <line>      a new comment line carrying a handover phrase (case-insensitive; the
+#                               full list, human-readable, prints after this header on --help)
 #   QUIET <file>: <n> new comment line(s), untouched <age>s — candidate for pickup
 #                               a file with new comment lines nobody has touched for QUIET_SECS
 # Each event fires once (state dir keeps what was seen); a changed comment set fires again. A file
@@ -27,6 +27,52 @@ digest() {  # stdin → hex digest
 
 mtime() {  # file → epoch seconds
   stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null
+}
+
+# --- handover-phrase list, generated from TRIGGER (so --help can never drift from the regex) ---
+_split_alts() {  # $1 inner regex → fills _ALTS with its top-level |-separated pieces (paren-aware)
+  local s=$1 c depth=0 cur=""; _ALTS=()
+  while [ -n "$s" ]; do
+    c=${s:0:1}; s=${s:1}
+    case $c in
+      '(') depth=$((depth + 1)); cur+=$c ;;
+      ')') depth=$((depth - 1)); cur+=$c ;;
+      '|') if [ "$depth" -eq 0 ]; then _ALTS+=("$cur"); cur=""; else cur+=$c; fi ;;
+      *) cur+=$c ;;
+    esac
+  done
+  _ALTS+=("$cur")
+}
+
+_expand() {  # $1 prefix, $2 remaining regex → one printed line per literal expansion
+  local pre=$1 r=$2 c rest n depth inner opts o
+  [ -n "$r" ] || { printf '%s\n' "$pre"; return; }
+  c=${r:0:1}; rest=${r:1}
+  if [ "$c" = "(" ]; then          # group: recurse on each top-level alternative
+    depth=1; inner=""
+    while [ -n "$rest" ]; do
+      n=${rest:0:1}; rest=${rest:1}
+      [ "$n" = "(" ] && depth=$((depth + 1))
+      [ "$n" = ")" ] && { depth=$((depth - 1)); [ "$depth" -eq 0 ] && break; }
+      inner+=$n
+    done
+    _split_alts "$inner"; opts=("${_ALTS[@]}")
+    for o in "${opts[@]}"; do _expand "$pre" "$o$rest"; done
+    return
+  fi
+  if [ "${rest:0:1}" = "?" ]; then  # optional preceding char → with and without it
+    rest=${rest:1}
+    _expand "$pre$c" "$rest"; _expand "$pre" "$rest"
+    return
+  fi
+  _expand "$pre$c" "$rest"
+}
+
+phrases() {  # $1 TRIGGER regex → each handover phrase it matches, one per line (derived, never hand-kept)
+  local core alt tops
+  core=${1#*)(}; core=${core%)(*}   # strip the (^|…) prefix and (…|$) suffix boundaries
+  _split_alts "$core"; tops=("${_ALTS[@]}")
+  for alt in "${tops[@]}"; do _expand "" "$alt"; done
 }
 
 scan() {  # $1 worktree → writes "<file>\t<comment line>" rows to $2
@@ -64,7 +110,7 @@ prepare() {  # $1 worktree, $2 state dir
 }
 
 selftest() {
-  local tmp wt st out fails=0
+  local tmp wt st out rc fails=0
   tmp=$(mktemp -d) && wt="$tmp/wt" && st="$tmp/state"
   pass() { echo "PASS  $1"; }
   fail() { echo "FAIL  $1: $2"; fails=$((fails + 1)); }
@@ -97,6 +143,13 @@ selftest() {
   printf 'a = 1\n# unready path\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 600)
   [ -z "$out" ] && pass "no trigger inside a word" || fail "no trigger inside a word" "$out"
+  # 5. --help prints the phrase list generated from TRIGGER (every alternative) and exits 0
+  out=$("$0" --help); rc=$?
+  { [ "$rc" -eq 0 ] \
+    && grep -q 'RELAY' <<<"$out" && grep -q 'TAKE OVER' <<<"$out" \
+    && grep -q 'TAKEOVER' <<<"$out" && grep -q 'PICK IT UP' <<<"$out" \
+    && grep -q 'PICK THIS UP' <<<"$out"; } \
+    && pass "help lists phrases from TRIGGER" || fail "help lists phrases from TRIGGER" "rc=$rc $out"
   rm -rf "$tmp"
   [ "$fails" -eq 0 ] && echo "all tests passed" || echo "$fails FAILED"
   return "$fails"
@@ -106,7 +159,11 @@ case "${1:-}" in
   --test) selftest; exit $? ;;
   --once) shift; [ $# -ge 2 ] || { echo "usage: relay-watch --once <worktree> <state-dir> [quiet-secs]" >&2; exit 1; }
           prepare "$1" "$2"; tick "$1" "$2" "${3:-600}"; exit 0 ;;
-  ""|-h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+  ""|-h|--help)
+    sed -n '2,17p' "$0"
+    printf '\nHandover phrases (case-insensitive; generated from the TRIGGER regex):\n'
+    phrases "$TRIGGER" | sort -u | sed 's/^/  /'
+    exit 0 ;;
 esac
 [ $# -ge 2 ] || { echo "usage: relay-watch <worktree> <state-dir> [quiet-secs] [poll-secs]" >&2; exit 1; }
 prepare "$1" "$2"

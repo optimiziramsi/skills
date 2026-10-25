@@ -41,7 +41,9 @@ together with [`worktree-guards`](../worktree-guards), which keeps the edits ins
     per new comment line that carries a handover phrase (`RELAY`, `READY`, `TAKE OVER`, `NOW YOU`,
     `DO IT`, `GO AHEAD`, `YOUR TURN`, `SCHEDULED`, `PICK IT UP`) → the primary proposes the topic
     as a session card; and one per comment file untouched for `RELAY_QUIET_SECS` → the primary
-    asks "Address it? Yes / Not yet", never starts on its own. macOS + Linux; `--test` self-test.
+    asks "Address it? Yes / Not yet", never starts on its own. `--help` (also `-h` / no args)
+    prints the header plus the full handover-phrase list generated from the trigger regex itself
+    (so it can't drift from what actually fires). macOS + Linux; `--test` self-test.
 
 The skill and [`worktree-guards`](../worktree-guards) are complementary: the guards are the *mechanism*; the skill is the
 *workflow* on top (who takes what, how slices get reviewed and landed). The skill relies on the

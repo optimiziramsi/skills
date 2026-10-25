@@ -6,7 +6,7 @@ The `worktree` skill is the protocol; this file is only the board.
 
 | # | Status | Branch | Worktree | Brief |
 |---|---|---|---|---|
-| _none_ | | | | |
+| relay-watch-help-phrases | active | `feature/relay-watch-help-phrases-416fb8` | `.claude/worktrees/relay-watch-help-phrases-416fb8` | `relay-watch --help` prints the handover phrase list generated from the `TRIGGER` regex (human-readable, every alternative shown); selftest case + docs. Touches `worktree/` only. |
 
 ## Open
 
