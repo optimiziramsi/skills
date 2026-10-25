@@ -1,5 +1,5 @@
 {
-  "description": "guards — run project-owned .agent/guards.d tripwires on Bash commands, and downgrade writes to enforcement surfaces (Claude settings, hook scripts) to an ask. Kill-switches: TRIPWIRE_GUARD_OFF=1, FILE_GUARD_OFF=1.",
+  "description": "guards — run project-owned .agent/guards.d tripwires on Bash commands, downgrade writes to enforcement surfaces (Claude settings, hook scripts) to an ask, and re-inject a trust reminder on every prompt while the session runs on an untrusted model (model-guard, default opus-5-5). Kill-switches: TRIPWIRE_GUARD_OFF=1, FILE_GUARD_OFF=1, MODEL_GUARD_OFF=1.",
   "hooks": {
     "PreToolUse": [
       {
@@ -19,6 +19,30 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/tripwire-guard.py\"",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/model-guard.py\"",
+            "statusMessage": "model guard",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/model-guard.py\"",
+            "statusMessage": "model guard",
+            "timeout": 10
           }
         ]
       }

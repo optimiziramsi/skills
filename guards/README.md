@@ -2,9 +2,10 @@
 
 The `guards@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
-Two hooks that enforce the PROJECT's rules rather than this marketplace's: **tripwire-guard** runs
+Three hooks that enforce the PROJECT's rules rather than this marketplace's: **tripwire-guard** runs
 your own checks before every shell command, **file-guard** asks you before the agent edits the files
-that enforce your rules.
+that enforce your rules, **model-guard** re-injects a trust reminder while the session runs on a
+model you do not trust to follow instructions in full.
 
 ## Contents
 
@@ -25,6 +26,19 @@ that enforce your rules.
     `.claude/hooks/`) downgrade to an **ask**: a session must not silently rewrite its own
     guards. Extra prefixes via `FILE_GUARD_EXTRA` (colon-separated); escape hatch
     `FILE_GUARD_OFF=1`; self-test `--test`.
+
+- name: `model-guard`
+  kind: hook
+  purpose:
+    SessionStart + UserPromptSubmit — while the session model matches `MODEL_GUARD_MATCH`
+    (comma-separated substrings of the model id; default `opus-5-5`), injects a two-sentence
+    **trust reminder** on every prompt: follow every instruction and step (skipping is a violation,
+    not a judgment call), and deliver in full — stop and ask rather than park the rest as a
+    TODO / follow-up. The model comes from the SessionStart payload, then the transcript's last
+    assistant `model` (so a `/model` switch is honored). Text override: `MODEL_GUARD_FILE` →
+    `.agent/model-guard.md` → `.claude/model-guard.md` → the shipped `hooks/model-guard.txt`
+    (`{{MODEL}}` = the matched id). Kill switch `MODEL_GUARD_OFF=1`. Tests:
+    `python3 tests/test_model_guard.py`.
 
 ## tripwire-guard — project-owned command tripwires
 
