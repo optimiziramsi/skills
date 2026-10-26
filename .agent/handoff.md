@@ -4,10 +4,11 @@ _Last updated:_ 2026-10-26 — session 14: `relay` skill + `model-guard` hook ad
 
 ## Where we left off
 
-Released locally: `main` @ dbc9732 = worktree 0.1.3 (`relay` skill, `/relay`, `bin/relay-watch`) +
-guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1/2/3`, `guards--v0.1.1`.
-`develop` @ c486ad0, `./tests.sh` ALL GREEN. **Remote sync pending (user):** publish `main`, the
-four tags and `develop` to origin. 0.1.3 = relay-watch exclude built with a real tab (the RR run
+Released locally: `main` @ 5ab1246 = worktree 0.1.4 (`relay` skill, `/relay`, `bin/relay-watch`) +
+guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1/2/3/4`, `guards--v0.1.1`.
+`develop` @ 779ac84, `./tests.sh` ALL GREEN. **Remote sync pending (user):** publish `main`, the
+five tags and `develop` to origin. 0.1.4 = multi-line `relay:` notes dropped whole by the watcher.
+0.1.3 = relay-watch exclude built with a real tab (the RR run
 saw `relay:` notes fire TRIGGER; this machine's `grep` is ugrep, which accepts `\t`, so the self-test
 passed falsely — run `PATH=/usr/bin:/bin bash worktree/bin/relay-watch --test` for BSD parity).
 0.1.2 applied the RR chat's first-run feedback (`relay:` prefix, `--seed`, modify/delete in the
