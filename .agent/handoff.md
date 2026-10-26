@@ -37,8 +37,8 @@ worktrees-archive log made conditional (RR convention, not shipped).
 
 - User to archive the lab primary session (`Relay lab primary`, worktree `.claude/worktrees/relay-lab-fb223f`)
   and delete `feature/relay-lab-fb223f` (reference-only branch, nothing on it).
-- Model id for Opus 4.8 in `RELAY_SUB_MODELS` / `RELAY_PRIMARY_MODELS` defaults is a guess
-  (`claude-opus-4-8`) — confirm against the app's model picker.
+- Model id `claude-opus-4-8` in the `RELAY_SUB_MODELS` / `RELAY_PRIMARY_MODELS` defaults is
+  confirmed (the app's `/model claude-opus-4-8` accepts it; this session ran on it) — no change due.
 - Decide whether `file-guard` should also guard the override files (`.agent/model-guard.md`,
   `.agent/output-contract.md`, `.agent/code-first.md`) — skipped for consistency.
 - Stale Pending-cleanup lines from older sessions still on the board (looper-grinder, land-wiring).
