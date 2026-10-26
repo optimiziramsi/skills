@@ -4,6 +4,10 @@ Versions of the `worktree@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.4 — 2026-10-26
+
+- relay-watch: a multi-line `relay:` note (prefix on its first line only) is dropped as a whole — its continuation comment lines no longer count as new human comments (they made a file with an audit note show up as QUIET). A block ends at the first code line, removed line or hunk boundary; a human comment right after code still fires. Self-test covers it.
+
 ## 0.1.3 — 2026-10-26
 
 - relay-watch fix: the `relay:` exclude never matched under a POSIX `grep -E` (no `\t` escape — the regex is now built with a real tab), so the primary's own `relay:` notes containing a handover word fired TRIGGER; self-test now covers a `// relay: audit — RELAY …` line (no TRIGGER, no QUIET) and runs clean under BSD tools. Digest falls back md5 → md5sum → shasum.
