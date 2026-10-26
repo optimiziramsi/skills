@@ -4,11 +4,14 @@ _Last updated:_ 2026-10-26 — session 14: `relay` skill + `model-guard` hook ad
 
 ## Where we left off
 
-Released locally: `main` @ f9b20d4 = worktree 0.1.1 (`relay` skill, `/relay`, `bin/relay-watch`) +
-guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1`, `guards--v0.1.1`.
-`develop` @ aece961, `./tests.sh` ALL GREEN. **Remote sync pending (user):** publish `main`, both
-tags and `develop` to origin — `release.sh` printed the exact command. The user will review the
-released version and come back with comments.
+Released locally: `main` @ d7b1845 = worktree 0.1.2 (`relay` skill, `/relay`, `bin/relay-watch`) +
+guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1`, `worktree--v0.1.2`,
+`guards--v0.1.1`. `develop` @ 60ceb2f, `./tests.sh` ALL GREEN. **Remote sync pending (user):**
+publish `main`, the three tags and `develop` to origin — `release.sh` printed the command.
+0.1.2 applied the RR chat's first-run feedback (`relay:` prefix, `--seed`, modify/delete in the
+rebase trick, board strike from a clean main checkout, model-id fallthrough); two points were
+adjusted, not taken verbatim: `git add -u` instead of the guard-blocked bulk add, and the
+worktrees-archive log made conditional (RR convention, not shipped).
 
 ## This session's arc
 
