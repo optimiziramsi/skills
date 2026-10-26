@@ -59,25 +59,45 @@ for everything in flight — never a list of the sub chats' pending questions.
    primary can do nothing about it but report. Say so in one line (the fix is the worktree skill's
    one-time `_integration` worktree); a sub chat blocked on a dirty `<integration>` checkout is a
    one-line report to the human, never a reason to touch that tree.
-5. **Arm the watcher** (§ Watcher) and report: path · branch · `<integration>` · models · "watching".
+5. **Keep the watcher's state out of git**: append `.agent/relay-watch/` to
+   `$(git rev-parse --git-common-dir)/info/exclude` (never to a tracked `.gitignore`).
+6. **Take stock of what is already there**: read `git diff HEAD` yourself, then
+   `relay-watch --seed <worktree> .agent/relay-watch` so the watcher reports only what the human
+   writes from now on — otherwise its first tick floods you with every pre-existing comment, your
+   own notes included. Existing comments are the **backlog**: list them as topic candidates in one
+   message (file · count · gist) and let the human pick; never one question per file.
+7. **Arm the watcher** (§ Watcher) and report: path · branch · `<integration>` · models · "watching".
+
+## Everything the primary writes carries `relay:`
+
+Every line the primary itself puts into the shared worktree starts, right after the comment marker,
+with **`relay:`** — `// relay: addressed in <slug> worktree chat`, `# relay: audit — <fact>`,
+`<!-- relay: … -->`. That prefix is what `relay-watch` skips, so the primary is never asked about
+its own notes. The human's comments never carry it.
 
 ## The shared branch — staged, never committed
 
-The human's edits and comments stay **STAGED** (`git add -A` is fine) and **uncommitted**. The
+The human's edits and comments stay **STAGED** (`git add -u`, plus new files by name — `git-guard`
+blocks `git add -A`) and **uncommitted**. The
 primary **never commits them** to carry them along — a commit destroys the human's IDE review view.
 Comments also never leave the branch: a sub chat gets them transcribed in its brief (§ Briefs).
 
 **Rebase trick (the only moment a commit exists):** after every land,
 ```sh
-git add -A && git commit -qm "relay ┃ wip (temporary — never land)"   # 1. park the edits
-git rebase -X ours <integration>                                        # 2. onto the new tip; conflicts go <integration>'s way
+git add -u && git commit -qm "relay ┃ wip (temporary — never land)"   # 1. park the edits (new files are already staged by the human)
+git rebase -X ours <integration>                                        # 2. onto the new tip; content conflicts go <integration>'s way
+# 2b. modify/delete is NOT settled by -X ours — upstream wins there too:
+git status --short | grep '^DU' | awk '{print $2}' | xargs -r git rm -q           # deleted on <integration>, commented here → gone
+git status --short | grep '^UD' | awk '{print $2}' | xargs -r git checkout --ours --   # deleted here, changed on <integration> → back
+GIT_EDITOR=true git rebase --continue
 git reset --soft HEAD~1                                                 # 3. edits are staged again
-git status --short                                                      # 4. verify: everything staged, nothing committed
+git status --short                                                      # 4. verify: only `M `/`A ` rows (staged), nothing committed
 ```
 Conflicts resolve toward `<integration>` (`-X ours` = the upstream side) — **never by hand-merging
 comments**; a comment lost to the rebase was about code that changed under it, so re-read the file
-and re-propose if it still applies. If step 2 stops on a conflict the strategy cannot settle: abort
-(`git rebase --abort`), `git reset --soft HEAD~1`, report the file, wait.
+and re-propose if it still applies. Step 2b is the common case (a file the human commented on was
+deleted or moved by a land). Anything else step 2 stops on: abort (`git rebase --abort`),
+`git reset --soft HEAD~1`, report the file, wait.
 
 ## Watcher — how the human hands work over
 
@@ -167,12 +187,14 @@ Opus-HIGH). So **right after every spawn, lift the sub chat explicitly**: read y
 (`echo $CLAUDE_EFFORT`) and model (your system prompt); whenever the entry you want is above either,
 call `set_session_effort` / `set_session_model` on the new session id at once — the app asks the
 human to confirm, and the level applies from the sub chat's next turn (its first turn is only the
-gate + claim row). The result names the level that will apply — record it in `.agent/relay.md`.
+gate + claim row). The result names the level that will apply — record it in `.agent/relay.md`. **A refused model id**
+(the result lists the ids the app offers) is not an error: take the next entry of the list that the
+app offers, silently, and record what applied — the list is a preference, not a promise.
 
 **Record state at every step** in `.agent/relay.md` — `proposed` (card up, not started) →
 `in flight` (session running; add its id, branch, worktree) → `landed` → `done`. On `in flight`,
-**annotate** every file the topic covers — one line beside the comments, `// addressed in <slug>
-worktree chat` (the comment syntax of that file) — stage, and report `<slug> → <session link>` in
+**annotate** every file the topic covers — one line beside the comments, `// relay: addressed in
+<slug> worktree chat` (the comment syntax of that file) — stage, and report `<slug> → <session link>` in
 one line. A proposed card that the human never starts stays `proposed`; a second TRIGGER on the
 same file is not a second card — point at the existing one.
 
@@ -193,7 +215,7 @@ told about is handled the same way. Then, in order:
 
 1. **Rebase** the shared branch (§ Rebase trick). Verify staged-and-uncommitted afterwards.
 2. **Strip** every comment of the human's that the topic addressed, and the primary's own
-   `addressed in <slug>` annotations for it. Leave comments of other topics untouched.
+   `relay:` lines for it. Leave comments of other topics untouched.
 3. **Re-annotate** still-open files whose topic is in flight (the rebase may have moved lines).
 4. **Review against `Done =`**: read the landed diff on `<integration>` (`git log -p
    <before>..<integration>`). Anything deferred, skipped, parked as a TODO / inbox entry /
@@ -204,9 +226,12 @@ told about is handled the same way. Then, in order:
    is on `<integration>`): `archive_session`, then `git worktree prune` and, if the worktree dir is still there
    (observed: it stays as a detached HEAD), `git worktree remove <path>` → `git branch -D
    <topic branch>` (+ its `backup/*`) → strike its Pending-cleanup line in `.agent/worktrees.md`
-   on `<integration>` — from the materialized integration tree (`git -C <integration-tree>`:
-   edit, commit `board: <slug> cleaned`); no such tree → tell the human the line to strike. Update
-   `.agent/relay.md` (`done`). The human no longer says "clean <branch>" per topic — this is the
+   on `<integration>` — and, where the project keeps an archive log (`.agent/worktrees-archive.md`,
+   newest first under its cleanup section), append the entry there in the same commit. Do it in
+   whichever tree holds `<integration>` **and is clean**: the materialized `_integration` worktree,
+   or the main checkout when `git -C <main> status --porcelain` is empty (`git -C <that tree>`:
+   edit, commit `board: <slug> cleaned`). Neither clean → tell the human the line to strike; never
+   touch a dirty tree. Update `.agent/relay.md` (`done`). The human no longer says "clean <branch>" per topic — this is the
    one place the primary acts as the coordinator the worktree skill otherwise leaves to the human.
 6. **Report**: landed `<slug>` · stripped `<n>` comments · in flight: `<slugs>` · open comments: `<n>`.
 
@@ -221,6 +246,8 @@ worth keeping (it is reference only), and tell the human: archive this session a
 
 - **Never commit the human's edits to "carry" them** — it kills their IDE review view. The
   temp-commit → rebase → soft-reset trick is the only exception and must end re-staged.
+- **`git add -A` is blocked by `git-guard`** — the rebase trick uses `git add -u`.
+- **`-X ours` ignores modify/delete** — step 2b of the rebase trick, or the rebase stalls.
 - **Land notes can be queued**, not delivered — check `<integration>`'s log on every turn, and
   accept the human's "X landed".
 - **The app names the shared branch** (`feature/<slug>-<hash>`), not the skill — the gate checks

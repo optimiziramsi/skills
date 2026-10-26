@@ -9,17 +9,19 @@
 #                               a file with new comment lines nobody has touched for QUIET_SECS
 # Each event fires once (state dir keeps what was seen); a changed comment set fires again. A file
 # whose TRIGGER fired is not also QUIET-reported for the same comment set.
-# Skips `.agent/`, `.todo*`, `*.md`, and the primary's own `// addressed in <slug> worktree` notes.
+# Skips `.agent/`, `.todo*`, `*.md`, and every line the primary itself writes — all of them carry the
+# `relay:` prefix right after the comment marker (`// relay: addressed in <slug> worktree chat`).
 #
 #   relay-watch <worktree> <state-dir> [quiet-secs=600] [poll-secs=10]   loop — run it via Monitor
 #   relay-watch --once <worktree> <state-dir> [quiet-secs]               one scan, then exit
+#   relay-watch --seed <worktree> <state-dir>                            mark the current comments as seen, emit nothing
 #   relay-watch --test                                                   self-test
 #
 # Portable: macOS (`md5 -q`, `stat -f %m`) and Linux (`md5sum`, `stat -c %Y`).
 set -u
 
 TRIGGER='(^|[^A-Za-z-])(RELAY|READY|TAKE ?OVER|NOW YOU|DO IT|GO AHEAD|SCHEDULED|YOUR TURN|PICK (THIS|IT) UP)([^A-Za-z-]|$)'
-EXCLUDE_RX='addressed in [a-z0-9-]+ worktree'
+EXCLUDE_RX='^[^\t]*\t[[:space:]]*(//|#|/\*|\*|<!--)[[:space:]]*relay:'
 
 digest() {  # stdin → hex digest
   if command -v md5 >/dev/null 2>&1; then md5 -q; else md5sum | cut -d' ' -f1; fi
@@ -104,6 +106,18 @@ tick() {  # $1 worktree, $2 state dir, $3 quiet secs
   done
 }
 
+seed() {  # $1 worktree, $2 state dir → every current comment line counts as seen (TRIGGER and QUIET)
+  scan "$1" "$2/cur"
+  while IFS=$'\t' read -r f s; do
+    [ -n "$f" ] || continue
+    printf '%s\t%s' "$f" "$s" | digest >> "$2/seen_trigger"
+  done < "$2/cur"
+  cut -f1 "$2/cur" | sort -u | while read -r f; do
+    [ -n "$f" ] || continue
+    grep -F "$(printf '%s\t' "$f")" "$2/cur" | digest >> "$2/seen_quiet"
+  done
+}
+
 prepare() {  # $1 worktree, $2 state dir
   git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "relay-watch: $1 is not a git worktree" >&2; exit 1; }
   mkdir -p "$2" && touch "$2/seen_trigger" "$2/seen_quiet"
@@ -136,9 +150,17 @@ selftest() {
   # 3. markdown, .agent and the primary's annotations are ignored; staged edits count
   printf 'ok\n<!-- DO IT -->\n' > "$wt/notes.md"
   mkdir -p "$wt/.agent" && printf '# RELAY\n' > "$wt/.agent/relay.md" && git -C "$wt" add -A
-  printf 'a = 1\n# rename this, RELAY\n# and drop b\n// addressed in relay-x worktree chat\n' > "$wt/x.py"
+  printf 'a = 1\n# rename this, RELAY\n# and drop b\n# relay: addressed in relay-x worktree chat\n  // relay: audit — RELAY this is ours\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 0)
-  [ -z "$out" ] && pass "md/.agent/annotations ignored" || fail "md/.agent/annotations ignored" "$out"
+  [ -z "$out" ] && pass "md/.agent/relay: lines ignored" || fail "md/.agent/relay: lines ignored" "$out"
+  # 3b. --seed marks pre-existing comments as seen on a fresh state dir
+  rm -rf "$st"; printf 'a = 1\n# old note, READY\n# older note\n' > "$wt/x.py"
+  "$0" --seed "$wt" "$st" >/dev/null
+  out=$("$0" --once "$wt" "$st" 0)
+  [ -z "$out" ] && pass "seed silences pre-existing comments" || fail "seed silences pre-existing comments" "$out"
+  printf 'a = 1\n# old note, READY\n# older note\n# new one, DO IT\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 600)
+  grep -q '^TRIGGER x.py: # new one, DO IT$' <<<"$out" && pass "new comment after seed fires" || fail "new comment after seed fires" "$out"
   # 4. phrase inside a word does not fire
   printf 'a = 1\n# unready path\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 600)
@@ -159,8 +181,10 @@ case "${1:-}" in
   --test) selftest; exit $? ;;
   --once) shift; [ $# -ge 2 ] || { echo "usage: relay-watch --once <worktree> <state-dir> [quiet-secs]" >&2; exit 1; }
           prepare "$1" "$2"; tick "$1" "$2" "${3:-600}"; exit 0 ;;
+  --seed) shift; [ $# -ge 2 ] || { echo "usage: relay-watch --seed <worktree> <state-dir>" >&2; exit 1; }
+          prepare "$1" "$2"; seed "$1" "$2"; echo "seeded $(wc -l < "$2/cur" | tr -d ' ') comment line(s) as seen"; exit 0 ;;
   ""|-h|--help)
-    sed -n '2,17p' "$0"
+    sed -n '2,18p' "$0"
     printf '\nHandover phrases (case-insensitive; generated from the TRIGGER regex):\n'
     phrases "$TRIGGER" | sort -u | sed 's/^/  /'
     exit 0 ;;
