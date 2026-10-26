@@ -21,10 +21,14 @@
 set -u
 
 TRIGGER='(^|[^A-Za-z-])(RELAY|READY|TAKE ?OVER|NOW YOU|DO IT|GO AHEAD|SCHEDULED|YOUR TURN|PICK (THIS|IT) UP)([^A-Za-z-]|$)'
-EXCLUDE_RX='^[^\t]*\t[[:space:]]*(//|#|/\*|\*|<!--)[[:space:]]*relay:'
+TAB=$'\t'
+# a real tab: POSIX grep -E has no \t escape (it would be a literal t), so the row "<file><TAB><line>" must be built with one
+EXCLUDE_RX="^[^${TAB}]*${TAB}[[:space:]]*(//|#|/\*|\*|<!--)[[:space:]]*relay:"
 
 digest() {  # stdin → hex digest
-  if command -v md5 >/dev/null 2>&1; then md5 -q; else md5sum | cut -d' ' -f1; fi
+  if command -v md5 >/dev/null 2>&1; then md5 -q
+  elif command -v md5sum >/dev/null 2>&1; then md5sum | cut -d' ' -f1
+  else shasum | cut -d' ' -f1; fi
 }
 
 mtime() {  # file → epoch seconds
@@ -153,6 +157,10 @@ selftest() {
   printf 'a = 1\n# rename this, RELAY\n# and drop b\n# relay: addressed in relay-x worktree chat\n  // relay: audit — RELAY this is ours\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 0)
   [ -z "$out" ] && pass "md/.agent/relay: lines ignored" || fail "md/.agent/relay: lines ignored" "$out"
+  # 3a. a relay: line whose text carries a trigger word fires neither TRIGGER nor QUIET, on a fresh state
+  rm -rf "$st"; printf 'a = 1\n// relay: audit — RELAY appears here, READY too\n# relay: addressed in relay-x worktree chat\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 0)
+  [ -z "$out" ] && pass "relay: prefix beats the trigger words" || fail "relay: prefix beats the trigger words" "$out"
   # 3b. --seed marks pre-existing comments as seen on a fresh state dir
   rm -rf "$st"; printf 'a = 1\n# old note, READY\n# older note\n' > "$wt/x.py"
   "$0" --seed "$wt" "$st" >/dev/null
