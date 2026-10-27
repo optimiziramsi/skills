@@ -9,8 +9,10 @@
 #                               a file with new comment lines nobody has touched for QUIET_SECS
 # Each event fires once (state dir keeps what was seen); a changed comment set fires again. A file
 # whose TRIGGER fired is not also QUIET-reported for the same comment set.
-# Skips `.agent/`, `.todo*`, `*.md`, and every line the primary itself writes — all of them carry the
-# `relay:` prefix right after the comment marker (`// relay: addressed in <slug> worktree chat`).
+# Scans every file in the diff, docs included — only the relay's own free-prose state files are left
+# out (`.agent/relay.md`, `.agent/handoff.md`, `.agent/relay-watch/`, `.todo*`; they are full of
+# handover words and carry no line prefix). The primary's own lines are told from the human's by the
+# `relay:` prefix right after the comment marker (`// relay: …`, `<!-- relay: … -->` in docs).
 #
 #   relay-watch <worktree> <state-dir> [quiet-secs=600] [poll-secs=10]   loop — run it via Monitor
 #   relay-watch --once <worktree> <state-dir> [quiet-secs]               one scan, then exit
@@ -83,7 +85,8 @@ phrases() {  # $1 TRIGGER regex → each handover phrase it matches, one per lin
 }
 
 scan() {  # $1 worktree → writes "<file>\t<comment line>" rows to $2 (the primary's relay: lines skipped)
-  git -C "$1" diff HEAD -U0 --no-color -- . ':!.agent' ':!.todo*' ':!*.md' 2>/dev/null \
+  git -C "$1" diff HEAD -U0 --no-color -- . \
+      ':!.agent/relay.md' ':!.agent/handoff.md' ':!.agent/relay-watch' ':!.todo*' 2>/dev/null \
     | awk '
         /^\+\+\+ b\//{ f=substr($0,7); next }
         /^\+/ { s=substr($0,2)
@@ -138,6 +141,10 @@ selftest() {
   fail() { echo "FAIL  $1: $2"; fails=$((fails + 1)); }
   git init -q "$wt" && git -C "$wt" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
   printf 'a = 1\n' > "$wt/x.py"; printf 'ok\n' > "$wt/notes.md"
+  mkdir -p "$wt/.agent/milestone/x"
+  printf '# Milestone X\n' > "$wt/.agent/milestone/x/README.md"   # a doc: scanned (not a state file)
+  printf '# relay board\n' > "$wt/.agent/relay.md"                # a relay state file: denylisted
+  printf 'todo list\n' > "$wt/.todo-inbox"                        # a relay state file: denylisted
   git -C "$wt" add -A && git -C "$wt" -c user.name=t -c user.email=t@t commit -q -m base
   # 1. a handover phrase fires TRIGGER once
   printf 'a = 1\n# rename this, RELAY\n' > "$wt/x.py"
@@ -155,12 +162,11 @@ selftest() {
   grep -q '^QUIET x.py: 2 new comment line(s), untouched [0-9]*s' <<<"$out" && pass "quiet reports" || fail "quiet reports" "$out"
   out=$("$0" --once "$wt" "$st" 0)
   [ -z "$out" ] && pass "quiet reports once" || fail "quiet reports once" "$out"
-  # 3. markdown, .agent and the primary's annotations are ignored; staged edits count
-  printf 'ok\n<!-- DO IT -->\n' > "$wt/notes.md"
-  mkdir -p "$wt/.agent" && printf '# RELAY\n' > "$wt/.agent/relay.md" && git -C "$wt" add -A
+  # 3. staged edits count (git diff HEAD sees the index); the primary's relay: annotations are ignored
   printf 'a = 1\n# rename this, RELAY\n# and drop b\n# relay: addressed in relay-x worktree chat\n  // relay: audit — RELAY this is ours\n' > "$wt/x.py"
+  git -C "$wt" add x.py
   out=$("$0" --once "$wt" "$st" 0)
-  [ -z "$out" ] && pass "md/.agent/relay: lines ignored" || fail "md/.agent/relay: lines ignored" "$out"
+  [ -z "$out" ] && pass "staged edit counted, relay: annotations ignored" || fail "staged edit counted, relay: annotations ignored" "$out"
   # 3a. a relay: line whose text carries a trigger word fires neither TRIGGER nor QUIET, on a fresh state
   rm -rf "$st"; printf 'a = 1\n// relay: audit — RELAY appears here, READY too\n# relay: addressed in relay-x worktree chat\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 0)
@@ -177,6 +183,27 @@ selftest() {
   rm -rf "$st"; printf 'a = 1\n// relay: audit — candidates:\n// relay:   bracket A, READY\n// relay:   bracket B\nb = 2\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 0)
   [ -z "$out" ] && pass "fully-prefixed relay: note is silent" || fail "fully-prefixed relay: note is silent" "$out"
+  # 3e. docs are scanned now (no *.md / .agent skip) — a user handover in a doc fires, code-comment or HTML-comment
+  rm -rf "$st"; git -C "$wt" checkout -q HEAD -- .
+  printf '# Milestone X\n// RELAY take this one\n<!-- RELAY and this -->\n' > "$wt/.agent/milestone/x/README.md"
+  out=$("$0" --once "$wt" "$st" 600)
+  { grep -q '^TRIGGER .agent/milestone/x/README.md: // RELAY take this one$' <<<"$out" \
+    && grep -q '^TRIGGER .agent/milestone/x/README.md: <!-- RELAY and this -->$' <<<"$out"; } \
+    && pass "doc handover fires (md no longer skipped)" || fail "doc handover fires (md no longer skipped)" "$out"
+  # 3f. a trigger word in the relay's own state files never fires (narrow denylist, not a file-type skip)
+  rm -rf "$st"; git -C "$wt" checkout -q HEAD -- .
+  printf '# relay board\n## RELAY topics — READY, DO IT\n' > "$wt/.agent/relay.md"
+  printf '# RELAY in the inbox, GO AHEAD\n' > "$wt/.todo-inbox"
+  out=$("$0" --once "$wt" "$st" 0)
+  [ -z "$out" ] && pass "state files (relay.md, .todo-inbox) denylisted" || fail "state files denylisted" "$out"
+  # 3g. in a doc, a relay: HTML-comment note is the primary's; a plain user comment after it still fires
+  rm -rf "$st"; git -C "$wt" checkout -q HEAD -- .
+  printf '# Notes\n<!-- relay: audit — primary note, READY -->\n<!-- RELAY human takes it -->\n' > "$wt/.agent/milestone/x/README.md"
+  out=$("$0" --once "$wt" "$st" 600)
+  { [ "$(grep -c '^TRIGGER' <<<"$out")" = 1 ] \
+    && grep -q '^TRIGGER .agent/milestone/x/README.md: <!-- RELAY human takes it -->$' <<<"$out"; } \
+    && pass "relay: prefix still wins in docs" || fail "relay: prefix still wins in docs" "$out"
+  git -C "$wt" checkout -q HEAD -- .
   # 3b. --seed marks pre-existing comments as seen on a fresh state dir
   rm -rf "$st"; printf 'a = 1\n# old note, READY\n# older note\n' > "$wt/x.py"
   "$0" --seed "$wt" "$st" >/dev/null

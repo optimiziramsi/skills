@@ -104,7 +104,10 @@ deleted or moved by a land). Anything else step 2 stops on: abort (`git rebase -
 ## Watcher — how the human hands work over
 
 The human writes plain comments and signals readiness **in a human way**; the primary must not start
-early. Two signals, both produced by `relay-watch` (this plugin's `bin/`, on PATH):
+early. `relay-watch` scans every file in `git diff HEAD`, **docs included** — a handover left in a
+README or a milestone doc fires like one in code; only the relay's own state files are unwatched
+(`.agent/relay.md`, `.agent/handoff.md`, `.agent/relay-watch/`, `.todo*`). Two signals, both produced
+by `relay-watch` (this plugin's `bin/`, on PATH):
 
 - **TRIGGER** — a new comment line carries a handover phrase: `RELAY`, `READY`, `TAKE OVER`,
   `NOW YOU`, `DO IT`, `GO AHEAD`, `YOUR TURN`, `SCHEDULED`, `PICK IT UP` (case-insensitive, whole
