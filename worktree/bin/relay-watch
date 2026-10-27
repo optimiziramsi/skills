@@ -21,9 +21,10 @@
 set -u
 
 TRIGGER='(^|[^A-Za-z-])(RELAY|READY|TAKE ?OVER|NOW YOU|DO IT|GO AHEAD|SCHEDULED|YOUR TURN|PICK (THIS|IT) UP)([^A-Za-z-]|$)'
-# the primary's own notes: a comment line starting `relay:` right after its marker — and every added
-# comment line that directly follows it (a multi-line block), until a non-comment or non-added line
-# (the pattern lives inline in scan(): awk -v would unescape its backslashes)
+# the primary's own notes: every comment line starting `relay:` right after its marker. Lines are
+# judged independently — a comment WITHOUT the prefix is the human's and is tracked, even directly
+# under a relay: line — so a multi-line relay: note must carry the prefix on every line.
+# (the relay: pattern lives inline in scan(): awk -v would unescape its backslashes)
 
 digest() {  # stdin → hex digest
   if command -v md5 >/dev/null 2>&1; then md5 -q
@@ -81,16 +82,14 @@ phrases() {  # $1 TRIGGER regex → each handover phrase it matches, one per lin
   for alt in "${tops[@]}"; do _expand "" "$alt"; done
 }
 
-scan() {  # $1 worktree → writes "<file>\t<comment line>" rows to $2 (the primary's relay: blocks dropped)
+scan() {  # $1 worktree → writes "<file>\t<comment line>" rows to $2 (the primary's relay: lines skipped)
   git -C "$1" diff HEAD -U0 --no-color -- . ':!.agent' ':!.todo*' ':!*.md' 2>/dev/null \
     | awk '
-        /^\+\+\+ b\//{ f=substr($0,7); blk=0; next }
-        !/^\+/        { blk=0; next }                     # hunk header or removed line ends a block
-        { s=substr($0,2)
-          if (s !~ /^[[:space:]]*(\/\/|#|\/\*|\*|<!--)/) { blk=0; next }   # code line ends a block
-          if (s ~ /^[[:space:]]*(\/\/|#|\/\*|\*|<!--)[[:space:]]*relay:/) { blk=1; next }   # the primary'"'"'s line opens one
-          if (blk) next                                    # … its continuation lines are the primary'"'"'s too
-          print f "\t" s }' > "$2" || true
+        /^\+\+\+ b\//{ f=substr($0,7); next }
+        /^\+/ { s=substr($0,2)
+          if (s !~ /^[[:space:]]*(\/\/|#|\/\*|\*|<!--)/) next                          # not a comment line
+          if (s ~  /^[[:space:]]*(\/\/|#|\/\*|\*|<!--)[[:space:]]*relay:/) next         # a relay: line is the primary, skip it
+          print f "\t" s }' > "$2" || true                                             # any other comment is the human'"'"'s
 }
 
 tick() {  # $1 worktree, $2 state dir, $3 quiet secs
@@ -166,12 +165,18 @@ selftest() {
   rm -rf "$st"; printf 'a = 1\n// relay: audit — RELAY appears here, READY too\n# relay: addressed in relay-x worktree chat\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 0)
   [ -z "$out" ] && pass "relay: prefix beats the trigger words" || fail "relay: prefix beats the trigger words" "$out"
-  # 3c. a multi-line relay: block (prefix on its first line only) is dropped whole; a human line after code still counts
-  rm -rf "$st"; printf 'a = 1\n// relay: audit — candidates:\n//   bracket A, READY\n//   bracket B\nb = 2\n# human: fix this, GO AHEAD\n' > "$wt/x.py"
+  # 3c. per-line relay: prefix required — a human comment glued directly under a relay: line is the
+  #     human's and still fires (regression guard: the glued-comment bug that dropped it with the block)
+  rm -rf "$st"; printf 'a = 1\n// relay: addressed in relay-x worktree chat\n// take it from here, RELAY\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 600)
+  grep -q '^TRIGGER x.py: // take it from here, RELAY$' <<<"$out" && pass "human line glued under relay: fires TRIGGER" || fail "human line glued under relay: fires TRIGGER" "$out"
+  rm -rf "$st"; printf 'a = 1\n// relay: addressed in relay-x worktree chat\n//   a plain follow-up, no phrase\n' > "$wt/x.py"
   out=$("$0" --once "$wt" "$st" 0)
-  { [ "$(grep -c '^TRIGGER' <<<"$out")" = 1 ] && grep -q '^TRIGGER x.py: # human: fix this, GO AHEAD$' <<<"$out" \
-    && [ "$(grep -c '^QUIET' <<<"$out")" = 0 ]; } \
-    && pass "multi-line relay: block dropped whole" || fail "multi-line relay: block dropped whole" "$out"
+  grep -q '^QUIET x.py: 1 new comment line(s)' <<<"$out" && pass "human line glued under relay: fires QUIET" || fail "human line glued under relay: fires QUIET" "$out"
+  # 3d. a multi-line relay: note with the prefix on EVERY line fires nothing
+  rm -rf "$st"; printf 'a = 1\n// relay: audit — candidates:\n// relay:   bracket A, READY\n// relay:   bracket B\nb = 2\n' > "$wt/x.py"
+  out=$("$0" --once "$wt" "$st" 0)
+  [ -z "$out" ] && pass "fully-prefixed relay: note is silent" || fail "fully-prefixed relay: note is silent" "$out"
   # 3b. --seed marks pre-existing comments as seen on a fresh state dir
   rm -rf "$st"; printf 'a = 1\n# old note, READY\n# older note\n' > "$wt/x.py"
   "$0" --seed "$wt" "$st" >/dev/null
