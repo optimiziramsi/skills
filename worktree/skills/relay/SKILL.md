@@ -73,10 +73,9 @@ for everything in flight — never a list of the sub chats' pending questions.
 Every line the primary itself puts into the shared worktree starts, right after the comment marker,
 with **`relay:`** — `// relay: addressed in <slug> worktree chat`, `# relay: audit — <fact>`,
 `<!-- relay: … -->`. That prefix is what `relay-watch` skips, so the primary is never asked about
-its own notes. A multi-line note needs the prefix on its first line only — the watcher drops the
-comment lines that directly follow it, up to the next code line — but **prefix every line anyway**:
-a human comment the human appends right under your block would otherwise be swallowed with it.
-The human's comments never carry it.
+its own notes. **Every line of a multi-line note carries it** — the watcher judges comment lines one
+by one, so any comment without the prefix is read as the human's and fires, including one you wrote
+as a continuation directly under a `relay:` line. The human's comments never carry it.
 
 ## The shared branch — staged, never committed
 

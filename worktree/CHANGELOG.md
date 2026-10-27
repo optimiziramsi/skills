@@ -4,6 +4,10 @@ Versions of the `worktree@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.5 — 2026-10-27
+
+- relay-watch: a human comment written directly under a `relay:` line (no blank or code line between) was swallowed — 0.1.4's multi-line-block rule read every comment line after a `relay:` line as the primary's continuation, so a handover glued under an audit note never fired TRIGGER or QUIET. The watcher now judges comment lines independently: a line is the primary's only if it itself carries the `relay:` prefix, so multi-line `relay:` notes must carry the prefix on every line (SKILL.md updated to require it). Self-test covers a glued human comment (fires TRIGGER and QUIET) and a fully-prefixed multi-line note (silent).
+
 ## 0.1.4 — 2026-10-26
 
 - relay-watch: a multi-line `relay:` note (prefix on its first line only) is dropped as a whole — its continuation comment lines no longer count as new human comments (they made a file with an audit note show up as QUIET). A block ends at the first code line, removed line or hunk boundary; a human comment right after code still fires. Self-test covers it.
