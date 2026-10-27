@@ -4,6 +4,10 @@ Versions of the `worktree@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.6 — 2026-10-27
+
+- relay-watch now scans docs too: the blanket `*.md` / `.agent/` file-type skip is replaced by a narrow denylist of the relay's own free-prose state files (`.agent/relay.md`, `.agent/handoff.md`, `.agent/relay-watch/`, `.todo*`). A user handover left in a doc (a README, a milestone doc) now fires instead of depending on the primary sweeping it up by hand; the primary's own `relay:`-prefixed notes are still skipped everywhere, docs included (`<!-- relay: … -->`). Trade-off (chosen deliberately): because markdown `#` headings and `*` bullets read as comment markers, a newly added heading/bullet that contains a handover word (Ready, Scheduled, …) can fire. Self-test covers doc handovers firing, the state-file denylist, and the `relay:` prefix still winning in docs.
+
 ## 0.1.5 — 2026-10-27
 
 - relay-watch: a human comment written directly under a `relay:` line (no blank or code line between) was swallowed — 0.1.4's multi-line-block rule read every comment line after a `relay:` line as the primary's continuation, so a handover glued under an audit note never fired TRIGGER or QUIET. The watcher now judges comment lines independently: a line is the primary's only if it itself carries the `relay:` prefix, so multi-line `relay:` notes must carry the prefix on every line (SKILL.md updated to require it). Self-test covers a glued human comment (fires TRIGGER and QUIET) and a fully-prefixed multi-line note (silent).
