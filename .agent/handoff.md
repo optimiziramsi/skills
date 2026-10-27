@@ -1,13 +1,15 @@
 # Handoff
 
-_Last updated:_ 2026-10-26 — session 14: `relay` skill + `model-guard` hook added, live-tested, released as worktree 0.1.1 + guards 0.1.1.
+_Last updated:_ 2026-10-27 — session 15: relay-watch glued-comment bug fixed, released as worktree 0.1.5.
 
 ## Where we left off
 
-Released locally: `main` @ 5ab1246 = worktree 0.1.4 (`relay` skill, `/relay`, `bin/relay-watch`) +
-guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1/2/3/4`, `guards--v0.1.1`.
-`develop` @ 779ac84, `./tests.sh` ALL GREEN. **Remote sync pending (user):** publish `main`, the
-five tags and `develop` to origin. 0.1.4 = multi-line `relay:` notes dropped whole by the watcher.
+Released locally: `main` @ b1ee117 = worktree 0.1.5 (`relay` skill, `/relay`, `bin/relay-watch`) +
+guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1…0.1.5`, `guards--v0.1.1`.
+`develop` @ 567e7ae (+ this handoff commit), `./tests.sh` ALL GREEN. **Remote sync pending (user):**
+`git push origin main worktree--v0.1.5 && git push origin develop` (0.1.1–0.1.4 + their tags were
+pushed in session 14). 0.1.5 = relay-watch now tracks a human comment glued directly under a
+`relay:` line — 0.1.4's multi-line-block rule swallowed it; per-line `relay:` prefix now required.
 0.1.3 = relay-watch exclude built with a real tab (the RR run
 saw `relay:` notes fire TRIGGER; this machine's `grep` is ugrep, which accepts `\t`, so the self-test
 passed falsely — run `PATH=/usr/bin:/bin bash worktree/bin/relay-watch --test` for BSD parity).
