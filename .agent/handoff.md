@@ -1,15 +1,17 @@
 # Handoff
 
-_Last updated:_ 2026-10-27 — session 15: relay-watch glued-comment bug fixed, released as worktree 0.1.5.
+_Last updated:_ 2026-10-27 — session 15: relay-watch — glued-comment fix (0.1.5), then docs brought into scan (0.1.6).
 
 ## Where we left off
 
-Released locally: `main` @ b1ee117 = worktree 0.1.5 (`relay` skill, `/relay`, `bin/relay-watch`) +
-guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1…0.1.5`, `guards--v0.1.1`.
-`develop` @ 567e7ae (+ this handoff commit), `./tests.sh` ALL GREEN. **Remote sync pending (user):**
-`git push origin main worktree--v0.1.5 && git push origin develop` (0.1.1–0.1.4 + their tags were
-pushed in session 14). 0.1.5 = relay-watch now tracks a human comment glued directly under a
-`relay:` line — 0.1.4's multi-line-block rule swallowed it; per-line `relay:` prefix now required.
+Released locally: `main` @ 7c920a2 = worktree 0.1.6 (`relay` skill, `/relay`, `bin/relay-watch`) +
+guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1…0.1.6`, `guards--v0.1.1`.
+`develop` @ 00f9dc1 (+ this handoff commit), `./tests.sh` ALL GREEN. **Remote sync pending (user):**
+`git push origin main worktree--v0.1.6 && git push origin develop` (0.1.1–0.1.4 + tags pushed in
+session 14; 0.1.5 may be too). 0.1.6 = watcher scans docs via the diff, narrow denylist for the
+relay's own state files (`.agent/relay.md`/`handoff.md`/`relay-watch/`, `.todo*`); trade-off accepted
+(user): markdown `#`/`*` lines with a handover word can fire. 0.1.5 = per-line `relay:` prefix now
+required (a human comment glued directly under a `relay:` line used to be swallowed).
 0.1.3 = relay-watch exclude built with a real tab (the RR run
 saw `relay:` notes fire TRIGGER; this machine's `grep` is ugrep, which accepts `\t`, so the self-test
 passed falsely — run `PATH=/usr/bin:/bin bash worktree/bin/relay-watch --test` for BSD parity).
