@@ -4,11 +4,11 @@ description: >-
   Pair-programming by worktree — the human edits and leaves comments in ONE shared worktree; this
   chat is the PRIMARY that turns those comments into topics, spawns one `worktree`-skill sub chat per
   topic (fresh session, own worktree cut off the integration branch), rebases the shared branch after
-  every land, strips the comments that landed and tears the sub chat down. Invoke as `/relay ...`, or
+  every land, strips the comments that landed and archives the sub chat. Invoke as `/relay ...`, or
   when the human says "relay mode", "you are the relay / primary chat", "pair-program by worktree",
   "pick up my comments", "watch my comments", "start topic <X>", "relay <X>", or hands this chat a
   comment-driven review of the working tree. The primary never codes a topic itself and never proxies
-  a sub chat's questions — it triggers, verifies, rebases, closes, cleans.
+  a sub chat's questions — it triggers, verifies, rebases, reviews, closes.
 ---
 
 # Relay — the primary chat of a pair-programming-by-worktree session
@@ -52,8 +52,8 @@ for everything in flight — never a list of the sub chats' pending questions.
 3. **Write `.agent/relay.md`** in the shared worktree (create or resume): the topic, `<relay-branch>`,
    `<integration>`, a `## Topics` table — `slug · session · branch · status · files` (status:
    `proposed` / `in flight` / `landed` / `done`), and
-   `## Watcher` (state dir, armed-until). Stage it like the human's edits; it is never committed
-   and never landed — it dies with the branch.
+   `## Watcher` (state dir, armed-until). **Commit it** as the single evolving state commit
+   (§ The shared branch) — it is never landed, it dies with the branch.
 4. **Check the landing wiring once**: `git worktree list` — if `<integration>` is checked out in the
    **main checkout**, every sub chat's land is refused the moment that checkout is dirty, and the
    primary can do nothing about it but report. Say so in one line (the fix is the worktree skill's
@@ -77,29 +77,43 @@ its own notes. **Every line of a multi-line note carries it** — the watcher ju
 by one, so any comment without the prefix is read as the human's and fires, including one you wrote
 as a continuation directly under a `relay:` line. The human's comments never carry it.
 
-## The shared branch — staged, never committed
+## The shared branch — two tracks
 
-The human's edits and comments stay **STAGED** (`git add -u`, plus new files by name — `git-guard`
-blocks `git add -A`) and **uncommitted**. The
-primary **never commits them** to carry them along — a commit destroys the human's IDE review view.
-Comments also never leave the branch: a sub chat gets them transcribed in its brief (§ Briefs).
+The shared branch carries two separate things, kept apart on purpose:
 
-**Rebase trick (the only moment a commit exists):** after every land,
+- **The primary's own state files** (`.agent/relay.md`, `.agent/handoff.md`) live in **ONE evolving
+  commit** — the *state commit*. Squash it as you go so a reference-only branch never fills with
+  `relay ┃ state` noise: `git commit --amend --no-edit`, or `git reset --soft HEAD~<N>` then recommit
+  (a **literal** `HEAD~<N>` or a sha of **your own** base — never a moving ref like `<integration>`
+  or a `merge-base` variable; `git-guard` blocks that and `git reset --hard`). ONLY your own state
+  files go in it. It is never landed — it dies with the branch; committing it just protects the
+  tracker from a stray hard-reset of the shared worktree.
+- **The human's edits and comments** (and the primary's own `relay:` annotation lines, which sit
+  inside the human's files) stay **UNSTAGED** working-tree edits — never staged, never committed by
+  the primary. That unstaged diff *is* the human's IDE review view; staging or committing it breaks
+  that view. Comments never leave the branch either: a sub chat gets them transcribed in its brief
+  (§ Briefs).
+
+**Rebase trick (after every land):** the state commit has to move onto the new `<integration>` tip,
+so the human's unstaged edits are parked in a throwaway commit for the replay, then un-committed
+**and re-unstaged** at the end — they must finish UNSTAGED, never staged.
 ```sh
-git add -u && git commit -qm "relay ┃ wip (temporary — never land)"   # 1. park the edits (new files are already staged by the human)
-git rebase -X ours <integration>                                        # 2. onto the new tip; content conflicts go <integration>'s way
+git add -u && git commit -qm "relay ┃ wip (temporary — never land)"   # 1. park the human's edits on top of the state commit (-u only; git-guard blocks git add -A)
+git rebase -X ours <integration>                                        # 2. state commit + wip onto the new tip; content conflicts go <integration>'s way
 # 2b. modify/delete is NOT settled by -X ours — upstream wins there too:
 git status --short | grep '^DU' | awk '{print $2}' | xargs -r git rm -q           # deleted on <integration>, commented here → gone
 git status --short | grep '^UD' | awk '{print $2}' | xargs -r git checkout --ours --   # deleted here, changed on <integration> → back
 GIT_EDITOR=true git rebase --continue
-git reset --soft HEAD~1                                                 # 3. edits are staged again
-git status --short                                                      # 4. verify: only `M `/`A ` rows (staged), nothing committed
+git reset --soft HEAD~1                                                 # 3. drop the wip commit — human edits staged, the state commit stays
+git restore --staged .                                                  # 4. re-UNSTAGE the human's edits (they must end unstaged)
+git status --short                                                      # 5. verify: human files ` M`/`??` (unstaged); HEAD = the state commit; nothing staged
 ```
 Conflicts resolve toward `<integration>` (`-X ours` = the upstream side) — **never by hand-merging
 comments**; a comment lost to the rebase was about code that changed under it, so re-read the file
 and re-propose if it still applies. Step 2b is the common case (a file the human commented on was
 deleted or moved by a land). Anything else step 2 stops on: abort (`git rebase --abort`),
-`git reset --soft HEAD~1`, report the file, wait.
+`git reset --soft HEAD~1`, report the file, wait. Untracked files the human added aren't parked by
+`git add -u`; the rebase leaves them untouched in the tree.
 
 ## Watcher — how the human hands work over
 
@@ -126,18 +140,24 @@ Arm it with Monitor, state under the worktree's own `.agent/relay-watch/`:
 ```sh
 relay-watch "$(git rev-parse --show-toplevel)" .agent/relay-watch "${RELAY_QUIET_SECS:-600}"
 ```
-`timeout_ms` 1 800 000 (the maximum, 30 min). **Re-arm on every expiry while the human is active**
-(an edit, a message, a land in the last window). **Two consecutive windows with no events and no
-human activity → pause**: do not re-arm, write "watcher paused" into `.agent/relay.md`, say it in one
-line. Any human message re-arms it. Never poll the files yourself between ticks.
+`timeout_ms` 1 800 000 (the maximum, 30 min). **Re-arm only on human activity in the shared
+worktree** — a new edit or comment, or a message to this chat. **A sub chat landing a commit does
+NOT re-arm it**: when the active work is all in sub chats awaiting the human and the shared worktree
+is quiet, there is nothing for the watcher to catch, so **pause** rather than re-arm into empty
+30-min windows (the pause→re-arm→pause churn a land otherwise causes). Pausing: do not re-arm, write
+"watcher paused" into `.agent/relay.md`, say it in one line. Any human message or shared-worktree
+edit re-arms it. Never poll the files yourself between ticks.
 
-## Topics — from comments to a brief
+## Topics — to a brief
 
-A topic is the smallest set of comments that lands as one coherent worktree chunk — usually one
-file or one cluster of related comments. Slug: `relay-<topic-slug>` (kebab, ≤ 40 chars; e.g.
-`relay-registration-cluster`). Before spawning, **audit**: read every file the comments touch
-(current `<integration>` state, not the shared branch's), note the facts the sub chat must know, and
-write the brief.
+A topic is the smallest coherent worktree chunk. Most come from the human's **comments** — usually
+one file or one cluster of related comments — but a topic can equally be (a) a **review/audit finding
+of the primary's own** that the human approves, or (b) a **direct question the human asked this chat**
+and told you to relay to a fresh worktree chat. A topic of kind (a) or (b) has **no shared-worktree
+comment** behind it — there is nothing to strip when it closes (§ After each land), only the review
+and the archive. Slug: `relay-<topic-slug>` (kebab, ≤ 40 chars; e.g. `relay-registration-cluster`).
+Before spawning, **audit**: read every file the topic touches (current `<integration>` state, not the
+shared branch's), note the facts the sub chat must know, and write the brief.
 
 ### Briefs — self-contained, verbatim rules
 
@@ -154,7 +174,8 @@ then the HARD-GATE report (path + branch), then the claim row. Branch commits ca
 the land squash is prefix-free.
 
 TASK
-<the human's comments, transcribed verbatim, each with its exact file path and the code it sits on>
+<the work, verbatim: the human's comments (each with its exact file path and the code it sits on),
+ or — for an audit/question topic with no comment — the human's question or the approved finding>
 <the audit facts: what the code does today, what else touches it, constraints>
 
 Done = <one line: the observable end state — tests, behavior, files>
@@ -197,11 +218,12 @@ gate + claim row). The result names the level that will apply — record it in `
 app offers, silently, and record what applied — the list is a preference, not a promise.
 
 **Record state at every step** in `.agent/relay.md` — `proposed` (card up, not started) →
-`in flight` (session running; add its id, branch, worktree) → `landed` → `done`. On `in flight`,
-**annotate** every file the topic covers — one line beside the comments, `// relay: addressed in
-<slug> worktree chat` (the comment syntax of that file) — stage, and report `<slug> → <session link>` in
-one line. A proposed card that the human never starts stays `proposed`; a second TRIGGER on the
-same file is not a second card — point at the existing one.
+`in flight` (session running; add its id, branch, worktree) → `landed` → `done`. Fold each relay.md
+update into the state commit (§ The shared branch). On `in flight`, **annotate** every file the topic
+covers — one line beside the comments, `// relay: addressed in <slug> worktree chat` (the comment
+syntax of that file) — leave it **unstaged** with the human's edits, and report `<slug> → <session
+link>` in one line. A proposed card that the human never starts stays `proposed`; a second TRIGGER on
+the same file is not a second card — point at the existing one.
 
 ### Hands off
 
@@ -218,26 +240,26 @@ human's "X landed" is the fallback trigger, and **on every turn of yours** (a ti
 message) first run `git log --oneline <last-seen>..<integration>` — a topic's land you were not
 told about is handled the same way. Then, in order:
 
-1. **Rebase** the shared branch (§ Rebase trick). Verify staged-and-uncommitted afterwards.
+1. **Rebase** the shared branch (§ The shared branch). Verify the human's edits end unstaged and
+   only the state commit sits on top.
 2. **Strip** every comment of the human's that the topic addressed, and the primary's own
-   `relay:` lines for it. Leave comments of other topics untouched.
+   `relay:` lines for it — leave the edit **unstaged** (§ The shared branch), comments of other
+   topics untouched. An audit/question topic (§ Topics) has no comment to strip — skip to the review.
 3. **Re-annotate** still-open files whose topic is in flight (the rebase may have moved lines).
-4. **Review against `Done =`**: read the landed diff on `<integration>` (`git log -p
-   <before>..<integration>`). Anything deferred, skipped, parked as a TODO / inbox entry /
-   "follow-up" instead of done → **reopen in the same sub chat** (`SendMessage`: the gap, the
-   brief's Done line, "finish it") — or restart the topic if the session is gone. **"Offloaded
-   for later" is a failure, not a completion.** Only a land that meets Done moves on.
-5. **Close + teardown** once the human closed the topic in the sub chat (its Pending-cleanup line
-   is on `<integration>`): `archive_session`, then `git worktree prune` and, if the worktree dir is still there
-   (observed: it stays as a detached HEAD), `git worktree remove <path>` → `git branch -D
-   <topic branch>` (+ its `backup/*`) → strike its Pending-cleanup line in `.agent/worktrees.md`
-   on `<integration>` — and, where the project keeps an archive log (`.agent/worktrees-archive.md`,
-   newest first under its cleanup section), append the entry there in the same commit. Do it in
-   whichever tree holds `<integration>` **and is clean**: the materialized `_integration` worktree,
-   or the main checkout when `git -C <main> status --porcelain` is empty (`git -C <that tree>`:
-   edit, commit `board: <slug> cleaned`). Neither clean → tell the human the line to strike; never
-   touch a dirty tree. Update `.agent/relay.md` (`done`). The human no longer says "clean <branch>" per topic — this is the
-   one place the primary acts as the coordinator the worktree skill otherwise leaves to the human.
+4. **Review — the hard gate before any close**: read the **actual landed diff** on `<integration>`
+   (`git log -p <before>..<integration>`) yourself and judge it against the **level and intent of
+   the human's original relay comment** — not the brief's one-line `Done =`, not the child's
+   self-report, not a quick human OK. Anything deferred, skipped, parked as a TODO / inbox entry /
+   "follow-up", or done more shallowly than the comment asked → **reopen in the same sub chat**
+   (`SendMessage`: the gap, the original intent, "finish it") — or restart the topic if the session
+   is gone. **"Offloaded for later" is a failure, not a completion.** Only a land you have read and
+   agree is complete moves on; your agreement is a close precondition.
+5. **Close** once (a) the human has closed the topic in the sub chat **and** (b) your review (step 4)
+   agrees the land is complete: `archive_session`, and update `.agent/relay.md` (`done`, folded into
+   the state commit). **That is the whole of the primary's teardown.** The primary does **not**
+   `git worktree remove`, `git branch -D`, or strike the `.agent/worktrees.md` Pending-cleanup row —
+   that worktree + branch + board teardown is the human's `clean` (and `file-guard` blocks the
+   primary from editing `<integration>`'s board anyway). Leave the Pending-cleanup line for the human.
 6. **Report**: landed `<slug>` · stripped `<n>` comments · in flight: `<slugs>` · open comments: `<n>`.
 
 ## End of the relay
@@ -249,10 +271,20 @@ worth keeping (it is reference only), and tell the human: archive this session a
 
 ## Gotchas (from the first relay)
 
-- **Never commit the human's edits to "carry" them** — it kills their IDE review view. The
-  temp-commit → rebase → soft-reset trick is the only exception and must end re-staged.
+- **Never stage or commit the human's edits** — their unstaged diff is the IDE review view. The
+  temp-commit → rebase → soft-reset trick is the only exception and must end **re-unstaged**
+  (`git restore --staged .`), not staged.
+- **The primary's state files ARE committed** — `.agent/relay.md` + `.agent/handoff.md` in one
+  evolving squashed commit (amend / soft-reset+recommit), never landed, so a stray hard-reset of the
+  shared worktree can't lose the tracker. Nothing else is ever committed on the branch.
 - **`git add -A` is blocked by `git-guard`** — the rebase trick uses `git add -u`.
 - **`-X ours` ignores modify/delete** — step 2b of the rebase trick, or the rebase stalls.
+- **A land is not a close** — the primary reads the landed diff and agrees it meets the human's
+  original intent before any close; the child's "done" or a quick human OK is not enough.
+- **A sub-chat land does NOT re-arm the watcher** — only a human edit or message does; work that is
+  all in sub chats with a quiet worktree → pause the watcher, don't churn empty windows.
+- **The primary doesn't do git/board cleanup** — it archives the sub chat and updates relay.md;
+  `git worktree remove` / `branch -D` / board strike are the human's `clean`.
 - **Land notes can be queued**, not delivered — check `<integration>`'s log on every turn, and
   accept the human's "X landed".
 - **The app names the shared branch** (`feature/<slug>-<hash>`), not the skill — the gate checks
@@ -280,9 +312,12 @@ Set them in the project's `.claude/settings.json` `env` block (shared) or `setti
 
 - **Sub work happens only through the `worktree` skill**, on its own worktree cut off
   `<integration>` — never in the shared worktree, never by the primary.
-- **The shared branch never lands.** Staged, uncommitted, reference only, deleted at the end.
+- **The shared branch never lands**, and dies at the end. The human's edits stay **unstaged**; only
+  the primary's own state files are committed (one never-landed commit) — reference only.
 - **Start only on a human signal** — a handover phrase, a Yes to a QUIET question, or a typed
   go. Quiet pickup is a question, never a start.
 - **Questions stay in the sub chat.** One status line here, no relaying.
-- **Done means Done =** — review every land against the brief; parked work is reopened.
-- **Teardown is the primary's**: archive → branch delete → board strike → `.agent/relay.md` update.
+- **A close needs the primary's own agreement** — read the landed diff against the human's original
+  intent; the child's "done" or a quick OK is not enough, and parked work is reopened.
+- **The primary's teardown is archive + `.agent/relay.md`** — worktree, branch and board cleanup are
+  the human's `clean`.
