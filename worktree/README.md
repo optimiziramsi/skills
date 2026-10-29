@@ -24,15 +24,17 @@ together with [`worktree-guards`](../worktree-guards), which keeps the edits ins
   purpose:
     **Pair-programming by worktree.** The human and the primary chat share ONE worktree on a
     branch cut off the integration branch (any name the app gives it); the human edits and leaves comments
-    there (staged, never committed — reference only, never landed). The primary turns comments
+    there (the human's edits stay unstaged; only the primary's state files are committed, never
+    landed — reference only). The primary turns comments
     into topics, spawns one `worktree`-skill sub chat per topic (fresh session, own worktree off
     the integration branch, title `Relay: <slug>`, self-contained brief with the project's hard
     rules verbatim and a `Done =` line), never codes a topic itself and never proxies the sub
     chat's questions — review, "merge?", "close?" are the human's, in the sub chat. After each
-    land it rebases the shared branch (temp commit → rebase → soft reset, edits re-staged),
-    strips the comments that landed, annotates files still in flight, reviews the land against
-    `Done =` (parked work is reopened — "offloaded for later" is a failure), and tears the sub
-    chat down (archive → branch delete → board strike).
+    land it rebases the shared branch (temp commit → rebase → soft reset, edits re-unstaged),
+    strips the comments that landed, annotates files still in flight, reviews the landed diff
+    against the human's original intent before any close (parked work is reopened — "offloaded for
+    later" is a failure), and archives the sub chat (worktree, branch and board cleanup are the
+    human's `clean`).
 
 - name: `bin/relay-watch`
   kind: cli
