@@ -1,17 +1,22 @@
 # Handoff
 
-_Last updated:_ 2026-10-27 — session 15: relay-watch — glued-comment fix (0.1.5), then docs brought into scan (0.1.6).
+_Last updated:_ 2026-10-29 — session 16: relay skill — applied 7 live-run rules (two-track branch, hard-gate close, narrowed teardown); worktree 0.1.7 released.
 
 ## Where we left off
 
-Released locally: `main` @ 7c920a2 = worktree 0.1.6 (`relay` skill, `/relay`, `bin/relay-watch`) +
-guards 0.1.1 (`model-guard`, `MODEL_GUARD_TAIL_KB`); tags `worktree--v0.1.1…0.1.6`, `guards--v0.1.1`.
-`develop` @ 00f9dc1 (+ this handoff commit), `./tests.sh` ALL GREEN. **Remote sync pending (user):**
-`git push origin main worktree--v0.1.6 && git push origin develop` (0.1.1–0.1.4 + tags pushed in
-session 14; 0.1.5 may be too). 0.1.6 = watcher scans docs via the diff, narrow denylist for the
-relay's own state files (`.agent/relay.md`/`handoff.md`/`relay-watch/`, `.todo*`); trade-off accepted
-(user): markdown `#`/`*` lines with a handover word can fire. 0.1.5 = per-line `relay:` prefix now
-required (a human comment glued directly under a `relay:` line used to be swallowed).
+Released locally: `main` @ 5737074 = worktree 0.1.7 + earlier worktree 0.1.1–0.1.6 and guards 0.1.1;
+tags `worktree--v0.1.1…0.1.7`, `guards--v0.1.1`. `develop` @ 2021483 (+ this handoff commit),
+`./tests.sh` ALL GREEN. **Remote sync pending (user):**
+`git push origin main worktree--v0.1.7 && git push origin develop` (earlier tags pushed in
+sessions 14–15; 0.1.5/0.1.6/0.1.7 may be outstanding). 0.1.7 applied 7 rules from a long live relay
+run: the shared branch is now two-track — the primary's own state files (`relay.md`/`handoff.md`)
+live in ONE squashed never-landed commit while the human's edits stay UNSTAGED (the rebase trick
+ends `git restore --staged .`); a close is a HARD GATE on the primary reading the landed diff vs the
+**original comment's** intent (not the brief's `Done =`, not the child's word); teardown shrinks to
+archive + relay.md (worktree/branch/board cleanup is the human's `clean`, file-guard blocks the
+board anyway); topics may also be an approved audit finding or a relayed question (no comment to
+strip); a sub-chat land no longer re-arms the watcher (sub-chat-driven quiet → pause). `--amend` is
+git-guard-safe by default; the earlier 0.1.6 doc-scan NOTE was already shipped — no action.
 0.1.3 = relay-watch exclude built with a real tab (the RR run
 saw `relay:` notes fire TRIGGER; this machine's `grep` is ugrep, which accepts `\t`, so the self-test
 passed falsely — run `PATH=/usr/bin:/bin bash worktree/bin/relay-watch --test` for BSD parity).
