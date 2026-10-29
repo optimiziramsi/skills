@@ -17,19 +17,16 @@ archive + relay.md (worktree/branch/board cleanup is the human's `clean`, file-g
 board anyway); topics may also be an approved audit finding or a relayed question (no comment to
 strip); a sub-chat land no longer re-arms the watcher (sub-chat-driven quiet → pause). `--amend` is
 git-guard-safe by default; the earlier 0.1.6 doc-scan NOTE was already shipped — no action.
-0.1.3 = relay-watch exclude built with a real tab (the RR run
-saw `relay:` notes fire TRIGGER; this machine's `grep` is ugrep, which accepts `\t`, so the self-test
-passed falsely — run `PATH=/usr/bin:/bin bash worktree/bin/relay-watch --test` for BSD parity).
-0.1.2 applied the RR chat's first-run feedback (`relay:` prefix, `--seed`, modify/delete in the
-rebase trick, board strike from a clean main checkout, model-id fallthrough); two points were
-adjusted, not taken verbatim: `git add -u` instead of the guard-blocked bulk add, and the
-worktrees-archive log made conditional (RR convention, not shipped).
+(relay-watch self-test caveat: this machine's `grep` is ugrep and accepts `\t`, so run
+`PATH=/usr/bin:/bin bash worktree/bin/relay-watch --test` for BSD parity. Full 0.1.1–0.1.6 history
+is in worktree/CHANGELOG.md.)
 
 ## This session's arc
 
-- Relay = pair-programming by worktree: human + primary share one worktree (edits staged, never
-  committed, never landed); primary spawns one `worktree`-skill sub chat per topic, rebases, strips,
-  reviews against `Done =`, tears down. Spec came from the user's rabbit-run POC (2026-10-22→25).
+- Relay = pair-programming by worktree: human + primary share one worktree (human edits unstaged,
+  never landed; primary's state files in one never-landed commit); primary spawns one
+  `worktree`-skill sub chat per topic, rebases, strips, reviews, archives. Spec came from the user's
+  rabbit-run POC (2026-10-22→25).
 - Live test ran inside this repo: two real topics landed on `develop` through the gate (`f0afa14`
   relay-watch `--help` phrases; `21cfee3` `MODEL_GUARD_TAIL_KB`), both sub chats archived, board
   struck. Seven skill fixes came out of it (see worktree CHANGELOG 0.1.1 — unreleased).
