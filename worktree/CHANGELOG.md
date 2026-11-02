@@ -4,7 +4,7 @@ Versions of the `worktree@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.8 — unreleased
+## 0.1.8 — 2026-11-02
 
 - Land report: when a topic belongs to an umbrella milestone with a `ledger.md` (the `planning`
   plugin's `milestone` skill), the report also carries the ledger fields the orchestrator folds in
