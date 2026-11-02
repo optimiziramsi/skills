@@ -4,6 +4,22 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.2.0 — unreleased
+
+- Dev-to-dev PLAIN block in the shipped contract: plain names over ids, the decision itself over
+  "confirm as written", order-and-dependency over calendar, a question as the thing + the two
+  choices + your pick. Dropped "terse" (it produced id soup) — plain beats short.
+- `/calibrate` (skill + command, backed by the read-only `bin/calibrate` CLI): `compare` A/Bs the
+  session's last reports under the active vs. the shipped contract and, when the active text wins,
+  offers to flip its stamp `· rc:` → `· stable:`; `grill` re-sets the knobs by asking six plain
+  questions. Logs each run to `.agent/output-contract.calibration.md`.
+- The contract's first line may carry a `· rc: <date> v<n>` / `· stable: <date>` stamp. A stale
+  `rc:` contract appends a once-per-session "run /calibrate" nudge (`REPORT_RC_DAYS`, default 7);
+  advisory only, nothing blocks. A `· stable:` or unstamped contract is never nudged.
+- The mid-turn pulse now follows the active contract — `REPORT_PULSE_TEXT` → the contract's first
+  meaningful line (frame and stamp stripped) → the hardcoded fallback — so an override is reminded
+  in its own words.
+
 ## 0.1.0 — 2026-10-18
 
 - Split out of the single `optimiziramsi-skills` plugin (its `reporting` topic). Enable it per project with `claude plugin install reporting@optimiziramsi --scope project`.
