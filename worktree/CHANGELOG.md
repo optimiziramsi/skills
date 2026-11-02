@@ -4,6 +4,11 @@ Versions of the `worktree@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.9 — unreleased
+
+- worktree: isolation now defers to the project's **local-env hub** instead of teaching hand-rolled per-worktree stack isolation (project names, port offsets and board reservations are gone). A worktree that needs a stack registers with the hub; the hub is the collision check, so nothing is reserved on the board and the default is no stack (build/typecheck-only slices need hub jobs, not services). Installs, typecheck, lint, build and tests run as hub jobs — never host-side in a worktree — and the land gate is the hub's full-verify job; the land loop's re-verify and the pause stabilize point at it. Pause/close stop the worktree's hub stack, the human's `clean` also removes its registration, and a recycle onto a new branch registers anew when the hub keys by branch. The hub queue is the only cap on workers / sub chats / stacks. The checkout holding `<integration>` owns the shared stack; worktrees only register. The skills carry no hub commands: a repo that runs a hub keeps its rules in `.agent/hub/README.md` and the skills only defer to that file; a project without a hub keeps its own rules and boots no stack by default.
+- relay: the primary no longer rations sub chats — the hub queue is the cap (the hub rules say how to see the load; any chat may stop what nobody needs) — and the human's `clean` now also covers the sub chat's hub registration.
+
 ## 0.1.8 — 2026-11-02
 
 - Land report: when a topic belongs to an umbrella milestone with a `ledger.md` (the `planning`

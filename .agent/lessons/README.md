@@ -25,6 +25,7 @@ _(none yet)_
 ### Authoring skill / guard documentation
 
 - [A doc that documents a bug becomes a bypass the moment the bug is fixed](doc-fixes-must-not-become-bypasses.md) — the workaround outlives the defect; never ship "work around the guard" as guidance, ship "verify" instead.
+- [The marketplace ships the system, never a project's commands](marketplace-defers-to-project-rules.md) — skills state the protocol and point at a project-owned `.agent/<topic>/README.md`; a delegating spec's "use my commands as the example" does not waive it.
 
 ## ⚪ Low — lookup only
 
