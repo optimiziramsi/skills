@@ -4,6 +4,11 @@ Versions of the `session@optimiziramsi` plugin. History before the split into on
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.1 — 2026-11-02
+
+- handoff: the "Active milestones / plans" section is a record list (one dash per item), never a
+  table — matching the `no-tables` convention a project's own `.agent/` lint enforces.
+
 ## 0.1.0 — 2026-10-18
 
 - Split out of the single `optimiziramsi-skills` plugin (its `session` topic). Enable it per project with `claude plugin install session@optimiziramsi --scope project`.

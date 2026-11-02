@@ -14,10 +14,12 @@ across many sessions (**milestone**).
     truth.
 
 - name: `milestone`
-  kind: skill + command
+  kind: skill + command + `bin/ledger`
   purpose:
     Multi-session strategic initiatives in `.agent/milestone/{date}_{slug}/`, each its own
-    scope/steps/progress.
+    scope/steps/progress. An *umbrella* milestone (many parallel chats, one orchestrator) keeps a
+    machine-scannable `ledger.md` instead of `steps.md`; the `ledger` reader (pure bash+awk,
+    read-only — `open` / `ready` / `check` / …) is on PATH while this plugin is enabled.
 
 ## Directories
 
@@ -28,7 +30,7 @@ Kept **under `.agent/`** so they don't clutter your repo root; each degrades gra
   naming: `YYMMDD_HHMMSS_{topic}.md`
 
 - dir: `.agent/milestone/{date}_{slug}/`
-  holds: strategic initiatives (folder each)
+  holds: strategic initiatives (folder each; umbrella milestones add `ledger.md`)
   naming: `YYMMDD_{slug}/`
 
 - dir: `.agent/milestones.md`

@@ -72,7 +72,7 @@ Total ≤ 4k chars. Per-section:
   cap: 3-7 bullets, 1 line each
 
 - section: Active milestones / plans
-  shape: Table, no editorial
+  shape: Record list — one dash per item, no editorial (never a table)
   cap: ~5 lines
 
 - section: Build state
