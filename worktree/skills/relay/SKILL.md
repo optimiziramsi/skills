@@ -217,6 +217,11 @@ gate + claim row). The result names the level that will apply — record it in `
 (the result lists the ids the app offers) is not an error: take the next entry of the list that the
 app offers, silently, and record what applied — the list is a preference, not a promise.
 
+**Don't ration sub chats.** With a project local-env hub (the `worktree` skill's § Worktree +
+isolation) the hub queue is the cap — registrations are cheap, heavy jobs wait their turn — so
+spawn one sub chat per topic as usual. The hub rules (the project's `.agent/hub/README.md`) say
+how to see the load; any chat, the primary included, may stop a stack nobody needs.
+
 **Record state at every step** in `.agent/relay.md` — `proposed` (card up, not started) →
 `in flight` (session running; add its id, branch, worktree) → `landed` → `done`. Fold each relay.md
 update into the state commit (§ The shared branch). On `in flight`, **annotate** every file the topic
@@ -257,9 +262,10 @@ told about is handled the same way. Then, in order:
 5. **Close** once (a) the human has closed the topic in the sub chat **and** (b) your review (step 4)
    agrees the land is complete: `archive_session`, and update `.agent/relay.md` (`done`, folded into
    the state commit). **That is the whole of the primary's teardown.** The primary does **not**
-   `git worktree remove`, `git branch -D`, or strike the `.agent/worktrees.md` Pending-cleanup row —
-   that worktree + branch + board teardown is the human's `clean` (and `file-guard` blocks the
-   primary from editing `<integration>`'s board anyway). Leave the Pending-cleanup line for the human.
+   `git worktree remove`, `git branch -D`, strike the `.agent/worktrees.md` Pending-cleanup row, or
+   remove the sub chat's hub registration — that worktree + branch + board + hub teardown is the
+   human's `clean` (and `file-guard` blocks the primary from editing `<integration>`'s board
+   anyway). Leave the Pending-cleanup line for the human.
 6. **Report**: landed `<slug>` · stripped `<n>` comments · in flight: `<slugs>` · open comments: `<n>`.
 
 ## End of the relay
@@ -283,8 +289,9 @@ worth keeping (it is reference only), and tell the human: archive this session a
   original intent before any close; the child's "done" or a quick human OK is not enough.
 - **A sub-chat land does NOT re-arm the watcher** — only a human edit or message does; work that is
   all in sub chats with a quiet worktree → pause the watcher, don't churn empty windows.
-- **The primary doesn't do git/board cleanup** — it archives the sub chat and updates relay.md;
-  `git worktree remove` / `branch -D` / board strike are the human's `clean`.
+- **The primary doesn't do git/board/hub cleanup** — it archives the sub chat and updates
+  relay.md; `git worktree remove` / `branch -D` / board strike / hub deregistration are the
+  human's `clean`.
 - **Land notes can be queued**, not delivered — check `<integration>`'s log on every turn, and
   accept the human's "X landed".
 - **The app names the shared branch** (`feature/<slug>-<hash>`), not the skill — the gate checks
@@ -319,5 +326,5 @@ Set them in the project's `.claude/settings.json` `env` block (shared) or `setti
 - **Questions stay in the sub chat.** One status line here, no relaying.
 - **A close needs the primary's own agreement** — read the landed diff against the human's original
   intent; the child's "done" or a quick OK is not enough, and parked work is reopened.
-- **The primary's teardown is archive + `.agent/relay.md`** — worktree, branch and board cleanup are
-  the human's `clean`.
+- **The primary's teardown is archive + `.agent/relay.md`** — worktree, branch, board and hub
+  cleanup are the human's `clean`.

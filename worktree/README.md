@@ -61,7 +61,9 @@ existed.
 The skill lands work into a configurable **integration branch** — your repo's day-to-day merge
 target, substituted for `<integration>` wherever it appears. Worktree branches are cut off it;
 nothing reaches it except through the human-gated review→land flow. It assumes the `.agent/` house
-layout for its board (`.agent/worktrees.md`) and per-topic plans (`.agent/plan/<slug>.md`).
+layout for its board (`.agent/worktrees.md`) and per-topic plans (`.agent/plan/<slug>.md`). A repo
+that runs a local-env hub keeps the hub's rules in `.agent/hub/README.md`; the skill only defers to
+that file and carries no hub commands.
 
 Declare it in the project's `.claude/settings.json` `env` so the skill and [`git-guard`](../git-guard) agree:
 

@@ -116,8 +116,8 @@ plan or code:
   waives it.
 - Write **your own board row** in `.agent/worktrees.md` — `active` + a 1–3-line brief + `touches` —
   commit it, run the gate. The merge carries **`worktrees.md` only** (nothing else exists yet).
-- **If workers run an isolated service stack**, also reserve a resource slot here (§ Worktree +
-  isolation) — the board row *is* the collision check.
+- **No stack reservation on the board.** A worktree that needs a running stack registers with the
+  project's local-env hub instead (§ Worktree + isolation) — the hub is the collision check.
 
 **2 — Plan + example slice** (the direction check):
 - Write the **whole plan** in the topic's `.agent/plan/<slug>.md` (use the `plan` skill) — full
@@ -145,8 +145,8 @@ plan or code:
   **to your branch only**, show the diff, then **ask** *"merge `worktrees.md` to `<integration>`?"*
   and **wait**.
 - **Stop everything this worktree is running** — first any dev server / app / background process you
-  launched, then free your isolated service stack if you booted one (§ Worktree + isolation). Leave
-  **nothing running** holding your reserved resources.
+  launched, then stop your stack in the project's local-env hub if you booted one (§ Worktree +
+  isolation). Leave **nothing running** holding resources.
 - Then the human closes the chat. **Teardown is a separate, later chat** — this chat can't remove
   its own worktree (it's the cwd); it stays in Pending cleanup until someone runs the teardown.
 - **Recycling instead?** If they trigger *recycle* (§ Recycle), you **skip this teardown** entirely.
@@ -214,11 +214,11 @@ The loop, in your worktree on your branch:
    `.agent/worktrees.md`, **resolve from the file, never from memory**: keep the `<integration>`
    side for everything that isn't yours and re-apply only your own row — reconstructing the file
    from your stale in-context copy resurrects rows siblings deleted.
-3. **re-verify** — full typecheck / build / tests **again** (a clean rebase can still break
-   things) + confirm the main checkout is clean (leak check) **and** that the tree holding
-   `<integration>`, if any, is clean (the push is refused otherwise). If the project keeps
-   pattern/style checks and the diff touches governed areas, run them and fix findings before
-   pushing.
+3. **re-verify** — the land gate (§ Worktree + isolation): full typecheck / build / tests
+   **again** (a clean rebase can still break things) + confirm the main checkout is clean (leak
+   check) **and** that the tree holding `<integration>`, if any, is clean (the push is refused
+   otherwise). If the project keeps pattern/style checks and the diff touches governed areas, run
+   them and fix findings before pushing.
 4. **obsolete-check** — if the diff collapsed to ~nothing (a sibling did it), stop: report
    done-by-sibling.
 5. **squash** — `git reset --soft HEAD~<N> && git commit` (N = the commits in your slice, **counted
@@ -338,8 +338,9 @@ retires to Pending cleanup.
 The human triggers it. **Never you.** It authorizes you to **PREPARE** the pause — not to merge it;
 `<integration>` stays gated. In order:
 
-1. **Stabilize — nothing broken.** Commit every scrap of WIP, run the full verify. Reach a clean
-   boundary; if a slice is mid-flight, commit it and mark it **WIP / not-landable** in the handoff.
+1. **Stabilize — nothing broken.** Commit every scrap of WIP, run the full verify (the land gate,
+   § Worktree + isolation). Reach a clean boundary; if a slice is mid-flight, commit it and mark it
+   **WIP / not-landable** in the handoff.
 2. **Write the handoff** into `.agent/plan/<slug>.md`'s Progress section: what **landed** (SHAs),
    what's **committed on this branch but not landed**, the **exact next slice**, open decisions — so
    a cold session acts on it with zero chat history.
@@ -349,8 +350,9 @@ The human triggers it. **Never you.** It authorizes you to **PREPARE** the pause
 4. **Record the worktree for teardown** — a `## Pending cleanup` line tagged worktree-only: `-
    <branch> (<path>) — worktree only; the <id> topic CONTINUES (paused in Active; resume via
    /worktree lets continue work for <id>; handoff in <plan link>).`
-5. **Stop everything this worktree is running** (dev servers, processes, isolated service stack) so
-   nothing holds your reserved resources; the resume reserves fresh ones.
+5. **Stop everything this worktree is running** (dev servers, processes, your stack in the
+   project's local-env hub — § Worktree + isolation) so nothing holds resources; the resume
+   registers anew.
 6. Commit the board + `.agent/plan` changes **to your branch only**, show the diff, then **ask**
    *"merge pause-state to `<integration>`?"* and **wait**.
 
@@ -364,8 +366,9 @@ the § First-response order — HARD GATE first — but the reserve is a **re-cl
    **stop and ask**. Read its `.agent/plan/<slug>.md` handoff end to end — that, not this chat, is
    your context.
 3. **Re-claim the existing row** (don't draft a new one): flip Status `paused → active — resumed`,
-   set Branch to **this** new branch, reserve a fresh resource slot, keep the same `#` and
-   `.agent/plan` link. This re-claim **auto-lands** like the original claim row.
+   set Branch to **this** new branch, keep the same `#` and `.agent/plan` link (a stack, if the
+   slice needs one, registers with the hub anew — § Worktree + isolation). This re-claim
+   **auto-lands** like the original claim row.
 4. **Continue from the handoff** — pick up at its next slice, run the normal Stage-3 loop. The old
    paused worktree stays in Pending cleanup until teardown.
 
@@ -386,14 +389,16 @@ Then, in order:
 1. **Confirm A landed + clean** — last slice on `<integration>`, `git status` clean, main checkout
    clean.
 2. **One fused board merge — retire A + claim B together.** In `.agent/worktrees.md`, **delete A's
-   `## Active` row** and **add B's fresh claim row** in the *same* edit (new `#`, brief, `touches`,
-   and **reuse this worktree's existing resource slot**). Add **no `## Pending cleanup` line** — the
-   worktree isn't retiring. This fused edit **auto-lands** like a normal reserve (the recycle
-   trigger is the OK). Report topic B's new slug (the chat's new rename target).
+   `## Active` row** and **add B's fresh claim row** in the *same* edit (new `#`, brief, `touches`).
+   Add **no `## Pending cleanup` line** — the worktree isn't retiring. This fused edit
+   **auto-lands** like a normal reserve (the recycle trigger is the OK). Report topic B's new slug
+   (the chat's new rename target).
 3. **Reset the branch for B** — `git rebase <integration>` so B starts clean (usually a no-op at a
    landed boundary). Same branch + worktree name — identity is durable.
-4. **Keep everything running** — do not stop services or free the resource slot; B reuses them. The
-   **HARD GATE is not re-run** (same proven worktree).
+4. **Keep everything running** — do not stop services; B reuses them (same branch, same hub
+   registration). If B puts the worktree on a new branch and the hub rules key registrations by
+   branch, register anew and stop the old one — don't reuse it. The **HARD GATE is not re-run**
+   (same proven worktree).
 5. **Drive B from Stage 2** — write B's `.agent/plan`, implement one example slice, run the gate for
    the direction check.
 
@@ -406,18 +411,34 @@ Recycle again after B freely. When a topic should finally end the worktree, use 
   create it.
 - **Env** — a fresh worktree has no local env/secrets → run the project's env bootstrap before any
   app command.
-- **Service stacks (optional)** — most cutting/refactor work is build/typecheck-only; don't boot
-  services by default. **If a slice needs a running stack and workers run in parallel, isolate it**
-  so stacks don't collide: give each worktree its own compose/project name (e.g.
-  `COMPOSE_PROJECT_NAME=worktree-<branch>`) and a **per-worktree port offset** — reserve the lowest
-  free offset on the board (the record *is* the collision check), and add it to every **published
-  host port** (leave in-container/listen ports alone). The base checkout keeps the un-offset ports,
-  so the coordinator's stack and every worker coexist. On close/pause, free your stack.
+- **Local-env hub** — if the project runs one (a central tool for stacks and heavy work across
+  all worktrees), **its rules live in the project**: follow `.agent/hub/README.md` (or the file
+  the project's CLAUDE.md names) for every command and flag. This skill fixes only the protocol's
+  side of it and carries no project's commands. No hub → the project's own rules govern; boot no
+  stack by default.
+  - **Register, don't reserve** — a worktree that needs a running stack registers with the hub.
+    The hub is the collision check: nothing is reserved on the board, no ports are hand-picked.
+    The default is **no stack** — most cutting/refactor work is build/typecheck-only and needs
+    hub jobs, not services.
+  - **Heavy work through the hub, never host-side** — installs, typecheck, lint, build and tests
+    run as hub jobs, not directly on the host in a worktree. The **land gate** is the hub's
+    full-verify job, every stage blocking. "Verify for real" keeps its meaning — only the command
+    changes.
+  - **The queue is the cap** — registrations are cheap and jobs wait their turn, so there is no
+    max-workers / sub-chats / stacks limit: spawn freely. The hub rules say how to see the load;
+    any chat may stop what nobody needs.
+  - **Checkout model** — `<integration>` is checked out in one place (§ Landing → One-time repo
+    wiring: the main checkout, or its pinned `_integration` tree). That checkout owns the shared
+    stack — never started from a worktree — and is the hub's `<integration>` entry; worktrees
+    live under `.claude/worktrees/*` and only register.
+  - **End of life** — close/pause stop what your worktree started in the hub; the human's "clean
+    <branch>" (below) also removes its registration.
 - **Teardown** is **human-confirmed and never hurried** — never automatic on `done`. The worktree
   backs the coordinator's git view **and** this chat, which may stay open past `done`. You **cannot
   remove your own worktree** (it's the cwd) — on `done` just ensure it's listed under Pending
   cleanup and **wait**. Only on the explicit **"clean <branch>"** does the coordinator (from the
-  main repo) `git worktree remove <path>` + delete the branch + backup.
+  main repo) `git worktree remove <path>` + delete the branch + backup + its hub registration (if
+  the project has a hub).
 
 ## Status lifecycle
 
@@ -444,6 +465,7 @@ decision — waiting on the human). No `reserved` state — without a captain yo
   record; Recycle keeps the worktree + swaps the topic (no cleanup line).**
 - **Path discipline + leak check.** Every path off `git rev-parse --show-toplevel`; the main
   checkout stays clean. A leak is a HARD STOP.
-- **Stay in scope** — one slice = one focused change. **Verify for real** — "builds" is not "done".
+- **Stay in scope** — one slice = one focused change. **Verify for real** — "builds" is not
+  "done"; with a local-env hub that means a hub job, never host-side.
 - **Write only your own board row** — never another worker's.
 - **Brevity + silence** — execute gates/stages silently, speak only on the required beats (§ Voice).
