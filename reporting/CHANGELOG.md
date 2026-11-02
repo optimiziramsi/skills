@@ -4,7 +4,7 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.0 — unreleased
+## 0.2.0 — 2026-11-02
 
 - Dev-to-dev PLAIN block in the shipped contract: plain names over ids, the decision itself over
   "confirm as written", order-and-dependency over calendar, a question as the thing + the two
