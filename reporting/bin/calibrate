@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""calibrate — the read-only half of /calibrate (the skill drives the comparison and the edits).
+
+  calibrate messages [N] [--transcript PATH]
+        the last N turns' final reports from this session's transcript, oldest first, each framed
+        by `--- report K ---` so the skill can split them (default 5)
+  calibrate contracts
+        the active contract and (when an override is in force) the shipped one, each framed by
+        `--- active ---` / `--- shipped ---`, under a header: `active-source:` and `active-stamp:`
+
+Project root: $CLAUDE_PROJECT_DIR, else the current directory. Reads only; never writes.
+"""
+import os
+import re
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "hooks"))
+import _contract as c  # noqa: E402
+
+
+def find_transcript(project):
+    """The project's most-recently-touched session transcript, or None.
+
+    Claude Code stores them at ~/.claude/projects/<slug>/<session>.jsonl, where <slug> is the
+    project path with every non-alphanumeric run turned to a dash. A skill has no hook payload to
+    read the path from, so newest-mtime is the best available signal for the live session.
+    """
+    slug = re.sub(r"[^A-Za-z0-9]+", "-", os.path.realpath(project))
+    base = os.path.join(os.path.expanduser("~"), ".claude", "projects", slug)
+    try:
+        files = [os.path.join(base, f) for f in os.listdir(base) if f.endswith(".jsonl")]
+    except OSError:
+        return None
+    return max(files, key=os.path.getmtime) if files else None
+
+
+def messages(args, project):
+    n, path = 5, None
+    rest = iter(args)
+    for a in rest:
+        if a == "--transcript":
+            path = next(rest, None)
+        elif a.isdigit():
+            n = int(a)
+    path = path or find_transcript(project)
+    if not path:
+        return 1, "calibrate: no transcript found for this project"
+    finals = c.turn_finals(path)[-n:] if n > 0 else []
+    if not finals:
+        return 1, "calibrate: no finished reports in the transcript yet"
+    return 0, "\n\n".join(f"--- report {i} ---\n{t.strip()}" for i, t in enumerate(finals, 1))
+
+
+def contracts(project):
+    text, warning = c.active(project)
+    if warning:
+        return 1, f"calibrate: contract unreadable — {warning}"
+    source = c.active_source(project)
+    stamp = c.parse_stamp(text)
+    if stamp:
+        age = c.days_since(stamp["date"])
+        shown = f"{stamp['kind']} {stamp['date']}" + (f" v{stamp['version']}" if stamp["version"] else "")
+        shown += "" if age is None else f" ({age} d)"
+    else:
+        shown = "unstamped"
+    out = [f"active-source: {source or 'shipped'}", f"active-stamp: {shown}",
+           "--- active ---", text.rstrip()]
+    if source:  # an override is in force — hand over the shipped text to compare against
+        try:
+            with open(c.SHIPPED, encoding="utf-8") as handle:
+                out += ["--- shipped ---", handle.read().rstrip()]
+        except OSError as e:
+            return 1, f"calibrate: shipped contract unreadable ({e.__class__.__name__})"
+    return 0, "\n".join(out)
+
+
+def main(argv):
+    args = argv[1:]
+    cmd = args[0] if args else "help"
+    project = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    if cmd == "messages":
+        code, text = messages(args[1:], project)
+    elif cmd == "contracts":
+        code, text = contracts(project)
+    else:
+        print(__doc__.strip())
+        return 0 if cmd in ("help", "-h", "--help") else 2
+    print(text, file=sys.stdout if code == 0 else sys.stderr)
+    return code
+
+
+sys.exit(main(sys.argv))

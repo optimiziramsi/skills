@@ -1,8 +1,8 @@
 {
   "name": "reporting",
   "displayName": "optimiziramsi reporting",
-  "version": "0.1.0",
-  "description": "Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message.",
+  "version": "0.2.0",
+  "description": "Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, a Stop guard that blocks a narrating or over-long final message, and /calibrate to tune the contract on real reports.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"

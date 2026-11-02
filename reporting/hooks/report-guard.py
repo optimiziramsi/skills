@@ -14,6 +14,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _contract  # noqa: E402  — the transcript reader is shared with /calibrate
+
 BANNED = [
     (r"\blet me (check|look|start|see|first|try|run|dig|inspect|examine|verify|fix|now)\b",
      'process narration ("Let me check/look/…")'),
@@ -32,28 +35,9 @@ def max_lines():
 
 
 def final_assistant_text(path):
-    last = None
-    try:
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    entry = json.loads(line)
-                except ValueError:
-                    continue
-                if entry.get("type") != "assistant":
-                    continue
-                content = (entry.get("message") or {}).get("content") or []
-                texts = [c.get("text", "") for c in content
-                         if isinstance(c, dict) and c.get("type") == "text"]
-                joined = "\n".join(t for t in texts if t.strip())
-                if joined.strip():
-                    last = joined
-    except OSError:
-        return None
-    return last
+    """The just-ended turn's final assistant text — the last of the shared transcript reader."""
+    finals = _contract.turn_finals(path)
+    return finals[-1] if finals else None
 
 
 def violations(text):
@@ -90,7 +74,7 @@ def main():
             "decision": "block",
             "reason": (
                 "Final message violates the output contract: " + "; ".join(problems)
-                + ". Rewrite the report now as exactly: one outcome line, <=5 terse fact bullets, "
+                + ". Rewrite the report now as exactly: one outcome line, <=5 plain fact bullets, "
                   "then a numbered 'Q:' list (omit if none). No headers, tables, prose paragraphs, "
                   "or narration. Do not run tools — just restate the report in that shape."
             ),

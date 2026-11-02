@@ -61,7 +61,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`commit`](commit/README.md) | House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge. |
 | [`code-first`](code-first/README.md) | Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge. |
 | [`rename`](rename/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
-| [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message. |
+| [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message; `/calibrate` tunes the contract on real reports, and an `rc:`-stamped contract nudges for it once it's stale. |
 | [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot. |
 | [`context`](context/README.md) | Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh. |
 | [`lessons`](lessons/README.md) | Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug. |
@@ -97,7 +97,7 @@ no concern is stuck on:
 | `GIT_GUARD_OFF=1` | the git safety net (see also `GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`, `GIT_GUARD_STRICT`, `GIT_GUARD_PROTECTED_BRANCH`) |
 | `COMMIT_FORMAT_OFF=1` | the single-line commit-message guard |
 | `STOP_NUDGE_OFF=1` | the end-of-session commit nudge (`COMMIT_NUDGE_EXTRA_DIRS` widens it) |
-| `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_PULSE_EVERY`, `REPORT_GUARD_MAX_LINES` tune it |
+| `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_PULSE_EVERY`, `REPORT_PULSE_TEXT`, `REPORT_GUARD_MAX_LINES`, `REPORT_RC_DAYS` tune it |
 | `CODE_FIRST_OFF=1` | the whole code-first plugin (`CODE_FIRST_GUARD_OFF=1` drops only its Stop guard on inline code) |
 | `SESSION_START_OFF=1` | the SessionStart state snapshot + freshness nudges |
 | `CONTEXT_NUDGE_OFF=1` | the context-window nudges (`CONTEXT_WINDOW_TOKENS`, `CONTEXT_NUDGE_AT`, `CONTEXT_SNOOZE_PCT` tune them) |

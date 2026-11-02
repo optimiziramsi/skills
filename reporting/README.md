@@ -3,9 +3,11 @@
 The `reporting@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 The house **output contract**: total silence while working (zero text between tool calls), then
-exactly one report — **1 outcome line + ≤5 terse fact bullets + a numbered `Q:` list** (omitted if
-empty). No narration, headers, tables, or "next steps". Blocked on a decision mid-task → send only
-the `Q:` list and wait.
+exactly one report — **1 outcome line + ≤5 fact bullets + a numbered `Q:` list** (omitted if empty).
+The bullets are **plain** — a tired dev reads them at 3 am without looking anything up: plain names
+not ids, the decision itself not "confirm as written", order-and-dependency not calendar, and a
+question is the thing + the two choices + your pick. No narration, headers, tables, or "next steps".
+Blocked on a decision mid-task → send only the `Q:` list and wait.
 
 **Opt-in and opinionated** (like the `commit` plugin): enable it only if you want this specific
 convention. It's aggressive by design — the Stop guard *blocks* a violating final message and forces
@@ -21,14 +23,17 @@ a rewrite.
     `.agent/output-contract.md` → `.claude/output-contract.md` → the shipped
     `hooks/brevity-reminder.txt`. An override that exists but can't be read (or a
     `REPORT_CONTRACT_FILE` that doesn't exist) prints a visible "⚠️ brevity-reminder DISARMED" line
-    instead of silently falling back.
+    instead of silently falling back. When the active contract's first line is stamped `· rc: <date>
+    v<n>` and older than `REPORT_RC_DAYS` (default 7), one advisory line is appended once per session
+    — "run /calibrate to confirm or edit". A `· stable:` or unstamped contract is never nudged.
 
 - name: `contract-pulse`
   kind: hook
   purpose:
     PostToolUse — re-injects a one-line reminder every Nth tool call (default 10,
-    `REPORT_PULSE_EVERY`), so the contract doesn't decay over a long agentic turn.
-    `REPORT_PULSE_TEXT` replaces the one-liner (keep it matching a custom contract).
+    `REPORT_PULSE_EVERY`), so the contract doesn't decay over a long agentic turn. The line follows
+    the active contract: `REPORT_PULSE_TEXT` → the contract's first meaningful line (frame and stamp
+    stripped) → a hardcoded fallback. So an override is reminded in its own words, for free.
 
 - name: `report-guard`
   kind: hook
@@ -37,17 +42,42 @@ a rewrite.
     rewrite, `stop_hook_active`-guarded) on process narration, headers, tables, or gross
     over-length (`REPORT_GUARD_MAX_LINES`, default 18). Fenced code blocks are exempt from shape
     checks — limiting inline code is the [`code-first`](../code-first) plugin's job. Self-test:
-    `--test`.
+    `tests/test_reporting.py`.
 
-Escape hatch for all three: `REPORT_GUARD_OFF=1` (user-set). Fail-open: a missing dependency or
-unreadable transcript never bricks a session.
+- name: `calibrate`
+  kind: skill + command (`/calibrate`)
+  purpose:
+    Tune the contract on real reports without a chat like the one that first wrote it. `compare`
+    A/Bs the session's last reports under the active contract vs. the shipped one and, when the
+    active text wins, offers to flip its stamp `· rc:` → `· stable:`; `grill` re-sets the knobs by
+    asking six plain questions. Edits only the project's own `.agent/output-contract.md`, never the
+    shipped text; logs each run to `.agent/output-contract.calibration.md`. Backed by the read-only
+    `calibrate` CLI (`bin/`, on PATH while the plugin is enabled).
 
 ## Why three hooks, not one
 
 A single injection decays: models drift back to narrating over a 50-tool-call turn. The trio covers
 the whole lifecycle — contract stated at prompt time, kept warm mid-turn, and *verified* at stop.
 The Stop guard is what gives the convention teeth; the injections are what keep the guard from
-firing often.
+firing often. `/calibrate` closes the loop: the contract itself improves from what the session saw.
+
+## Settings (env)
+
+| Var | Default | Effect |
+|---|---|---|
+| `REPORT_CONTRACT_FILE` | — | explicit contract path (project-relative or absolute); wins over the `.agent`/`.claude` lookup |
+| `REPORT_PULSE_EVERY` | `10` | re-pulse cadence (1-in-N tool calls) |
+| `REPORT_PULSE_TEXT` | — | replaces the pulse one-liner outright |
+| `REPORT_GUARD_MAX_LINES` | `18` | the Stop guard's over-length threshold |
+| `REPORT_RC_DAYS` | `7` | how stale an `rc:`-stamped contract gets before the once-per-session nudge |
+
+The `· rc: <YYYY-MM-DD> v<n>` / `· stable: <YYYY-MM-DD>` stamp is an optional tail on the contract's
+first line; it drives the nudge and the `/calibrate` flip, nothing else.
+
+## Escape hatch
+
+`REPORT_GUARD_OFF=1` (user-set) silences all three hooks. Fail-open: a missing dependency or
+unreadable transcript never bricks a session.
 
 ## Enable
 
@@ -60,4 +90,4 @@ firing often.
 }
 ```
 
-No skills or commands — this plugin is pure enforcement of a reporting style.
+One command — `/calibrate` — and its skill; everything else is pure enforcement of a reporting style.
