@@ -293,6 +293,13 @@ Done — include ONLY when the topic is finished: "topic complete → close + te
 
 A routine slice fills only **Ready + Summary**.
 
+**When the topic belongs to an umbrella milestone with a `ledger.md`** (the `planning` plugin's
+`milestone` skill, when that plugin is enabled), the land report also carries the ledger fields the
+orchestrator folds in: `Record: [id:…]`, `Verify:` (the record's `verify:` line as run, with its
+result), `Design:` (design file + tab ↔ the slice's screenshot — screen slices only), and
+`Deferred:` (`[id:<new>]…` or `none`). The in-flight signals `REVIEW` / `BLOCKED` / `REQUEST` /
+`PAUSE` reach the orchestrator in the same one-line shapes (that skill's `ledger.md` § Reports).
+
 ## Signal, don't push
 
 You **do** signal — ping "ready for review" and ask "merge?". What you never do is **push the
