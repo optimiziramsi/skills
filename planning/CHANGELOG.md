@@ -4,7 +4,7 @@ Versions of the `planning@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.1 — unreleased
+## 0.2.1 — 2026-11-02
 
 - milestone/`ledger`: `ledger why <ID>` prints the transitive chain of unlanded `needs:` for one
   record as an indented tree — group refs shown as `group:X (n/m landed)`, `group:PREFIX*` globs
