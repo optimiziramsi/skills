@@ -81,6 +81,10 @@ Updated during execution. No checkboxes — write prose:
 
 > Legacy plans may use `[ ]` / `[x]` checkboxes for execution status. New plans use prose. Don't
 > retrofit unless you're already editing the file for other reasons.
+>
+> **Carve-out:** closed-enum `[status:…]` tags in an umbrella milestone's `ledger.md` (the
+> `milestone` skill) are a sanctioned machine-view exception — a tool parses them. "Prose, no
+> checkboxes" still governs plan files and milestone `README.md` trackers.
 
 ## Rules
 

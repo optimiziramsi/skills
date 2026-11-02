@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+# ledger — read-only reader for an umbrella milestone's ledger.md; on PATH while the planning plugin is enabled.
+# Format / vocab / report shapes: the planning:milestone skill's ledger.md. Pure bash + awk; never writes the ledger.
+#
+#   ledger <cmd> [args] [-m <milestone-dir>]
+#   cmds: list [GROUP] | ready | open | blocked | active | id <ID> | next <PREFIX> | check | --test
+#   -m picks the ledger; default = the single .agent/milestone/*/ledger.md under the repo (err if 0 or >1).
+#   `open` printing nothing + `check` exiting 0 = the milestone is complete.
+set -euo pipefail
+
+# Resolve the consumer repo root from the cwd (this runs from inside the repo, like the other plugin
+# CLIs on PATH), NOT from the script's own location — the script ships in the plugin, not the repo.
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+usage() { sed -n '2,8p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
+
+cmd="${1:-}"; [[ -n "$cmd" ]] || usage; shift
+arg=""; ledger=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m) ledger="${2:?-m needs a dir}/ledger.md"; shift 2 ;;
+    *) arg="$1"; shift ;;
+  esac
+done
+
+resolve_ledger() {
+  [[ -n "$ledger" ]] && return
+  local found=()
+  while IFS= read -r f; do found+=("$f"); done < <(ls "$repo_root"/.agent/milestone/*/ledger.md 2>/dev/null || true)
+  [[ ${#found[@]} -eq 1 ]] || { echo "ledger: ${#found[@]} ledger.md files under .agent/milestone — pass -m <dir>" >&2; exit 2; }
+  ledger="${found[0]}"
+}
+
+# The one awk program: parses the ledger into records / groups / requests, then runs `cmd`.
+run_awk() {
+  awk -v cmd="$1" -v arg="$2" '
+  function tags(line, arr,   s, m) {
+    s = line
+    while (match(s, /\[[a-z]+:[^]]*\]/)) {
+      m = substr(s, RSTART + 1, RLENGTH - 2)
+      arr[substr(m, 1, index(m, ":") - 1)] = substr(m, index(m, ":") + 1)
+      s = substr(s, RSTART + RLENGTH)
+    }
+  }
+  function err(msg) { errors++; print "ERROR " msg }
+  function warn(msg) { warnings++; print "warn  " msg }
+  function group_landed(g,   i) {
+    if (gcount[g] == 0) return 0
+    for (i = 1; i <= nrec; i++) if (rgroup[rid[i]] == g && rstatus[rid[i]] != "landed" && rstatus[rid[i]] != "dropped" && rstatus[rid[i]] != "post-v1") return 0
+    return 1
+  }
+  function need_landed(n,   g, i, j, hit, res, pre, r) {
+    if (n == "-" || n == "") return 1
+    if (substr(n, 1, 6) == "group:") {
+      g = substr(n, 7); hit = 0; res = 1
+      if (substr(g, length(g)) == "*") { pre = substr(g, 1, length(g) - 1)
+        for (j = 1; j <= ngrp; j++) if (index(gorder[j], pre) == 1) { hit = 1; r = group_landed(gorder[j]); if (r == 0) res = 0 }
+        return hit ? res : -1 }
+      if (!(g in gstatus)) return -1
+      return group_landed(g)
+    }
+    if (!(n in rstatus)) return -1
+    return rstatus[n] == "landed" ? 1 : 0
+  }
+  function all_needs(id,   k, n, parts, r, res) {
+    res = 1; k = split(rneeds[id], parts, ",")
+    for (n = 1; n <= k; n++) { r = need_landed(parts[n]); if (r == -1) return -1; if (r == 0) res = 0 }
+    return res
+  }
+  BEGIN { SV = " pending ready active blocked landed dropped post-v1 "; GV = " pending active paused done "
+          IV = " continue wait blocked "; RV = " open filed done "; cur = "" }
+  /^## .*\[group:[^]]+\]/ { delete t; tags($0, t); g = t["group"]; if (g in gstatus) err("group declared twice: " g)
+          gstatus[g] = t["status"]; gchat[g] = ("chat" in t) ? t["chat"] : "-"; gorder[++ngrp] = g; gcount[g] += 0; cur = ""; next }
+  /^## / { cur = ""; next }
+  /^- \[id:/ { delete t; tags($0, t); id = t["id"]
+          if (id in rstatus) err("duplicate id: " id)
+          rid[++nrec] = id; rstatus[id] = t["status"]; rgroup[id] = t["group"]; rwsd[id] = ("wsd" in t) ? t["wsd"] : "-"
+          rneeds[id] = ("needs" in t) ? t["needs"] : "-"; rchat[id] = ("chat" in t) ? t["chat"] : ""; rby[id] = ("by" in t) ? t["by"] : ""
+          rsha[id] = ("sha" in t) ? t["sha"] : ""; rprio[id] = ("prio" in t) ? t["prio"] : ""; rowner[id] = ("owner" in t) ? t["owner"] : ""
+          gcount[rgroup[id]]++; block[id] = $0 "\n"; cur = "rec:" id; if (length($0) > 100) err(id ": tag line over 100 chars"); next }
+  /^- \[req:/ { delete t; tags($0, t); r = t["req"]; if (r in qstatus) err("duplicate request: " r)
+          qid[++nreq] = r; qfrom[r] = t["from"]; qto[r] = t["to"]; qneeds[r] = t["needs"]; qimpact[r] = t["impact"]; qstatus[r] = t["status"]
+          qblock[r] = $0 "\n"; cur = "req:" r; next }
+  /^  [a-z]+: / { if (cur ~ /^rec:/) { id = substr(cur, 5); f = $0; sub(/^  /, "", f); fname = substr(f, 1, index(f, ":") - 1)
+          rfield[id, fname] = 1; block[id] = block[id] $0 "\n" } else if (cur ~ /^req:/) { qblock[substr(cur, 5)] = qblock[substr(cur, 5)] $0 "\n" }; next }
+  /^    / { if (cur ~ /^rec:/) block[substr(cur, 5)] = block[substr(cur, 5)] $0 "\n"; else if (cur ~ /^req:/) qblock[substr(cur, 5)] = qblock[substr(cur, 5)] $0 "\n"; next }
+  /^- / { if (cur != "") err("stray bullet inside a record/request zone: " substr($0, 1, 60)); next }
+  { next }
+  END {
+    if (cmd == "list") { for (i = 1; i <= nrec; i++) { id = rid[i]; if (arg != "" && rgroup[id] != arg) continue
+        printf "%-10s %-8s %-8s %-4s needs:%s%s\n", id, rstatus[id], rgroup[id], rwsd[id], rneeds[id], (rprio[id] != "" ? " prio:" rprio[id] : "") } exit }
+    if (cmd == "ready") { for (i = 1; i <= nrec; i++) { id = rid[i]
+        if (rstatus[id] == "ready") printf "%-10s ready    %s\n", id, rgroup[id]
+        else if (rstatus[id] == "pending" && all_needs(id) == 1) printf "%-10s pending  %s  should-be-ready\n", id, rgroup[id] } exit }
+    if (cmd == "open") { for (i = 1; i <= nrec; i++) { id = rid[i]; s = rstatus[id]
+        if (s != "landed" && s != "dropped" && s != "post-v1") printf "%-10s %-8s %s%s\n", id, s, rgroup[id], (rby[id] != "" ? "  by:" rby[id] : "") }
+        for (i = 1; i <= nreq; i++) { r = qid[i]; if (qstatus[r] != "done") printf "%-10s %-8s %s -> %s needs:%s impact:%s\n", r, qstatus[r], qfrom[r], qto[r], qneeds[r], qimpact[r] } exit }
+    if (cmd == "blocked") { for (i = 1; i <= nrec; i++) { id = rid[i]; if (rstatus[id] == "blocked") printf "%-10s %s  by:%s  chat:%s\n", id, rgroup[id], rby[id], rchat[id] }
+        for (i = 1; i <= nreq; i++) { r = qid[i]; if (qstatus[r] != "done" && qimpact[r] == "blocked") printf "%-10s request %s -> %s needs:%s\n", r, qfrom[r], qto[r], qneeds[r] } exit }
+    if (cmd == "active") { for (g = 1; g <= ngrp; g++) if (gstatus[gorder[g]] == "active") printf "group %-8s chat:%s\n", gorder[g], gchat[gorder[g]]
+        for (i = 1; i <= nrec; i++) { id = rid[i]; if (rstatus[id] == "active") printf "%-10s %s  chat:%s\n", id, rgroup[id], rchat[id] } exit }
+    if (cmd == "id") { if (arg in rstatus) printf "%s", block[arg]; else if (arg in qstatus) printf "%s", qblock[arg]; else { print "ledger: no record " arg; exit 1 } exit }
+    if (cmd == "next") { mx = 0; for (i = 1; i <= nrec; i++) { id = rid[i]; if (index(id, arg) == 1) { rest = substr(id, length(arg) + 1); sub(/^-/, "", rest)
+        if (rest ~ /^[0-9]+$/ && rest + 0 > mx) mx = rest + 0 } } print arg (mx + 1); exit }
+    if (cmd == "check") {
+      for (g = 1; g <= ngrp; g++) { gn = gorder[g]; if (index(GV, " " gstatus[gn] " ") == 0) err("group " gn ": status \"" gstatus[gn] "\" not in" GV)
+        if (gstatus[gn] == "active" && gchat[gn] == "-") warn("group " gn " active without chat") }
+      for (i = 1; i <= nrec; i++) { id = rid[i]; s = rstatus[id]; if (id in seen) continue; seen[id] = 1
+        if (index(SV, " " s " ") == 0) err(id ": status \"" s "\" not in" SV)
+        if (!(rgroup[id] in gstatus)) err(id ": group \"" rgroup[id] "\" not declared")
+        if (rwsd[id] != "-" && rwsd[id] !~ /^[0-9]+(\.[0-9]+)?$/) err(id ": wsd \"" rwsd[id] "\" not a number or -")
+        if (!((id, "verify") in rfield)) err(id ": no verify: field")
+        if (!((id, "what") in rfield)) err(id ": no what: field")
+        k = split(rneeds[id], parts, ","); for (n = 1; n <= k; n++) if (need_landed(parts[n]) == -1) err(id ": needs \"" parts[n] "\" does not resolve")
+        a = all_needs(id)
+        if (s == "ready" && a == 0) err(id ": ready but a need is not landed")
+        if (s == "pending" && a == 1) warn(id ": every need landed — should be ready")
+        if (s == "active" && rchat[id] == "") err(id ": active without chat:")
+        if (s == "blocked" && rby[id] == "") err(id ": blocked without by:")
+        if (s == "landed" && rsha[id] == "") err(id ": landed without sha:") }
+      for (i = 1; i <= nreq; i++) { r = qid[i]
+        if (qfrom[r] == "" || qto[r] == "" || qneeds[r] == "" || qimpact[r] == "" || qstatus[r] == "") err(r ": request needs from/to/needs/impact/status")
+        if (index(IV, " " qimpact[r] " ") == 0) err(r ": impact \"" qimpact[r] "\" not in" IV)
+        if (index(RV, " " qstatus[r] " ") == 0) err(r ": status \"" qstatus[r] "\" not in" RV)
+        if (qto[r] != "" && !(qto[r] in gstatus)) err(r ": to-group \"" qto[r] "\" not declared")
+        if (qfrom[r] != "" && !(qfrom[r] in rstatus)) err(r ": from-record \"" qfrom[r] "\" not found")
+        if (qneeds[r] != "new" && qneeds[r] != "" && !(qneeds[r] in rstatus)) err(r ": needs \"" qneeds[r] "\" not found (or new)")
+        if (qstatus[r] == "filed" && qneeds[r] == "new") err(r ": filed but needs still \"new\"") }
+      printf "%s: %d records, %d groups, %d requests, %d errors, %d warnings\n", (errors ? "FAIL" : "ok"), nrec, ngrp, nreq, errors, warnings
+      exit (errors ? 1 : 0) }
+    print "ledger: unknown command " cmd; exit 2
+  }' "$ledger"
+}
+
+self_test() {
+  tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+  cat > "$tmp/ledger.md" <<'EOF'
+# fixture
+## BE — [group:BE] [status:active] [chat:be-1]
+- [id:BE1] [group:BE] [status:landed] [wsd:1] [needs:-] [sha:abc1234]
+  what: one
+  verify: bun test x
+- [id:BE2] [group:BE] [status:pending] [wsd:0.5] [needs:BE1]
+  what: two
+  verify: grep y
+## WS — [group:WS] [status:pending] [chat:-]
+- [id:WS1] [group:WS] [status:blocked] [wsd:1] [needs:group:B*] [by:BE2] [chat:ws-1]
+  what: three
+  verify: curl z
+## Requests
+- [req:R1] [from:WS1] [to:BE] [needs:BE2] [impact:blocked] [status:filed]
+  what: ws needs two
+EOF
+  local out rc=0
+  out="$(ledger="$tmp/ledger.md" run_awk check "")" || rc=$?
+  [[ $rc -eq 0 && "$out" == *"ok: 3 records, 2 groups, 1 requests, 0 errors, 1 warnings"* ]] || { echo "FAIL check-ok: rc=$rc $out"; exit 1; }
+  out="$(ledger="$tmp/ledger.md" run_awk ready "")"; [[ "$out" == *"BE2"*"should-be-ready"* ]] || { echo "FAIL ready: $out"; exit 1; }
+  out="$(ledger="$tmp/ledger.md" run_awk open "")"; [[ "$out" == *"BE2"* && "$out" == *"WS1"* && "$out" == *"R1"* && "$out" != *"BE1"* ]] || { echo "FAIL open: $out"; exit 1; }
+  out="$(ledger="$tmp/ledger.md" run_awk next "BE")"; [[ "$out" == "BE3" ]] || { echo "FAIL next: $out"; exit 1; }
+  out="$(ledger="$tmp/ledger.md" run_awk blocked "")"; [[ "$out" == *"WS1"*"by:BE2"* && "$out" == *"R1"* ]] || { echo "FAIL blocked: $out"; exit 1; }
+  printf -- '- [id:BE2] [group:BE] [status:pending] [wsd:1] [needs:-]\n  what: dup\n  verify: x\n' >> "$tmp/ledger.md"
+  printf -- '- [id:BE9] [group:BE] [status:ready] [wsd:x] [needs:NOPE,group:ZZ*]\n  what: bad\n' >> "$tmp/ledger.md"
+  rc=0; out="$(ledger="$tmp/ledger.md" run_awk check "")" || rc=$?
+  [[ $rc -eq 1 && "$out" == *"duplicate id: BE2"* && "$out" == *"\"NOPE\" does not resolve"* && "$out" == *"\"group:ZZ*\" does not resolve"* && "$out" == *"BE9: no verify"* && "$out" == *"not a number"* ]] || { echo "FAIL check-fail: rc=$rc $out"; exit 1; }
+  echo "ledger --test: ok"
+}
+
+case "$cmd" in
+  --test) self_test ;;
+  list|ready|open|blocked|active|id|next|check) resolve_ledger; run_awk "$cmd" "$arg" ;;
+  *) usage ;;
+esac
