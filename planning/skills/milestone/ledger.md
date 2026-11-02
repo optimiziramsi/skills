@@ -31,17 +31,19 @@ parallel chats — a single-chat milestone keeps `steps.md` and needs none of th
 - **`group`** — exactly one, declared as a group header in the same file (§ Groups).
 - **`status`** — one of `pending` (nobody holds it), `ready` (every `needs` landed; the orchestrator
   flips it at each land relay), `active` (a chat holds it — `[chat:<slug>]` required), `blocked` (a
-  chat holds it and cannot continue — `[by:<id|walk:<pattern>>]` required), `landed`
-  (`[sha:<short>]` required), `dropped`, `post-v1` (moved to the parked backlog). Nothing else.
+  chat holds it and cannot continue — `[by:<id|walk:<pattern>>]`, or the project's own decision id
+  (e.g. `OD-n`), required), `landed` (`[sha:<short>]` required), `dropped`, `post-v1` (moved to the
+  parked backlog). Nothing else.
 - **`wsd`** — worker-session-days, one number or `-`.
 - **`needs`** — comma-separated ids, or `group:<NAME>` (= every record of that group landed), or
   `-`. This is the only place a dependency lives; prose repeats it, never defines it.
 - **Fields** (2-space indent, continuation lines 4-space): `what:` one sentence; `verify:` the done
-  check — a command, a test id, a probe URL + expected status, or `user: <who> approves, logged
-  README § Log <date>`. **`verify:` is mandatory**: a record without an executable or grep-able
-  check is not land-ready, and a smaller model confirms completion by running `verify:`, never by
-  judging prose. `spec:` where the body lives (plan §, backlog record, design file). Optional
-  `note:`.
+  check — a backticked command or path, a probe URL + expected status, `review:` by whom, or `user:
+  <who> approves, logged README § Log <date>`. **`verify:` is mandatory and must be runnable**:
+  `ledger check` ERRORs on a `verify:` that carries no backticked command/path and no `review:` /
+  `user:` / `README § Log` token, or that runs under 25 characters — a vague `verify: works` is not
+  land-ready, and a smaller model confirms completion by running `verify:`, never by judging prose.
+  `spec:` where the body lives (plan §, backlog record, design file). Optional `note:`.
 - Order inside a group = priority. Moving a record up IS the re-prioritisation; `[prio:now]` marks a
   pre-emption the orchestrator granted on a request (strike it when the record lands).
 
@@ -89,8 +91,9 @@ ledger. Each line starts with its verb so a scan finds it.
 - **Land report** = the `worktree` skill's land-report shape (Ready / Summary / Significant /
   Follow-ups) plus, when the milestone has a ledger: `Record: [id:API3]`; `Verify:` the record's
   `verify:` line as run, with its result; `Design:` design file + tab ↔ the slice's screenshot
-  (screen slices only); `Deferred:` `[id:<new>]…` or `none`. The orchestrator flips the record to
-  `[status:landed] [sha:…]` from this report.
+  (screen slices only); `Deferred:` `[id:<new>]…` or `none`. These ledger lines are the minimum, not
+  the whole report — a project may add its own (e.g. `Tests:` / `Patterns:` from its board header).
+  The orchestrator flips the record to `[status:landed] [sha:…]` from this report.
 - `REVIEW [id:API3] <branch>@<sha> — ready for review`
 - `BLOCKED [id:WEB6] [by:walk:ui-resolver-pattern] [impact:wait] <file:line evidence, options>`
 - `REQUEST [from:WEB2] [to:API] [needs:new] [impact:continue] <what, why>`
@@ -112,8 +115,10 @@ report says so. Items only a human can approve carry `verify: user: … approves
 
 ## `ledger` — the reader
 
-On PATH while the `planning` plugin is enabled (a repo may also wrap it as `bin/ledger`). Pure bash +
-awk, read-only. `ledger <cmd> [-m <milestone-dir>]`; without `-m` it takes the single
+On PATH inside a Claude Code session with the `planning` plugin enabled
+(`…/cache/<plugin>/<version>/bin`), so a chat calls it bare; a headless runner started outside the
+session is not on that PATH — call it by its path, or have the repo wrap it as `bin/ledger`. Pure
+bash + awk, read-only. `ledger <cmd> [-m <milestone-dir>]`; without `-m` it takes the single
 `.agent/milestone/*/ledger.md` under the repo.
 
 - `list [GROUP]` — one line per record: id, status, group, wsd, needs.
@@ -121,10 +126,12 @@ awk, read-only. `ledger <cmd> [-m <milestone-dir>]`; without `-m` it takes the s
   `should-be-ready`).
 - `open` — every record not landed / dropped / post-v1 and every open request. Empty = complete.
 - `blocked` / `active` — the records in that status with their `by` / `chat`.
-- `id <ID>` — the record block. `next <PREFIX>` — next free id number.
+- `id <ID>` — the record block. `why <ID>` — the transitive chain of unlanded `needs:` as an
+  indented tree (group refs as `group:X (n/m landed)`, `group:PREFIX*` globs, depth-capped): the
+  critical path for one record. `next <PREFIX>` — next free id number.
 - `check` — unique ids, vocab, declared groups, `needs` resolve, `ready` ⇔ needs landed, required
-  tags per status, `verify:` present, request vocab; exit 1 on any error. `--test` runs the embedded
-  fixture.
+  tags per status, `verify:` present **and runnable** (§ One record), request vocab; exit 1 on any
+  error. `--test` runs the embedded fixture.
 
 ## Where the rest lives
 

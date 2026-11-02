@@ -1,7 +1,7 @@
 {
   "name": "planning",
   "displayName": "optimiziramsi planning",
-  "version": "0.2.0",
+  "version": "0.2.1-dev.1",
   "description": "Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/.",
   "author": {
     "name": "optimiziramsi",

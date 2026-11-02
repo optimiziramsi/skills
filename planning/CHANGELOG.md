@@ -4,6 +4,26 @@ Versions of the `planning@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.2.1 — unreleased
+
+- milestone/`ledger`: `ledger why <ID>` prints the transitive chain of unlanded `needs:` for one
+  record as an indented tree — group refs shown as `group:X (n/m landed)`, `group:PREFIX*` globs
+  supported, depth-capped. The critical path for a record, derived from the tags instead of restated
+  in prose.
+- milestone/`ledger`: `ledger check` now lints `verify:` for runnability — a `verify:` carrying no
+  backticked command/path, `review:`, `user:`, or `README § Log` token (or under 25 chars) is an
+  ERROR, not a missing-field pass, so a vague `verify: works` no longer counts as land-ready.
+- milestone/`ledger.md`: documents the `verify:` runnability rule and the `by:` project-decision-id
+  form (e.g. `OD-n`) beside `<id>` / `walk:<pattern>`, and notes a project may add its own
+  land-report lines on top of the ledger minimum.
+- milestone: new `milestone/orchestrator.md` lifts the parent chat's own playbook (opening a group,
+  the worker brief, the per-land loop, requests/blockers, phase boundaries, context refresh);
+  SKILL.md § Umbrella milestones points at it.
+- `bin/ledger` header notes it is on PATH only inside a Claude Code session
+  (`…/cache/<plugin>/<version>/bin`); a headless runner started outside the session must call it by
+  path. Any change under a published version number requires a version bump — the cache is
+  version-keyed, so an unmoved version reaches nobody.
+
 ## 0.2.0 — 2026-11-02
 
 - milestone: umbrella milestones (many parallel chats under one orchestrator) now keep a

@@ -62,13 +62,14 @@ An **umbrella** milestone fans one initiative across **many parallel chats under
 tagged record per task (`[id:]` `[group:]` `[status:]` `[needs:]`), groups for what runs in
 parallel, a cross-group `## Requests` section, and a gate that is itself a group of
 `verify:`-carrying records. **Complete = `ledger open` empty + `ledger check` exits 0** (the
-`ledger` reader is on PATH with this plugin). Only the orchestrator writes the ledger — workers
-report and it folds them in; the `README.md` stays the prose narrative.
+`ledger` reader is on PATH). Only the orchestrator writes the ledger — workers report and it folds
+them in; the `README.md` stays the prose narrative.
 
-Full format, vocab, group/request rules, report shapes and the reader: **[`ledger.md`](ledger.md)**
-in this skill folder. Its `[status:…]` tags are the one sanctioned exception to **prose, no
-checkboxes** (§ `README.md` structure) — a closed enum a tool parses; the `README.md` and `steps.md`
-stay checkbox-free prose. A single-chat milestone keeps `steps.md` and ignores all of this.
+Full format, vocab, group/request rules, report shapes and the reader: **[`ledger.md`](ledger.md)**;
+the orchestrator's own playbook: **[`orchestrator.md`](orchestrator.md)** — both in this skill
+folder. The ledger's `[status:…]` tags are the one sanctioned exception to **prose, no checkboxes**
+(§ `README.md` structure) — a closed enum a tool parses. A single-chat milestone keeps `steps.md`
+and ignores all of this.
 
 ## Creating a milestone
 
