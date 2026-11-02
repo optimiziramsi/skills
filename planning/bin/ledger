@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# ledger — read-only reader for an umbrella milestone's ledger.md; on PATH while the planning plugin is enabled.
-# Format / vocab / report shapes: the planning:milestone skill's ledger.md. Pure bash + awk; never writes the ledger.
+# ledger — read-only reader for an umbrella milestone's ledger.md. Pure bash + awk; never writes it.
+# Format / vocab / report shapes: the planning:milestone skill's ledger.md.
 #
 #   ledger <cmd> [args] [-m <milestone-dir>]
-#   cmds: list [GROUP] | ready | open | blocked | active | id <ID> | next <PREFIX> | check | --test
+#   cmds: list [GROUP] | ready | open | blocked | active | id <ID> | why <ID> | next <PREFIX> | check | --test
 #   -m picks the ledger; default = the single .agent/milestone/*/ledger.md under the repo (err if 0 or >1).
 #   `open` printing nothing + `check` exiting 0 = the milestone is complete.
+#
+# On PATH inside a Claude Code session (…/cache/<plugin>/<version>/bin), so chats call it bare; a
+# headless runner started outside the session is NOT — call it by path or wrap it as the repo's
+# bin/ledger. The cache path is version-keyed: a change under a published version needs a version bump.
 set -euo pipefail
 
 # Resolve the consumer repo root from the cwd (this runs from inside the repo, like the other plugin
@@ -67,6 +71,23 @@ run_awk() {
     for (n = 1; n <= k; n++) { r = need_landed(parts[n]); if (r == -1) return -1; if (r == 0) res = 0 }
     return res
   }
+  function gdesc(spec,   g, pre, j, tot, done, i, s2) {
+    tot = 0; done = 0; g = substr(spec, 7)
+    for (j = 1; j <= ngrp; j++) { if (substr(g, length(g)) == "*") { pre = substr(g, 1, length(g) - 1); if (index(gorder[j], pre) != 1) continue } else if (gorder[j] != g) continue
+      for (i = 1; i <= nrec; i++) if (rgroup[rid[i]] == gorder[j]) { tot++; s2 = rstatus[rid[i]]; if (s2 == "landed" || s2 == "dropped" || s2 == "post-v1") done++ } }
+    return done "/" tot " landed"
+  }
+  function why(id, depth,   k, n, parts, pad, i) {
+    pad = ""; for (i = 0; i < depth; i++) pad = pad "  "
+    printf "%s%s %s%s\n", pad, id, rstatus[id], (rby[id] != "" ? " by:" rby[id] : "")
+    if (rstatus[id] == "landed" || depth > 8) return
+    k = split(rneeds[id], parts, ",")
+    for (n = 1; n <= k; n++) { if (parts[n] == "-" || parts[n] == "") continue
+      if (substr(parts[n], 1, 6) == "group:") { printf "%s  %s (%s)\n", pad, parts[n], gdesc(parts[n]); continue }
+      if (!(parts[n] in rstatus)) { printf "%s  %s ?\n", pad, parts[n]; continue }
+      if (rstatus[parts[n]] == "landed") printf "%s  %s landed\n", pad, parts[n]; else why(parts[n], depth + 1) }
+  }
+  function verify_ok(v) { return (index(v, "`") > 0 || index(v, "user:") > 0 || index(v, "review:") > 0 || index(v, "README § Log") > 0 || index(v, "Log line") > 0) && length(v) >= 25 }
   BEGIN { SV = " pending ready active blocked landed dropped post-v1 "; GV = " pending active paused done "
           IV = " continue wait blocked "; RV = " open filed done "; cur = "" }
   /^## .*\[group:[^]]+\]/ { delete t; tags($0, t); g = t["group"]; if (g in gstatus) err("group declared twice: " g)
@@ -77,13 +98,15 @@ run_awk() {
           rid[++nrec] = id; rstatus[id] = t["status"]; rgroup[id] = t["group"]; rwsd[id] = ("wsd" in t) ? t["wsd"] : "-"
           rneeds[id] = ("needs" in t) ? t["needs"] : "-"; rchat[id] = ("chat" in t) ? t["chat"] : ""; rby[id] = ("by" in t) ? t["by"] : ""
           rsha[id] = ("sha" in t) ? t["sha"] : ""; rprio[id] = ("prio" in t) ? t["prio"] : ""; rowner[id] = ("owner" in t) ? t["owner"] : ""
-          gcount[rgroup[id]]++; block[id] = $0 "\n"; cur = "rec:" id; if (length($0) > 100) err(id ": tag line over 100 chars"); next }
+          gcount[rgroup[id]]++; block[id] = $0 "\n"; cur = "rec:" id; curf = ""; if (length($0) > 100) err(id ": tag line over 100 chars"); next }
   /^- \[req:/ { delete t; tags($0, t); r = t["req"]; if (r in qstatus) err("duplicate request: " r)
           qid[++nreq] = r; qfrom[r] = t["from"]; qto[r] = t["to"]; qneeds[r] = t["needs"]; qimpact[r] = t["impact"]; qstatus[r] = t["status"]
           qblock[r] = $0 "\n"; cur = "req:" r; next }
   /^  [a-z]+: / { if (cur ~ /^rec:/) { id = substr(cur, 5); f = $0; sub(/^  /, "", f); fname = substr(f, 1, index(f, ":") - 1)
-          rfield[id, fname] = 1; block[id] = block[id] $0 "\n" } else if (cur ~ /^req:/) { qblock[substr(cur, 5)] = qblock[substr(cur, 5)] $0 "\n" }; next }
-  /^    / { if (cur ~ /^rec:/) block[substr(cur, 5)] = block[substr(cur, 5)] $0 "\n"; else if (cur ~ /^req:/) qblock[substr(cur, 5)] = qblock[substr(cur, 5)] $0 "\n"; next }
+          rfield[id, fname] = 1; block[id] = block[id] $0 "\n"; curf = fname
+          if (fname == "verify") rverify[id] = substr(f, index(f, ":") + 1) } else if (cur ~ /^req:/) { qblock[substr(cur, 5)] = qblock[substr(cur, 5)] $0 "\n" }; next }
+  /^    / { if (cur ~ /^rec:/) { id = substr(cur, 5); block[id] = block[id] $0 "\n"; if (curf == "verify") rverify[id] = rverify[id] " " $0 }
+          else if (cur ~ /^req:/) qblock[substr(cur, 5)] = qblock[substr(cur, 5)] $0 "\n"; next }
   /^- / { if (cur != "") err("stray bullet inside a record/request zone: " substr($0, 1, 60)); next }
   { next }
   END {
@@ -99,6 +122,7 @@ run_awk() {
         for (i = 1; i <= nreq; i++) { r = qid[i]; if (qstatus[r] != "done" && qimpact[r] == "blocked") printf "%-10s request %s -> %s needs:%s\n", r, qfrom[r], qto[r], qneeds[r] } exit }
     if (cmd == "active") { for (g = 1; g <= ngrp; g++) if (gstatus[gorder[g]] == "active") printf "group %-8s chat:%s\n", gorder[g], gchat[gorder[g]]
         for (i = 1; i <= nrec; i++) { id = rid[i]; if (rstatus[id] == "active") printf "%-10s %s  chat:%s\n", id, rgroup[id], rchat[id] } exit }
+    if (cmd == "why") { if (!(arg in rstatus)) { print "ledger: no record " arg; exit 1 } why(arg, 0); exit }
     if (cmd == "id") { if (arg in rstatus) printf "%s", block[arg]; else if (arg in qstatus) printf "%s", qblock[arg]; else { print "ledger: no record " arg; exit 1 } exit }
     if (cmd == "next") { mx = 0; for (i = 1; i <= nrec; i++) { id = rid[i]; if (index(id, arg) == 1) { rest = substr(id, length(arg) + 1); sub(/^-/, "", rest)
         if (rest ~ /^[0-9]+$/ && rest + 0 > mx) mx = rest + 0 } } print arg (mx + 1); exit }
@@ -110,6 +134,7 @@ run_awk() {
         if (!(rgroup[id] in gstatus)) err(id ": group \"" rgroup[id] "\" not declared")
         if (rwsd[id] != "-" && rwsd[id] !~ /^[0-9]+(\.[0-9]+)?$/) err(id ": wsd \"" rwsd[id] "\" not a number or -")
         if (!((id, "verify") in rfield)) err(id ": no verify: field")
+        else if (!verify_ok(rverify[id])) err(id ": verify: has no runnable check (needs a `command`/path, review:, user:, or a README § Log line)")
         if (!((id, "what") in rfield)) err(id ": no what: field")
         k = split(rneeds[id], parts, ","); for (n = 1; n <= k; n++) if (need_landed(parts[n]) == -1) err(id ": needs \"" parts[n] "\" does not resolve")
         a = all_needs(id)
@@ -139,14 +164,14 @@ self_test() {
 ## BE — [group:BE] [status:active] [chat:be-1]
 - [id:BE1] [group:BE] [status:landed] [wsd:1] [needs:-] [sha:abc1234]
   what: one
-  verify: bun test x
+  verify: `bun test packages/x` green, drives the new op
 - [id:BE2] [group:BE] [status:pending] [wsd:0.5] [needs:BE1]
   what: two
-  verify: grep y
+  verify: `grep -rn y packages/` returns the new op
 ## WS — [group:WS] [status:pending] [chat:-]
 - [id:WS1] [group:WS] [status:blocked] [wsd:1] [needs:group:B*] [by:BE2] [chat:ws-1]
   what: three
-  verify: curl z
+  verify: `curl https://z/health` returns 200
 ## Requests
 - [req:R1] [from:WS1] [to:BE] [needs:BE2] [impact:blocked] [status:filed]
   what: ws needs two
@@ -160,13 +185,15 @@ EOF
   out="$(ledger="$tmp/ledger.md" run_awk blocked "")"; [[ "$out" == *"WS1"*"by:BE2"* && "$out" == *"R1"* ]] || { echo "FAIL blocked: $out"; exit 1; }
   printf -- '- [id:BE2] [group:BE] [status:pending] [wsd:1] [needs:-]\n  what: dup\n  verify: x\n' >> "$tmp/ledger.md"
   printf -- '- [id:BE9] [group:BE] [status:ready] [wsd:x] [needs:NOPE,group:ZZ*]\n  what: bad\n' >> "$tmp/ledger.md"
+  printf -- '- [id:BE8] [group:BE] [status:pending] [wsd:1] [needs:-]\n  what: weak\n  verify: works\n' >> "$tmp/ledger.md"
   rc=0; out="$(ledger="$tmp/ledger.md" run_awk check "")" || rc=$?
-  [[ $rc -eq 1 && "$out" == *"duplicate id: BE2"* && "$out" == *"\"NOPE\" does not resolve"* && "$out" == *"\"group:ZZ*\" does not resolve"* && "$out" == *"BE9: no verify"* && "$out" == *"not a number"* ]] || { echo "FAIL check-fail: rc=$rc $out"; exit 1; }
+  [[ $rc -eq 1 && "$out" == *"duplicate id: BE2"* && "$out" == *"\"NOPE\" does not resolve"* && "$out" == *"\"group:ZZ*\" does not resolve"* && "$out" == *"BE9: no verify"* && "$out" == *"not a number"* && "$out" == *"BE8: verify: has no runnable check"* ]] || { echo "FAIL check-fail: rc=$rc $out"; exit 1; }
+  out="$(ledger="$tmp/ledger.md" run_awk why "WS1")"; [[ "$out" == *"WS1 blocked by:BE2"* && "$out" == *"group:B* (1/"* ]] || { echo "FAIL why: $out"; exit 1; }
   echo "ledger --test: ok"
 }
 
 case "$cmd" in
   --test) self_test ;;
-  list|ready|open|blocked|active|id|next|check) resolve_ledger; run_awk "$cmd" "$arg" ;;
+  list|ready|open|blocked|active|id|why|next|check) resolve_ledger; run_awk "$cmd" "$arg" ;;
   *) usage ;;
 esac
