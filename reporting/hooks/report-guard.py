@@ -40,18 +40,38 @@ def final_assistant_text(path):
     return finals[-1] if finals else None
 
 
+# Inline quoted / backticked spans are blanked before the narration and header/table checks, so a
+# report that *quotes* a banned phrase, header or pipe (e.g. one explaining this very guard) is not
+# flagged for merely containing it — caveman blanks the same spans before its own trigger match.
+# Single quotes are boundary-guarded (opener not after a word char, closer not before one) so an
+# apostrophe in don't / I'll cannot pair up and swallow real narration; double quotes and backticks
+# — which the banned phrases are normally quoted with — need no such guard.
+INLINE_SPAN = re.compile(
+    r'"[^"\n]*"'                 # "double-quoted"
+    r"|`[^`\n]*`"                # `backticked`
+    r"|(?<!\w)'[^'\n]*'(?!\w)"   # 'single-quoted'
+)
+
+
+def blank_spans(text):
+    """Replace each inline quoted/backticked span with same-length blanks; newlines untouched."""
+    return INLINE_SPAN.sub(lambda m: " " * len(m.group(0)), text)
+
+
 def violations(text):
     stripped = re.sub(r"```.*?```", "", text, flags=re.S)  # fenced code is exempt from shape checks
+    blanked = blank_spans(stripped)                        # quoting a banned phrase/header != using it
     problems = []
     for pattern, label in BANNED:
-        if re.search(pattern, stripped, flags=re.I | re.M):
+        if re.search(pattern, blanked, flags=re.I | re.M):
             problems.append(label)
-    lines = [l for l in stripped.splitlines() if l.strip()]
+    lines = [l for l in stripped.splitlines() if l.strip()]  # length is measured on the un-blanked text
     if len(lines) > max_lines():
         problems.append(f"{len(lines)} non-empty lines (contract: 1 outcome line + <=5 bullets + Q list)")
-    if any(re.match(r"\s*#{1,6}\s", l) for l in lines):
+    shape = [l for l in blanked.splitlines() if l.strip()]   # header/table read the blanked copy
+    if any(re.match(r"\s*#{1,6}\s", l) for l in shape):
         problems.append("markdown headers")
-    if sum(1 for l in lines if l.lstrip().startswith("|")) >= 2:
+    if sum(1 for l in shape if l.lstrip().startswith("|")) >= 2:
         problems.append("a table")
     return problems
 

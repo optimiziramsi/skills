@@ -47,6 +47,22 @@ clean("over-length is caught", False, "\n".join(f"line {i}" for i in range(25)))
 clean("fenced code is exempt from the shape checks", True,
       "Done.\n```\nlet me check inside code is fine\n## header in code fine\n```\n- one fact")
 clean("exactly 18 lines still passes", True, "\n".join(f"- fact {i}" for i in range(18)))
+# quoting a banned phrase / header / pipe is talking *about* it, not doing it — not a violation
+clean("a double-quoted banned phrase is not flagged", True,
+      'Guard ships — it blanks the "Let me check" example before matching.\n- one fact')
+clean("a backticked banned phrase is not flagged", True,
+      "Guard ships — the `now I'll` case no longer self-trips.\n- one fact")
+clean("a single-quoted banned phrase is not flagged", True,
+      "Guard ships — the 'Let me look' phrase is quoted, not narrated.\n- one fact")
+clean("a quoted markdown header is not flagged", True,
+      'Done — a report may now name a "## Summary" header.\n- one fact')
+clean("a quoted table row is not flagged", True,
+      'Done — mentioning a "| a | b |" row is fine now.\n- one fact')
+# but real narration must still be caught, even next to an apostrophe pair or a legit quote
+clean("real narration beside an apostrophe pair is still caught", False,
+      "Now I'll wire it; that's the last step.")
+clean("real narration beside a quoted span is still caught", False,
+      'The guard blanks "quotes" but I\'m going to refactor anyway.')
 
 
 # ── _contract: the stamp parser ─────────────────────────────────────────────
