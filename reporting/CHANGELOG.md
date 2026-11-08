@@ -4,7 +4,7 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.1-dev.1
+## 0.2.1 — 2026-11-08
 
 - Stop guard no longer false-positives when the final message *quotes* a banned phrase, header or
   pipe (e.g. a report explaining the guard's own "Let me…" ban): inline `"…"`, `'…'` and `` `…` ``
