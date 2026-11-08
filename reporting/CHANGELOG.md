@@ -4,6 +4,15 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.2.1-dev.1
+
+- Stop guard no longer false-positives when the final message *quotes* a banned phrase, header or
+  pipe (e.g. a report explaining the guard's own "Let me…" ban): inline `"…"`, `'…'` and `` `…` ``
+  spans are now blanked before the narration / header / table checks run, the same way the triple-
+  backtick fenced blocks already were. Single-quoted spans are boundary-guarded so an apostrophe
+  (don't, I'll) can't pair up and swallow real narration, and the line-count check still runs on the
+  un-blanked text — real narration is still caught.
+
 ## 0.2.0 — 2026-11-02
 
 - Dev-to-dev PLAIN block in the shipped contract: plain names over ids, the decision itself over
