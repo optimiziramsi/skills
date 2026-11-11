@@ -58,8 +58,6 @@ def main():
         parts.append("dirty sibling tree(s): " + ", ".join(siblings))
     reason = ("[commit-nudge] " + "; ".join(parts) + ". Commit as you go (single-line message, "
               "per the commit skill), or say in one line why these stay uncommitted — then finish.")
-    if os.path.isfile(os.path.join(project, ".agent", "handoff.md")):
-        reason += " If the session is winding down, also refresh the handoff (/handoff)."
     print(reason, file=sys.stderr)
     sys.exit(2)
 

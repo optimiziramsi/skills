@@ -60,6 +60,10 @@ try:
     dirty(main)
     rc, _, err = run()
     check("a dirty tree nags with exit 2", rc == 2 and "uncommitted change(s)" in err, err)
+    os.makedirs(os.path.join(main, ".agent"))
+    pathlib.Path(main, ".agent", "handoff.md").write_text("notes\n")
+    check("the nudge asks for the commit only, handoff file or not", "handoff" not in run()[2])
+    shutil.rmtree(os.path.join(main, ".agent"))
     check("a read-only session is not nagged", run("readonly")[0] == 0)
     check("kill-switch disarms", run(env={"STOP_NUDGE_OFF": "1"})[0] == 0)
     check("stop_hook_active is never re-blocked", invoke(
