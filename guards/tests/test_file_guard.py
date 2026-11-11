@@ -2,6 +2,7 @@
 """Self-tests for file-guard. Run: python3 instructions/tests/test_file_guard.py"""
 import os
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
@@ -33,6 +34,9 @@ asks("ignore the Bash tool", False,
      {"tool_name": "Bash", "tool_input": {"command": "echo x > .claude/hooks/g.py"}})
 asks("notebook_path is guarded too", True,
      {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": ".claude/hooks/x.ipynb"}})
+
+reason = guard.decide(edit("/repo/.claude/hooks/x.sh"))["hookSpecificOutput"]["permissionDecisionReason"]
+check("the ask reason names no env switch", not re.search(r"[A-Z][A-Z0-9]+_[A-Z0-9_]+", reason), reason)
 
 os.environ["FILE_GUARD_EXTRA"] = "tools/git-hooks/"
 asks("ask on a FILE_GUARD_EXTRA prefix", True, edit("/repo/tools/git-hooks/pre-push"))

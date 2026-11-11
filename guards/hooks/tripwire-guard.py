@@ -91,7 +91,8 @@ def main():
             continue
         output = (done.stdout + done.stderr).strip()
         if done.returncode == 2:
-            print(output or f"⛔ tripwire-guard: blocked by {name} (no reason printed)",
+            print(output or f"tripwire-guard: blocked by the project guard {name}, which printed no "
+                            "reason. Stop and tell the user what you wanted to do.",
                   file=sys.stderr)
             sys.exit(2)
         if done.returncode != 0:

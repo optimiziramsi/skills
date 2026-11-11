@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""SessionStart + UserPromptSubmit — re-inject a trust reminder while the session runs on a model
-the project does not trust to follow instructions in full (default: Opus 5.5).
+"""SessionStart + UserPromptSubmit — re-inject a scope reminder while the session runs on a matched
+model (default: Opus 5.5): do what was asked at the scope it was asked, and treat a guard block as a
+stop — say what you wanted to do and wait for the user.
 
 The model is read from the SessionStart payload (the only hook payload that carries it) and cached
 per session; a later prompt re-reads the transcript's last assistant `model`, so a mid-session
@@ -87,7 +88,7 @@ def matches(model):
 
 
 def guard_text(data):
-    """The reminder to inject for this payload, or None when the model is trusted / unknown."""
+    """The reminder to inject for this payload, or None when the model is not matched / unknown."""
     if hookio.flag("MODEL_GUARD_OFF"):
         return None
     model = session_model(data)

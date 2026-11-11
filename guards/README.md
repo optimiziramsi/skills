@@ -4,8 +4,8 @@ The `guards@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../REA
 
 Three hooks that enforce the PROJECT's rules rather than this marketplace's: **tripwire-guard** runs
 your own checks before every shell command, **file-guard** asks you before the agent edits the files
-that enforce your rules, **model-guard** re-injects a trust reminder while the session runs on a
-model you do not trust to follow instructions in full.
+that enforce your rules, **model-guard** re-injects a scope reminder while the session runs on a
+model you want held to the asked scope.
 
 ## Contents
 
@@ -31,10 +31,11 @@ model you do not trust to follow instructions in full.
   kind: hook
   purpose:
     SessionStart + UserPromptSubmit — while the session model matches `MODEL_GUARD_MATCH`
-    (comma-separated substrings of the model id; default `opus-5-5`), injects a two-sentence
-    **trust reminder** on every prompt: follow every instruction and step (skipping is a violation,
-    not a judgment call), and deliver in full — stop and ask rather than park the rest as a
-    TODO / follow-up. The model comes from the SessionStart payload, then the transcript's last
+    (comma-separated substrings of the model id; default `opus-5-5`), injects a one-paragraph
+    **scope reminder** on every prompt: do what was asked at the scope it was asked (no extra
+    steps, side fixes or offers), finish the whole task and say plainly which part could not be
+    done, and treat a guard or hook block as a stop — say what you wanted to do and wait for the
+    user. The model comes from the SessionStart payload, then the transcript's last
     assistant `model` (so a `/model` switch is honored). Text override: `MODEL_GUARD_FILE` →
     `.agent/model-guard.md` → `.claude/model-guard.md` → the shipped `hooks/model-guard.txt`
     (`{{MODEL}}` = the matched id). How far back the transcript is read for the model is

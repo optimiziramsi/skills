@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Self-tests for todo-readonly-guard. Run: python3 flow/tests/test_todo_guard.py"""
+import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 
@@ -56,6 +58,16 @@ try:
     denies("deny a target followed by punctuation", "Bash", {"command": "rm .todo; echo done"})
     allows("allow a longer name that merely starts with .todo", "Bash",
            {"command": "echo x >> .todos"})
+
+    # ── what the MODEL reads when blocked ──────────────────────────────────
+    # The allowed form (.todo-inbox) and the user's own arming phrase — never an env switch.
+    for label, tool, tool_input in (("file", "Edit", {"file_path": "/repo/.todo"}),
+                                    ("bash", "Bash", {"command": "echo x >> .todo"})):
+        reason = json.loads(call(tool, tool_input))["hookSpecificOutput"]["permissionDecisionReason"]
+        check(f"the {label} deny reason points at .todo-inbox and the user's ALLOW TODO",
+              ".todo-inbox" in reason and "ALLOW TODO" in reason, reason)
+        check(f"the {label} deny reason names no env switch",
+              not re.search(r"[A-Z][A-Z0-9]+_[A-Z0-9_]+", reason), reason)
 
     # ── bash reads stay free ───────────────────────────────────────────────
     allows("allow a read", "Bash", {"command": "cat .todo"})

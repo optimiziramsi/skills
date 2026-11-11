@@ -31,7 +31,7 @@ import hookio  # noqa: E402
 
 
 def deny(reason: str):
-    print(f"[git-guard] BLOCKED: {reason}", file=sys.stderr)
+    print(f"[git-guard] blocked: {reason}", file=sys.stderr)
     sys.exit(2)
 
 
@@ -105,6 +105,10 @@ def integration_branch():
     return hookio.integration_branch()
 
 
+# How a block reason ends when no allowed form reaches the same result. A reason never names an
+# env switch or any other way to turn the guard off — those are documented in ../README.md only.
+STOP = "Stop and tell the user what you wanted to do."
+
 # safe soft-reset targets: nothing (defaults HEAD), HEAD~N/HEAD^-style, or a sha
 SAFE_SOFT_TARGET = re.compile(r"^(?:(?:HEAD|@)(?:[~^][0-9]*)*|[0-9a-fA-F]{7,40})$")
 
@@ -133,8 +137,8 @@ def check(command):
         # remote sync — the user owns it; `git push .` (local-dot remote) is a LOCAL ref update
         if sub == "push":
             if positional[:1] != ["."]:
-                return ("`git push` is forbidden — the user owns remote sync "
-                        "(local landing `git push . <ref>` is fine)")
+                return ("`git push` to a remote is blocked — the user owns remote sync. "
+                        "A local landing `git push . <ref>` is fine.")
             if "protected-branch" not in allow:
                 deleting = "--delete" in args or "-d" in args
                 integration = integration_branch()
@@ -151,62 +155,60 @@ def check(command):
                     if integration and dest == integration and sep and src \
                             and not forced and not deleting:
                         continue
-                    return (f"push refspec targets protected branch `{dest}` — protected "
-                            "branches are never the agent's to move "
-                            "(GIT_GUARD_PROTECTED_BRANCH to change which; "
-                            "GIT_GUARD_INTEGRATION_BRANCH to permit the fast-forward land)")
+                    return (f"this push targets the protected branch `{dest}` — protected "
+                            f"branches are never the agent's to move. {STOP}")
         if sub == "pull":
-            return "`git pull` is forbidden — the user owns remote sync"
+            return f"`git pull` is blocked — the user owns remote sync. {STOP}"
         if sub == "fetch" and "fetch" not in allow:
             allow_fetch = env_tokens("GIT_GUARD_ALLOW_FETCH")
             target = positional[0] if positional else ""     # `git fetch <remote> [refspec...]`
             multi = any(a in ("--all", "--multiple") for a in args)
             if multi or not (allow_fetch and target and target in allow_fetch):
-                return ("`git fetch` syncs the remote — the user owns remote sync "
-                        "(GIT_GUARD_ALLOW=fetch for all remotes, or "
-                        "GIT_GUARD_ALLOW_FETCH=<remote,...> to permit named remotes only)")
+                return ("this `git fetch` is blocked — the user owns remote sync. "
+                        f"{STOP}")
 
         # staging discipline — bulk adds sweep in files you didn't mean to commit
         if sub == "add" and "bulk-add" not in allow:
             if any(a in ("-A", "--all") for a in args) \
                     or any(re.match(r"^-[a-zA-Z]*A", a) for a in args) \
                     or any(p in (".", "./") for p in positional):
-                return ("bulk staging (`git add -A` / `--all` / `.`) sweeps in strays — "
-                        "stage files by name: `git add <path> <path>`")
+                return ("bulk staging (`git add -A` / `--all` / `.`) sweeps in stray files. "
+                        "Stage files by name: `git add <path> <path>`.")
 
         # merge discipline — merge means rebase + FF-only; no merge commits
         if sub == "merge" and "merge" not in allow:
             if not any(a in ("--ff-only", "--abort", "--continue", "--quit") for a in args):
-                return ("plain `git merge` can create a merge commit — rebase, then "
-                        "`git merge --ff-only` (a non-FF merge is never the agent's to make)")
+                return ("plain `git merge` can create a merge commit, which is never the "
+                        "agent's to make. Rebase, then `git merge --ff-only`.")
 
         # history rewrites
         if sub == "rebase" and "rebase" in strict:
-            return ("`git rebase` rewrites history — blocked by GIT_GUARD_STRICT in this "
-                    "project; ask the user")
+            return f"`git rebase` rewrites history — blocked in this project. {STOP}"
         if sub == "filter-branch":
-            return "`git filter-branch` rewrites history — not without the user"
+            return f"`git filter-branch` rewrites history — not without the user. {STOP}"
         if sub == "reset":
             if "reset" in strict:
-                return ("`git reset` is blocked by GIT_GUARD_STRICT in this project — no index/"
-                        "history manipulation by the agent; the user runs any reset themselves")
+                return ("`git reset` is blocked in this project — the user runs any reset "
+                        f"themselves. {STOP}")
             if any(a in ("--hard", "--merge", "--keep") for a in args):
-                return ("`git reset --hard` clobbers the worktree — check what's there first; "
-                        "plain `git reset <file>` to unstage is fine")
+                return ("`git reset --hard` / `--merge` / `--keep` overwrites uncommitted work. "
+                        "To unstage, plain `git reset <file>` is fine. To discard work, stop and "
+                        "tell the user what you wanted to do.")
             if "--soft" in args and "soft-reset" not in allow:
                 target = positional[0] if positional else ""
                 if target and not SAFE_SOFT_TARGET.match(target):
-                    return (f"`git reset --soft {target}` resolves a MOVING ref — if it advanced "
+                    return (f"`git reset --soft {target}` resolves a moving ref — if it advanced "
                             "since you branched, the squash silently reverts other commits. "
-                            "Soft-reset only against your own base: `HEAD~<N>` or a sha")
+                            "Soft-reset only against your own base: `HEAD~<N>` or a sha.")
 
         # commit safety (history / hooks) — message FORMAT lives in the commit plugin
         if sub == "commit":
             if "--amend" in args and "amend" in strict:
-                return ("`git commit --amend` rewrites history — blocked by GIT_GUARD_STRICT "
-                        "in this project; make a new commit instead")
+                return ("`git commit --amend` rewrites history — blocked in this project. "
+                        "Make a new commit instead.")
             if "--no-verify" in args or "-n" in args:
-                return "`git commit --no-verify` skips hooks — fix the underlying issue instead"
+                return ("`git commit --no-verify` skips the commit hooks. Commit without it "
+                        "and fix what the hooks report.")
 
         # protected branch — never checkout/switch onto it
         if sub in ("checkout", "switch") and "protected-branch" not in allow:
@@ -214,15 +216,15 @@ def check(command):
             head_positional = [a for a in args[:dd] if not a.startswith("-")]
             if head_positional[:1] and head_positional[0] in protected_set():
                 return (f"`git {sub} {head_positional[0]}` — the protected branch is off-limits "
-                        "to the agent; work on a feature branch "
-                        "(GIT_GUARD_PROTECTED_BRANCH to change which)")
+                        "to the agent. Work on a feature branch.")
 
         # never discard uncommitted work — the tree may hold the user's WIP
         if sub == "clean" and (any(re.match(r"^-[a-zA-Z]*f", a) for a in args) or "--force" in args):
-            return ("`git clean -f` deletes untracked work — if the user wants this, they run it "
-                    "(`git clean -n` dry-run is fine)")
+            return ("`git clean -f` deletes untracked work — only the user runs it. A "
+                    f"`git clean -n` dry run is fine. {STOP}")
         if sub == "stash" and positional[:1] in (["drop"], ["clear"]):
-            return f"`git stash {positional[0]}` destroys stashed work — user-only operation"
+            return (f"`git stash {positional[0]}` destroys stashed work — only the user runs "
+                    f"it. {STOP}")
         if sub == "checkout":
             dd = args.index("--") if "--" in args else -1
             ref_before = dd > 0 and any(not a.startswith("-") for a in args[:dd])
@@ -231,16 +233,17 @@ def check(command):
                 # allowed by default (rebase-based flows use it), re-block via GIT_GUARD_STRICT
                 if "checkout-file" in strict:
                     return ("`git checkout <ref> -- <path>` overwrites <path> with the version "
-                            "from <ref> — blocked by GIT_GUARD_STRICT in this project")
+                            f"from <ref> — blocked in this project. {STOP}")
             elif dd >= 0 or "." in positional:
-                return ("`git checkout -- <path>` / `checkout .` discards uncommitted changes — "
-                        "branch switches are fine, this is not")
+                return ("`git checkout -- <path>` / `checkout .` discards uncommitted changes "
+                        f"(a branch switch is fine). {STOP}")
         if sub == "restore":
             staged = "--staged" in args or "-S" in args
             touches_worktree = "--worktree" in args or "-W" in args
             if not (staged and not touches_worktree):
-                return ("`git restore` discards worktree changes — only `git restore --staged` / "
-                        "`-S <path>` to unstage is allowed")
+                return ("`git restore` discards worktree changes. To unstage, "
+                        "`git restore --staged <path>` is allowed. To discard changes, stop and "
+                        "tell the user what you wanted to do.")
     return None
 
 

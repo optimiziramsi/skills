@@ -27,7 +27,7 @@ def main():
             continue                                # inside the worktree — tested FIRST, since the
         if hookio.under(path, ctx["main_root"]):    # worktree may itself sit under the main checkout
             hookio.deny(
-                f"worktree-write-guard (#36182): target '{path}' is outside this worktree "
+                f"worktree-write-guard: target '{path}' is outside this worktree "
                 f"('{ctx['wt_root']}') — it resolves into the main checkout "
                 f"'{ctx['main_root']}'. Re-issue with a path under {ctx['wt_root']}/.",
                 mode=os.environ.get("WORKTREE_GUARD_MODE", "json"),

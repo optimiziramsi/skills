@@ -6,6 +6,7 @@ the three exit-code outcomes, ordering, and the escape hatches.
 """
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -93,6 +94,11 @@ try:
     }, executable=("20-shebang",))
     rc, _, err = run(langs, "echo forbidden")
     check("a .py guard blocks without needing +x", rc == 2, f"rc={rc} err={err}")
+    check("a guard that prints no reason gets the fallback, ending in the stop line",
+          "10-block.py" in err
+          and err.strip().endswith("Stop and tell the user what you wanted to do."), err)
+    check("the fallback block reason names no env switch",
+          not re.search(r"[A-Z][A-Z0-9]+_[A-Z0-9_]+", err), err)
     rc, out, _ = run(langs, "echo harmless")
     check("an extensionless +x guard runs via its own shebang",
           rc == 0 and "shebang guard ran" in out, out)

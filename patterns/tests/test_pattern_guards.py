@@ -7,6 +7,7 @@ real sibling generator — mocking that would test the mock.
 import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 import tempfile
@@ -50,6 +51,10 @@ try:
     rc, _, err = call("PreToolUse", "apps/web/forms/login.tsx")
     check("a TODO-only governed path is blocked", rc == 2, err)
     check("the block cites the pattern", "apps-web-form-handling" in err, err)
+    check("the block ends with the stop line",
+          err.strip().endswith("Stop and tell the user what you wanted to do."), err)
+    check("the block names no env switch and no way to disable the gate",
+          not re.search(r"[A-Z][A-Z0-9]+_[A-Z0-9_]+", err) and "disable" not in err, err)
     check("blessed coverage beats a decided overlap",
           call("PreToolUse", "src/server/reactors/update-x.ts")[0] == 0)
     check("an unmatched path is allowed", call("PreToolUse", "README.md")[0] == 0)

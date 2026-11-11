@@ -7,13 +7,14 @@ protected-branch AUTO-DETECTION against throwaway repos.
 import contextlib
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
-from selftest import Check, hook, load_module  # noqa: E402
+from selftest import Check, hook, invoke, load_module  # noqa: E402
 
 check = Check()
 guard = load_module(hook("hooks/git-guard.py"), "git_guard")
@@ -42,6 +43,12 @@ def blocks(name, want_blocked, command, allow="", strict="", protected="main",
              GIT_GUARD_PROTECTED_BRANCH=protected, GIT_GUARD_INTEGRATION_BRANCH=integration):
         reason = guard.check(command)
     check(name, (reason is not None) == want_blocked, repr(reason))
+    if reason is not None:
+        REASONS[name] = reason
+    return reason
+
+
+REASONS = {}                                         # every block reason the case table produced
 
 
 # ── remote sync — the user owns it ─────────────────────────────────────────
@@ -169,6 +176,47 @@ blocks("restore -S -W blocked (touches worktree)", True, "git restore -S -W src/
 blocks("restore --staged --worktree blocked", True, "git restore --staged --worktree src/app.ts")
 
 blocks("non-git command allowed", False, "ls -la && echo done")
+
+# ── what the MODEL reads when blocked ──────────────────────────────────────
+# A block reason says what was blocked and the allowed form when there is one. It never names an
+# env switch, an allow token, or any other way to turn the guard off — those live in the README.
+SWITCH = re.compile(r"[A-Z][A-Z0-9]+_[A-Z0-9_]+")
+STOP = "stop and tell the user what you wanted to do."
+leaks = {name: r for name, r in REASONS.items() if SWITCH.search(r) or "allow token" in r.lower()}
+check("no block reason names an env switch", len(REASONS) > 50 and not leaks, repr(leaks))
+
+
+def reason_for(command, **kw):
+    with env(GIT_GUARD_ALLOW=kw.get("allow", ""), GIT_GUARD_ALLOW_FETCH=kw.get("allow_fetch", ""),
+             GIT_GUARD_STRICT=kw.get("strict", ""), GIT_GUARD_PROTECTED_BRANCH="main",
+             GIT_GUARD_INTEGRATION_BRANCH=""):
+        return guard.check(command) or ""
+
+
+for command, kw in (("git pull", {}), ("git fetch origin", {}), ("git fetch --all", {"allow_fetch": "origin"}),
+                    ("git push . HEAD:main", {}), ("git filter-branch --all", {}),
+                    ("git rebase develop", {"strict": "rebase"}), ("git reset", {"strict": "reset"}),
+                    ("git reset --hard HEAD~1", {}), ("git clean -fd", {}), ("git stash drop", {}),
+                    ("git checkout -- src/app.ts", {}), ("git restore src/app.ts", {}),
+                    ("git checkout abc123 -- src/app.ts", {"strict": "checkout-file"})):
+    r = reason_for(command, **kw)
+    check(f"no allowed form → the reason ends with the stop line: {command}", r.lower().endswith(STOP), r)
+
+for command, kw, allowed in (("git push origin main", {}, "`git push . <ref>`"),
+                             ("git add -A", {}, "`git add <path> <path>`"),
+                             ("git merge feature/foo", {}, "`git merge --ff-only`"),
+                             ("git reset --soft develop", {}, "`HEAD~<N>` or a sha"),
+                             ("git commit --amend", {"strict": "amend"}, "new commit"),
+                             ("git checkout main", {}, "feature branch"),
+                             ("git restore src/app.ts", {}, "`git restore --staged <path>`")):
+    r = reason_for(command, **kw)
+    check(f"the allowed form is kept: {command}", allowed in r, r)
+
+rc, _, err = invoke(hook("hooks/git-guard.py"),
+                    {"tool_name": "Bash", "tool_input": {"command": "git fetch origin"}},
+                    env={"GIT_GUARD_ALLOW": "", "GIT_GUARD_ALLOW_FETCH": "", "GIT_GUARD_OFF": "0"})
+check("end to end: exit 2, and stderr carries the reason without a switch name",
+      rc == 2 and err.startswith("[git-guard] blocked: ") and not SWITCH.search(err), err)
 
 
 # ── protected-branch AUTO-DETECTION (no GIT_GUARD_PROTECTED_BRANCH set) ────
