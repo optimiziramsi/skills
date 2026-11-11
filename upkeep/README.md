@@ -3,22 +3,25 @@
 The `upkeep@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 Claude Code's own auto-update is off by default for third-party marketplaces, only updates what
-is already installed, and never tells you either way. This plugin tells you at session start
-when an installed plugin has a newer version, or when a marketplace you install from has gained
-a plugin — and `/upkeep` applies it.
+is already installed, and never tells you either way. This plugin tells you — in a note at the
+end of a turn, never at session start — when an installed plugin has a newer version, or when a
+marketplace you install from has gained a plugin; `/upkeep` applies it.
 
 ## Contents
 
 - name: `upkeep-check`
   kind: hook
   purpose:
-    SessionStart — compares this project's installs (user scope, plus its own project/local
-    rows) with the local copies of the marketplaces they come from; one line when something is
-    outdated or new. "New" means new since this project first looked — the first look records a
-    baseline silently, so a big marketplace doesn't announce its whole catalogue. An identical
-    report shows once a day. Then refreshes the watched marketplaces in the background
+    Stop — compares this project's installs (user scope, plus its own project/local rows) with
+    the local copies of the marketplaces they come from; one line for the **user** when
+    something is outdated or new (a `systemMessage`: not model context, never blocks the stop).
+    The check runs once per session, at its first Stop; nothing is printed at session start.
+    "New" means new since this project first looked — the first look records a baseline
+    silently, so a big marketplace doesn't announce its whole catalogue. An identical report
+    shows once a day. Then refreshes the watched marketplaces in the background
     (`claude plugin marketplace update`, at most once per `UPKEEP_REFRESH_HOURS`), so the next
-    session sees what's new. The hook itself never touches the network.
+    session sees what's new. The hook itself never touches the network. Silent in a linked git
+    worktree (see Settings).
 
 - name: `upkeep`
   kind: skill + command
@@ -37,6 +40,9 @@ In a settings.json `env` block (any scope):
 - `UPKEEP_MARKETPLACES` — comma-separated marketplaces to watch; default: every marketplace this
   project installs from.
 - `UPKEEP_REFRESH_HOURS` — background refresh throttle, default `24`; `0` = never refresh.
+- `NUDGES_IN_WORKTREE=1` — run the check in a linked git worktree too. Off by default: a
+  worktree is for one topic, and cleanup belongs to the main checkout's chat. The same switch is
+  read by every plugin that ships such notes.
 
 ## Escape hatches
 

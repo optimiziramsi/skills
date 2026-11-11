@@ -9,7 +9,11 @@ layout, filename conventions, dup tripwires, boards, audit stamp, generated file
 detects the config and stands down.
 
     meta-lint             # full run, grouped findings, exit 1 on findings (advisory)
-    meta-lint --fast      # one-line summary, exit 0 — the SessionStart pulse
+    meta-lint --fast      # one-line summary, exit 0 — a manual pulse
+    meta-lint --end-note  # Stop-hook NOTE for the user: the findings count as a `systemMessage`
+                          #   (not model context), exit 0, once per session per distinct text;
+                          #   silent when clean, and in a linked git worktree unless
+                          #   NUDGES_IN_WORKTREE=1. Never blocks.
     meta-lint --stop      # Stop-hook BLOCK: exit 2 when a file-writing session leaves a
                           #   size/count cap breached (one-shot per breach-set). The ONLY
                           #   mode that can block.
@@ -958,15 +962,20 @@ def run_all(root: str, cfg: dict) -> list[str]:
     return findings
 
 
-def fast_summary(findings: list[str]) -> str:
-    if not findings:
-        return "meta: OK"
+def finding_counts(findings: list[str]) -> str:
+    """"3 finding(s) — 2 size, 1 wrap" — the per-check tally both one-line modes share."""
     counts: dict[str, int] = {}
     for f in findings:
         tag = f.split("]", 1)[0].lstrip("[")
         counts[tag] = counts.get(tag, 0) + 1
     parts = ", ".join(f"{n} {tag}" for tag, n in sorted(counts.items()))
-    return f"meta: {len(findings)} finding(s) — {parts}. Run the meta-lint engine (instructions plugin) for detail."
+    return f"{len(findings)} finding(s) — {parts}"
+
+
+def fast_summary(findings: list[str]) -> str:
+    if not findings:
+        return "meta: OK"
+    return f"meta: {finding_counts(findings)}. Run the meta-lint engine (instructions plugin) for detail."
 
 
 # Stop-hook BLOCK mode — the caps Stop contract, driven by .agent/meta-lint.json instead of the
@@ -1039,6 +1048,78 @@ def stop_mode(payload: dict | None = None, root: str | None = None) -> int:
     for b in breaches:
         print(f"  • {b}", file=sys.stderr)
     return 2
+
+
+# Stop-hook NOTE mode — the findings count, for the USER. It used to be printed at session start,
+# where it became model context and read as a job; at Stop it is a `systemMessage` the user sees
+# and the model does not. Unlike --stop above it runs every enabled check and never blocks.
+def in_linked_worktree(root: str) -> bool:
+    """True when `root` is in a LINKED git worktree (its git-dir is not the shared common dir).
+    Not a repo, or no git → False."""
+    def rev_parse(what):
+        return subprocess.run(["git", "-C", root, "rev-parse", what],
+                              capture_output=True, text=True, timeout=5).stdout.strip()
+    try:
+        gitdir, common = rev_parse("--absolute-git-dir"), rev_parse("--git-common-dir")
+    except Exception:
+        return False
+    if not gitdir or not common:
+        return False
+    if not os.path.isabs(common):
+        common = os.path.join(root, common)
+    return os.path.realpath(gitdir) != os.path.realpath(common)
+
+
+def end_note(payload: dict, root: str) -> str:
+    """The note text, or "" when there is nothing to show: no config, clean, a Stop-hook
+    continuation, a linked worktree (a worktree is for one topic; NUDGES_IN_WORKTREE=1 opts in),
+    or the same text already shown this session."""
+    if payload.get("stop_hook_active") is True:
+        return ""
+    cfg_path = os.path.join(root, CONFIG_REL)
+    if not os.path.isfile(cfg_path):
+        return ""  # project hasn't opted into meta-lint
+    if in_linked_worktree(root) and os.environ.get("NUDGES_IN_WORKTREE") != "1":
+        return ""
+    try:
+        findings = run_all(root, load_config(cfg_path))
+    except Exception as e:
+        findings = [f"[meta-lint] config {cfg_path} unusable: {e}"]
+    if not findings:
+        return ""
+    text = f"[meta-lint] {finding_counts(findings)}."
+    marker = os.path.join(os.environ.get("TMPDIR", "/tmp"),
+                          f"meta-lint-end-note-{payload.get('session_id') or 'unknown'}")
+    digest = hashlib.sha1(text.encode("utf-8")).hexdigest()
+    try:
+        if os.path.isfile(marker):
+            with open(marker, encoding="utf-8") as f:
+                if f.read() == digest:
+                    return ""
+        with open(marker, "w", encoding="utf-8") as f:
+            f.write(digest)
+    except OSError:
+        pass
+    return text
+
+
+def end_note_mode(payload: dict | None = None, root: str | None = None) -> int:
+    """Print the note as `{"systemMessage": …}` and exit 0 — always 0, so it can never hold a
+    session open. An engine crash is NOT swallowed here: the hook wiring's `||` fallback turns it
+    into the loud DISARMED notice. `payload`/`root` are test seams, as in stop_mode."""
+    if os.environ.get("META_LINT_OFF") == "1":
+        return 0
+    if payload is None:
+        try:
+            payload = json.loads(sys.stdin.read() or "{}")
+        except (ValueError, OSError):
+            payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    text = end_note(payload, root or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    if text:
+        print(json.dumps({"systemMessage": text}))
+    return 0
 
 
 def run_tests() -> int:
@@ -1213,6 +1294,52 @@ def run_tests() -> int:
             stop_clean = stop_mode({"session_id": "sD", "transcript_path": wrote_t}, root=clean_root)
 
             stop_noconfig = stop_mode({"session_id": "sE", "transcript_path": wrote_t}, root=noconfig_root)
+
+            # ── --end-note NOTE-mode contract: user-visible, one-shot, never blocks ──
+            import contextlib
+            import io
+
+            old_nudges = os.environ.pop("NUDGES_IN_WORKTREE", None)
+            one_size = "[meta-lint] 1 finding(s) — 1 size."
+            note_first = end_note({"session_id": "nA"}, stop_root)
+            note_repeat = end_note({"session_id": "nA"}, stop_root)
+            note_new_session = end_note({"session_id": "nB"}, stop_root)
+            note_active = end_note({"session_id": "nC", "stop_hook_active": True}, stop_root)
+            note_clean = end_note({"session_id": "nD"}, clean_root)
+            note_noconfig = end_note({"session_id": "nE"}, noconfig_root)
+            printed = io.StringIO()
+            with contextlib.redirect_stdout(printed):
+                note_rc = end_note_mode({"session_id": "nF"}, root=stop_root)
+            with open(os.path.join(stop_root, "AGENTS.md"), "w") as f:
+                f.write("y" * 200)
+            with open(os.path.join(stop_root, ".agent", "meta-lint.json"), "w") as f:
+                json.dump({"checks": ["size", "count"], "size": {"caps": [
+                    {"path": "CLAUDE.md", "cap": 100, "unit": "chars"},
+                    {"path": "AGENTS.md", "cap": 100, "unit": "chars"}]}}, f)
+            note_changed = end_note({"session_id": "nA"}, stop_root)
+
+            # a linked worktree is for one topic — silent there unless NUDGES_IN_WORKTREE=1
+            wt_main = os.path.join(marker_dir, "repo")
+            wt_linked = os.path.join(marker_dir, "wt")
+            for cmd in (["git", "init", "-q", "-b", "main", wt_main],
+                        ["git", "-C", wt_main, "-c", "user.email=t@t", "-c", "user.name=t",
+                         "commit", "-q", "--allow-empty", "-m", "init"],
+                        ["git", "-C", wt_main, "worktree", "add", "-q", wt_linked, "-b", "wtb"]):
+                subprocess.run(cmd, capture_output=True, check=True)
+            for d in (wt_main, wt_linked):
+                os.makedirs(os.path.join(d, ".agent"))
+                with open(os.path.join(d, ".agent", "meta-lint.json"), "w") as f:
+                    json.dump({"checks": ["size"], "size": {"caps": [
+                        {"path": "CLAUDE.md", "cap": 100, "unit": "chars"}]}}, f)
+                with open(os.path.join(d, "CLAUDE.md"), "w") as f:
+                    f.write("x" * 200)
+            note_main = end_note({"session_id": "nG"}, wt_main)
+            note_worktree = end_note({"session_id": "nH"}, wt_linked)
+            os.environ["NUDGES_IN_WORKTREE"] = "1"
+            note_worktree_on = end_note({"session_id": "nH"}, wt_linked)
+            os.environ.pop("NUDGES_IN_WORKTREE")
+            if old_nudges is not None:
+                os.environ["NUDGES_IN_WORKTREE"] = old_nudges
         finally:
             if old_tmpdir is None:
                 os.environ.pop("TMPDIR", None)
@@ -1274,6 +1401,19 @@ def run_tests() -> int:
             ("stop: stop_hook_active → no block", stop_active == 0),
             ("stop: opted-in but clean → no block", stop_clean == 0),
             ("stop: no meta-lint.json → no block", stop_noconfig == 0),
+            ("end-note: findings → the count, as a fact", note_first == one_size),
+            ("end-note: one-shot per session per text", note_repeat == ""),
+            ("end-note: a new session is noted again", note_new_session == one_size),
+            ("end-note: a changed count is noted again",
+             note_changed == "[meta-lint] 2 finding(s) — 2 size."),
+            ("end-note: stop_hook_active → silent", note_active == ""),
+            ("end-note: opted-in but clean → silent", note_clean == ""),
+            ("end-note: no meta-lint.json → silent", note_noconfig == ""),
+            ("end-note: prints a systemMessage and exits 0 (never blocks)",
+             note_rc == 0 and json.loads(printed.getvalue()) == {"systemMessage": one_size}),
+            ("end-note: main checkout is noted", note_main == one_size),
+            ("end-note: linked worktree → silent", note_worktree == ""),
+            ("end-note: NUDGES_IN_WORKTREE=1 restores it there", note_worktree_on == one_size),
         ]
         fails = 0
         for name, ok in want:
@@ -1293,6 +1433,8 @@ def main() -> int:
         return run_tests()
     if "--stop" in argv:
         return stop_mode()
+    if "--end-note" in argv:
+        return end_note_mode()
     if os.environ.get("META_LINT_OFF") == "1":
         return 0
 
@@ -1315,8 +1457,8 @@ def main() -> int:
     except Exception as e:
         findings = [f"[meta-lint] config {cfg_path} unusable: {e}"]
     if "--fast" in argv:
-        # Pulse mode: findings ride the summary line; exit 0 so the hook wiring's `||` fallback
-        # fires ONLY on real execution failure (the loud-DISARM contract), never on findings.
+        # Pulse mode: findings ride the summary line; exit 0 so a wrapper's `||` fallback fires
+        # ONLY on real execution failure, never on findings.
         print(fast_summary(findings))
         return 0
     if findings:

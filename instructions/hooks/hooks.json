@@ -1,22 +1,6 @@
 {
-  "description": "instructions — surface instruction-surface cap breaches (file sizes + counts) at session start and Stop, and pulse the config-driven meta-lint engine where a project ships .agent/meta-lint.json. Kill-switches: CAPS_GUARD_OFF=1, META_LINT_OFF=1.",
+  "description": "instructions — at Stop, a non-blocking note for the user when instruction files are over their size / count caps (caps) or, where a project ships .agent/meta-lint.json, when the meta-lint engine has findings (once per session per distinct text; silent in a linked worktree unless NUDGES_IN_WORKTREE=1); meta-lint --stop separately BLOCKS a file-writing session that leaves a cap breached. Nothing runs at session start. Kill-switches: CAPS_GUARD_OFF=1, META_LINT_OFF=1.",
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/caps.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/meta-lint\" --fast || echo \"⚠️ meta-lint DISARMED — engine failed to run; instruction-system checks did NOT run this session.\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -28,6 +12,11 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/meta-lint\" --stop",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/meta-lint\" --end-note || echo '{\"systemMessage\":\"⚠️ meta-lint DISARMED — engine failed to run; instruction-system checks did NOT run this session.\"}'",
             "timeout": 30
           }
         ]
