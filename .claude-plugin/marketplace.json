@@ -40,7 +40,7 @@
     {
       "name": "reporting",
       "source": "./reporting",
-      "description": "Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, a Stop guard that blocks a narrating or over-long final message, and /calibrate to tune the contract on real reports.",
+      "description": "Lean-reporting output contract, enforced — injected per prompt, text between tool calls quoted back at the slip, re-pulsed every Nth tool call, a Stop guard that blocks a narrating or over-long final message, and /calibrate to tune the contract on real reports.",
       "category": "workflow"
     },
     {
@@ -52,7 +52,7 @@
     {
       "name": "context",
       "source": "./context",
-      "description": "Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh.",
+      "description": "Context-window awareness — nudges at 20% / 30% / 55% of a 1M window (configurable): a hint for the user, then that a handoff is needed, then that it is needed now; honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh.",
       "category": "workflow"
     },
     {
@@ -70,7 +70,7 @@
     {
       "name": "guards",
       "source": "./guards",
-      "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a trust reminder while the session runs on an untrusted model (model-guard).",
+      "description": "Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a scope reminder while the session runs on a matched model (model-guard).",
       "category": "workflow"
     },
     {
@@ -130,7 +130,7 @@
     {
       "name": "upkeep",
       "source": "./upkeep",
-      "description": "Plugin upkeep — a session-start notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins.",
+      "description": "Plugin upkeep — an end-of-turn notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins.",
       "category": "workflow"
     }
   ]
