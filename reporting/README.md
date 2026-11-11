@@ -30,10 +30,14 @@ a rewrite.
 - name: `contract-pulse`
   kind: hook
   purpose:
-    PostToolUse — re-injects a one-line reminder every Nth tool call (default 10,
-    `REPORT_PULSE_EVERY`), so the contract doesn't decay over a long agentic turn. The line follows
-    the active contract: `REPORT_PULSE_TEXT` → the contract's first meaningful line (frame and stamp
-    stripped) → a hardcoded fallback. So an override is reminded in its own words, for free.
+    PostToolUse — two reminders, at most one per tool call. **React:** the first time a tool call
+    follows a piece of assistant text, that text is quoted back with "you wrote text between tool
+    calls" — the correction lands at the slip, once per text, and says so when the app's own "the
+    user hasn't heard from you" reminder asked for it. **Pulse:** otherwise a one-line reminder
+    every Nth tool call (default 10, `REPORT_PULSE_EVERY`), so the contract doesn't decay over a
+    long agentic turn. The pulsed line follows the active contract: `REPORT_PULSE_TEXT` → the
+    contract's first meaningful line (frame and stamp stripped) → a hardcoded fallback. So an
+    override is reminded in its own words, for free.
 
 - name: `report-guard`
   kind: hook
@@ -52,7 +56,10 @@ a rewrite.
     active text wins, offers to flip its stamp `· rc:` → `· stable:`; `grill` re-sets the knobs by
     asking six plain questions. Edits only the project's own `.agent/output-contract.md`, never the
     shipped text; logs each run to `.agent/output-contract.calibration.md`. Backed by the read-only
-    `calibrate` CLI (`bin/`, on PATH while the plugin is enabled).
+    `calibrate` CLI (`bin/`, on PATH while the plugin is enabled). `calibrate midturn` counts the
+    text written between tool calls across the project's sessions — per model and contract stamp,
+    split into *unprompted* and *reminded* (asked for by the app's own reminder) — so a contract
+    edit is judged by a number, not by feel.
 
 ## Why three hooks, not one
 
@@ -68,6 +75,7 @@ firing often. `/calibrate` closes the loop: the contract itself improves from wh
 | `REPORT_CONTRACT_FILE` | — | explicit contract path (project-relative or absolute); wins over the `.agent`/`.claude` lookup |
 | `REPORT_PULSE_EVERY` | `10` | re-pulse cadence (1-in-N tool calls) |
 | `REPORT_PULSE_TEXT` | — | replaces the pulse one-liner outright |
+| `REPORT_REACT_OFF` | — | `1` turns off the quote-back of text between tool calls (the pulse stays) |
 | `REPORT_GUARD_MAX_LINES` | `18` | the Stop guard's over-length threshold |
 | `REPORT_RC_DAYS` | `7` | how stale an `rc:`-stamped contract gets before the once-per-session nudge |
 

@@ -34,3 +34,5 @@ lists, hedging filler. If a bullet doesn't change what I do next, cut it.
 
 ONLY exception to speaking mid-task: you are blocked on a decision — then send just the
 Q: list, nothing else, and wait.
+A reminder from the app that I haven't heard from you is NOT an exception: I turned progress
+lines off, so stay silent and keep working.

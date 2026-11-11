@@ -181,6 +181,66 @@ try:
           "no text between tool calls" in
           fire(f"{sid}-k", times=10, env={"REPORT_CONTRACT_FILE": "nope.md"}))
 
+    # ── the mid-turn react: text between tool calls is quoted back, once ────
+    def said(uuid, text, **extra):
+        return {"type": "assistant", "uuid": uuid, **extra,
+                "message": {"model": "model-x", "content": [{"type": "text", "text": text}]}}
+
+    def called(uuid):
+        return {"type": "assistant", "uuid": uuid,
+                "message": {"model": "model-x", "content": [{"type": "tool_use", "name": "Read", "input": {}}]}}
+
+    def transcript(name, entries):
+        path = os.path.join(tmp, name)
+        pathlib.Path(path).write_text("".join(json.dumps(e) + "\n" for e in entries))
+        return path
+
+    def react(session_id, path, env=None):
+        return invoke(PULSE, {"session_id": session_id, "transcript_path": path},
+                      env={"TMPDIR": tmp, "CLAUDE_PROJECT_DIR": cleanp, **(env or {})})[1]
+
+    prompt = {"type": "user", "message": {"content": "go"}}
+    nudge = {"type": "attachment", "uuid": "n1", "attachment": {"type": "silent_turn_reminder", "text": "…"}}
+    stamped = {"type": "attachment", "attachment": {
+        "type": "hook_success", "hookEvent": "UserPromptSubmit",
+        "content": "=== OUTPUT CONTRACT · rc: 2020-01-01 v3 ===\nbody"}}
+    chatty = transcript("chatty.jsonl", [prompt, stamped, called("u1"),
+                                         said("t1", "Found it, next the tests."), called("u2")])
+    out_r = react(f"{sid}-r1", chatty)
+    check("text between tool calls is quoted back",
+          "Found it, next the tests." in out_r and "between tool calls" in out_r)
+    check("an unprompted text is not blamed on the app's reminder", "hasn't heard" not in out_r)
+    check("the same text is corrected only once", react(f"{sid}-r1", chatty) == "")
+    check("REPORT_REACT_OFF silences the react half",
+          react(f"{sid}-r2", chatty, env={"REPORT_REACT_OFF": "1"}) == "")
+    check("the kill-switch silences the react half too",
+          react(f"{sid}-r3", chatty, env={"REPORT_GUARD_OFF": "1"}) == "")
+    asked = transcript("asked.jsonl", [prompt, called("u1"), nudge, said("t1", "Reading the hooks."), called("u2")])
+    check("a text the app's reminder asked for says so", "hasn't heard" in react(f"{sid}-r4", asked))
+    quiet = transcript("quiet.jsonl", [prompt, called("u1"), called("u2")])
+    check("a silent turn is not corrected", react(f"{sid}-r5", quiet) == "")
+    fresh = transcript("fresh.jsonl", [prompt, called("u1"), said("t1", "All done."),
+                                       {"type": "user", "message": {"content": "next"}}, called("u2")])
+    check("the previous turn's final report is not corrected", react(f"{sid}-r6", fresh) == "")
+    side = transcript("side.jsonl", [prompt, called("u1"), said("t1", "subagent talk", isSidechain=True), called("u2")])
+    check("a subagent's text is not corrected", react(f"{sid}-r7", side) == "")
+    check("the react line replaces that call's pulse, never doubles it",
+          react(f"{sid}-r8", chatty, env={"REPORT_PULSE_EVERY": "1"}).count("additionalContext") == 1)
+
+    events = _contract.turns(asked)[0]["events"] + _contract.turns(chatty)[0]["events"]
+    check("midturn counts tool calls, reminders, unprompted and reminded texts",
+          _contract.midturn(events) == (4, 1, 1, 1))
+    check("a turn's final report is not a mid-turn text",
+          _contract.midturn(_contract.turns(fresh)[0]["events"]) == (1, 0, 0, 0))
+    check("turns carry the model and the contract stamp",
+          (_contract.turns(chatty)[0]["model"], _contract.turns(chatty)[0]["stamp"]) == ("model-x", "rc 2020-01-01 v3"))
+    stats = run_cli(CLI, ["midturn", chatty, asked])
+    check("calibrate midturn skips turns under 3 tool calls", stats[0] != 0)
+    busy = transcript("busy.jsonl", [prompt, stamped, called("u1"), said("t1", "Halfway."), called("u2"), called("u3")])
+    row = run_cli(CLI, ["midturn", busy])[1].splitlines()[-1]
+    check("calibrate midturn reports one row per model and contract stamp",
+          row == "model-x | rc 2020-01-01 v3 | 1 | 3 | 0 | 1 | 0 | 33.3 | 100%")
+
     # ── the injected contract and its per-repo override chain ───────────────
     project = os.path.join(tmp, "proj")
     os.makedirs(os.path.join(project, ".agent"))

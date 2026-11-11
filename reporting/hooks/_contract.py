@@ -129,3 +129,96 @@ def turn_finals(path):
     if final is not None:
         finals.append(final)
     return finals
+
+
+# ── text written between tool calls, from the transcript JSONL ───────────────────
+
+REMINDER_ATTACHMENT = "silent_turn_reminder"   # the app's "the user hasn't heard from you" line
+CONTRACT_HEAD = "OUTPUT CONTRACT"
+
+
+def _lines(path, tail_bytes=None):
+    """The transcript's lines — only its last `tail_bytes` when given (a hook must stay cheap)."""
+    try:
+        with open(path, "rb") as handle:
+            if tail_bytes:
+                handle.seek(0, os.SEEK_END)
+                handle.seek(max(0, handle.tell() - tail_bytes))
+            return handle.read().decode("utf-8", "replace").splitlines()
+    except (OSError, TypeError):
+        return []
+
+
+def turns(path, tail_bytes=None):
+    """Each turn's main-thread events, oldest-first: [{"model", "stamp", "events"}].
+
+    An event is (kind, uuid, text): "T" assistant text, "U" a tool call, "N" the app's
+    silent-turn reminder. A real user prompt opens a turn; what precedes the first one in a tail
+    read is kept as a turn of its own, so a long turn cut by `tail_bytes` still shows its events.
+    """
+    out, cur = [], {"model": None, "stamp": None, "events": []}
+    for line in _lines(path, tail_bytes):
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(entry, dict) or entry.get("isSidechain"):
+            continue
+        kind, uuid = entry.get("type"), entry.get("uuid") or ""
+        if kind == "user" and not entry.get("isMeta"):
+            if _text_of((entry.get("message") or {}).get("content")).strip():
+                if cur["events"]:
+                    out.append(cur)
+                cur = {"model": None, "stamp": None, "events": []}
+        elif kind == "attachment":
+            att = entry.get("attachment") or {}
+            if att.get("type") == REMINDER_ATTACHMENT:
+                cur["events"].append(("N", uuid, ""))
+            elif att.get("hookEvent") == "UserPromptSubmit" and CONTRACT_HEAD in str(att.get("content"))[:200]:
+                stamp = parse_stamp(str(att.get("content")))
+                cur["stamp"] = "unstamped" if not stamp else (
+                    f"{stamp['kind']} {stamp['date']}" + (f" v{stamp['version']}" if stamp["version"] else ""))
+        elif kind == "assistant":
+            message = entry.get("message") or {}
+            if isinstance(message.get("model"), str) and not message["model"].startswith("<"):
+                cur["model"] = message["model"]
+            content = message.get("content")
+            text = _text_of(content).strip()
+            if text:
+                cur["events"].append(("T", uuid, text))
+            if isinstance(content, list) and any(
+                    isinstance(c, dict) and c.get("type") == "tool_use" for c in content):
+                cur["events"].append(("U", uuid, ""))
+    if cur["events"]:
+        out.append(cur)
+    return out
+
+
+def midturn(events):
+    """(tool calls, reminders, unprompted texts, reminded texts) for one turn's events.
+
+    A text counts only when a tool call follows it in the same turn — the final report never does.
+    It is "reminded" when the app's reminder arrived since the previous text, else "unprompted".
+    """
+    kinds = [kind for kind, _, _ in events]
+    unprompted = reminded = 0
+    pending = False
+    for i, kind in enumerate(kinds):
+        if kind == "N":
+            pending = True
+        elif kind == "T":
+            if "U" in kinds[i + 1:]:
+                reminded, unprompted = reminded + pending, unprompted + (not pending)
+            pending = False
+    return kinds.count("U"), kinds.count("N"), unprompted, reminded
+
+
+def last_text(events):
+    """(uuid, text, reminded) of the turn's newest assistant text, or None."""
+    for i in range(len(events) - 1, -1, -1):
+        kind, uuid, text = events[i]
+        if kind == "T":
+            before = [k for k, _, _ in events[:i]]
+            since = before[len(before) - before[::-1].index("T"):] if "T" in before else before
+            return uuid, text, "N" in since
+    return None
