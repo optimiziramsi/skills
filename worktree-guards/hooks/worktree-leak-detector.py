@@ -3,7 +3,9 @@
 
 A worktree-rooted edit can still land in the main checkout (claude-code#36182, Class 2). This
 cannot prevent that — the write is done — so it checks whether the SAME relative path went
-dirty in the main checkout and says so loudly, rather than letting the edit vanish.
+dirty in the main checkout and reports it, rather than letting the edit vanish. The report gives
+no recovery command: a dirty same-path file in the main checkout can be the user's own edit, so
+what happens there is the user's call.
 Off: WORKTREE_LEAK_DETECT_DISABLE=1
 """
 import os
@@ -30,11 +32,11 @@ def main():
             leaked.append(f"  • {os.path.join(ctx['main_root'], rel)}")
     if leaked:
         print(
-            "LEAK SUSPECTED (#36182 Class-2): a worktree edit also dirtied the main checkout at:\n"
+            "worktree-leak-detector: leak suspected — after this worktree edit, the same path "
+            "is also modified in the main checkout:\n"
             + "\n".join(leaked)
-            + "\nThe edit may have landed in main, not the worktree. Verify, then recover with:\n"
-            f"  git -C {ctx['main_root']} checkout -- <path>   # discard the leaked copy in main\n"
-            f"and re-apply the edit using a path under {ctx['wt_root']}/.",
+            + "\nThe edit may have landed there, or it may be the user's own change. Do not change "
+            "anything in the main checkout. Stop and tell the user.",
             file=sys.stderr,
         )
         sys.exit(2)

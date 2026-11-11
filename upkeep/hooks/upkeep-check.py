@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
-"""SessionStart — say when an installed plugin has a newer version in its marketplace, or a
+"""Stop — tell the USER when an installed plugin has a newer version in its marketplace, or a
 marketplace this project installs from has gained a plugin; then refresh the marketplaces in the
 background (throttled) so the next session sees what's new.
+
+A note, not a job: it is a `systemMessage` (the user sees it, it is not model context) and it
+never blocks the stop. The check runs once per session, at its first Stop — nothing is printed at
+session start, so a chat does the work it was opened for. Silent in a linked git worktree (a
+worktree is for one topic; cleanup belongs to the main checkout's chat) unless
+NUDGES_IN_WORKTREE=1.
 
 Reads Claude Code's plugin records only — no network in the hook itself. Silent when there is
 nothing to say. A repeated identical report is shown once a day, not every session.
@@ -11,7 +17,6 @@ Config: UPKEEP_MARKETPLACES (comma-separated; default: every marketplace this pr
 Off: UPKEEP_OFF=1
 """
 import hashlib
-import json
 import os
 import sys
 import time
@@ -25,7 +30,17 @@ REPEAT_SECS = 24 * 3600
 def main():
     if up.hookio.flag("UPKEEP_OFF"):
         return
-    project = up.hookio.project_dir(up.hookio.payload())
+    data = up.hookio.payload()
+    if data.get("stop_hook_active"):
+        return
+    project = up.hookio.project_dir(data)
+    if up.hookio.linked_worktree(project) and not up.hookio.flag("NUDGES_IN_WORKTREE"):
+        return
+    # one check per session: report() consumes "new" as it reads, so a second look in the same
+    # session would only repeat part of the first
+    session = data.get("session_id")
+    if session and not up.hookio.first_time("upkeep", session, "checked"):
+        return
     rep = up.report(project)
     up.refresh_in_background(rep["marketplaces"])
     line = up.summary(rep)
@@ -46,9 +61,7 @@ def main():
             handle.write(digest)
     except OSError:
         pass
-    print(json.dumps({"systemMessage": line, "hookSpecificOutput": {
-        "hookEventName": "SessionStart",
-        "additionalContext": line + " If the user asks to apply it, use the upkeep skill."}}))
+    up.hookio.notice(line)
 
 
 if __name__ == "__main__":

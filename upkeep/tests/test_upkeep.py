@@ -8,12 +8,13 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
-from selftest import Check, hook, invoke, run_cli  # noqa: E402
+from selftest import Check, hook, invoke, run_cli, scratch_repo  # noqa: E402
 
 check = Check()
 CHECK_HOOK = hook("hooks/upkeep-check.py")
 CLI = hook("bin/upkeep")
-for var in [v for v in os.environ if v.startswith(("UPKEEP_", "CLAUDE_PLUGIN_", "CLAUDE_CONFIG_DIR"))]:
+for var in [v for v in os.environ if v.startswith(
+        ("UPKEEP_", "CLAUDE_PLUGIN_", "CLAUDE_CONFIG_DIR", "NUDGES_IN_WORKTREE"))]:
     del os.environ[var]
 
 tmp = os.path.realpath(tempfile.mkdtemp())
@@ -46,11 +47,17 @@ try:
     }})
     offer({"alpha": "1.0.0", "beta": "0.1.0", "gamma": "0.2.0"})
     env = {"CLAUDE_CONFIG_DIR": config, "CLAUDE_PLUGIN_DATA": os.path.join(tmp, "data"),
-           "CLAUDE_PROJECT_DIR": project, "UPKEEP_REFRESH_HOURS": "0"}
+           "CLAUDE_PROJECT_DIR": project, "UPKEEP_REFRESH_HOURS": "0", "TMPDIR": tmp}
 
-    def session(extra=None):
-        out = invoke(CHECK_HOOK, {"cwd": project}, env={**env, **(extra or {})})[1]
-        return json.loads(out) if out.strip() else {}
+    def stop(extra=None, **payload):
+        """(exit code, parsed stdout JSON or {}, stderr) for one Stop."""
+        code, out, err = invoke(CHECK_HOOK, {"hook_event_name": "Stop", "cwd": project, **payload},
+                                env={**env, **(extra or {})})
+        return code, (json.loads(out) if out.strip() else {}), err
+
+    def session(extra=None, **payload):
+        """A Stop in a session of its own (no id → no once-per-session gate)."""
+        return stop(extra, **payload)[1]
 
     check("nothing outdated, first look → silent (the baseline)", session() == {})
     offer({"alpha": "1.0.0", "beta": "0.2.0", "gamma": "0.2.0"})
@@ -72,6 +79,31 @@ try:
     check("the CLI reports the same updates as JSON",
           rc == 0 and ["alpha@mk", "user", "1.0.0", "1.1.0"] in rep["updates"], out)
     check("UPKEEP_OFF=1 silences it", session({"UPKEEP_OFF": "1"}) == {})
+
+    # ── the note: for the user, at Stop, never a block ─────────────────────
+    there = {"CLAUDE_PROJECT_DIR": other}
+    code, body, err = stop(there, session_id="u1")
+    check("the note is a systemMessage only — no model context",
+          list(body) == ["systemMessage"] and "gamma@mk 0.1.0 → 0.2.0" in body["systemMessage"], body)
+    check("the note never blocks", code == 0 and err == "" and "decision" not in body, (code, err))
+    offer({"alpha": "1.2.0", "beta": "0.2.0", "gamma": "0.2.0", "delta": "0.1.0"})
+    check("one check per session, even when the report changed", stop(there, session_id="u1")[1] == {})
+    check("a new session is checked again",
+          "alpha@mk 1.0.0 → 1.2.0" in stop(there, session_id="u2")[1].get("systemMessage", ""))
+    check("stop_hook_active is never noted",
+          stop(there, session_id="u3", stop_hook_active=True)[1] == {})
+    wired = json.load(open(hook("hooks/hooks.json")))["hooks"]
+    check("the check is wired at Stop, nothing at SessionStart", list(wired) == ["Stop"], list(wired))
+
+    # ── a linked worktree is for one topic: no notes ───────────────────────
+    with scratch_repo() as r:
+        check("the main checkout is noted", "alpha@mk" in stop(
+            {"CLAUDE_PROJECT_DIR": r.main}, session_id="w1")[1].get("systemMessage", ""))
+        check("a linked worktree is silent",
+              stop({"CLAUDE_PROJECT_DIR": r.wt}, session_id="w2")[1:] == ({}, ""))
+        check("…and the silent look consumed nothing: NUDGES_IN_WORKTREE=1 restores the note",
+              "alpha@mk" in stop({"CLAUDE_PROJECT_DIR": r.wt, "NUDGES_IN_WORKTREE": "1"},
+                                 session_id="w2")[1].get("systemMessage", ""))
     os.remove(os.path.join(config, "plugins", "installed_plugins.json"))
     check("missing plugin records fail open", session() == {})
 finally:

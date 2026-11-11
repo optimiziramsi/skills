@@ -2,7 +2,11 @@
 
 The `code-first@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
-For anything technical, the proposal IS code. Claude brainstorms as `IDEA:` commits on an
+The working style is opt-in per session: it starts when you run `/idea`, or for one prompt when
+you ask for a proposal (see [When the contract applies](#when-the-contract-applies)). A design or
+architecture session that never does either is left alone.
+
+In a code-first turn, the proposal IS code. Claude brainstorms as `IDEA:` commits on an
 `idea/<topic>` branch cut from the integration branch (never the protected one), and you read it
 in your IDE as a code review — not chat prose, not inline snippets, not the chat diff view. Chat
 carries only the branch name, the key decisions, and open questions with a recommendation on each.
@@ -23,32 +27,48 @@ through the normal gate.
     topic branch (cherry-pick per commit, tag dropped — no merge commit, no interactive rebase);
     `/idea drop <topic>` deletes the branch locally after confirming. Every command passes
     [`git-guard`](../git-guard) as shipped and [`commit`](../commit)'s single-line format. Also
-    auto-triggers on technical proposals ("sketch this", "how would you do X").
+    auto-triggers when a proposal is asked for as code ("sketch this", "propose an approach") — not on
+    design talk.
 
 - name: `inject`
   kind: hook
   purpose:
-    UserPromptSubmit — injects the code-first contract (≤ 10 lines). Only the code-first part:
-    the output contract itself is [`reporting`](../reporting)'s, so the two compose.
+    UserPromptSubmit — injects the code-first contract (≤ 10 lines) when the turn is code-first:
+    the session ran `/idea`, or the prompt asks for a proposal. Any other prompt gets nothing.
+    Only the code-first part: the output contract itself is [`reporting`](../reporting)'s, so the
+    two compose.
 
 - name: `idea-guard`
   kind: hook
   purpose:
-    Stop — blocks once (`stop_hook_active`-guarded) when the final message's fenced code exceeds
+    Stop — acts only in a code-first turn (same test as `inject`; silent otherwise). Blocks once
+    (`stop_hook_active`-guarded) when the final message's fenced code exceeds
     `CODE_FIRST_MAX_FENCE_LINES` non-empty lines, summed over fences, and asks for a rewrite:
     commit it to an idea branch, chat only the branch name + questions. Fails open.
 
 - name: `stale-ideas`
   kind: hook
   purpose:
-    SessionStart — one line naming `idea/*` branches older than `CODE_FIRST_STALE_DAYS`, so ideas
-    don't rot. Silent when there are none.
+    Stop — one line for you (not for the model) naming `idea/*` branches older than
+    `CODE_FIRST_STALE_DAYS`, so ideas don't rot. Shown once per session, never blocks. Silent
+    when there are none, and in a linked git worktree unless `NUDGES_IN_WORKTREE=1`.
 
 - name: `bin/code-first`
   kind: cli
   purpose:
     `code-first base | list | prefix | tag` — the deterministic half of `/idea` (on PATH while
     the plugin is enabled), so the skill and the hooks resolve the same branch, prefix and tag.
+
+## When the contract applies
+
+- **The session opted in.** A prompt that invokes the idea command — `/idea …` or
+  `/code-first:idea …` — turns code-first on for the rest of that session.
+- **One prompt asks for a proposal.** A prompt matching `CODE_FIRST_TRIGGER_PATTERN` (default:
+  the words propose, proposal, sketch) gets the contract for that prompt only. "Brainstorm",
+  "how would you" and "what if we" are left out of the default on purpose: they are design talk.
+- **`CODE_FIRST_INJECT=always`** applies it to every prompt.
+
+In any other turn the plugin injects nothing and its Stop guard stays silent.
 
 ## The contract text — where it is read from
 
@@ -83,12 +103,17 @@ or `~/.claude/settings.json` for yourself), read from the hook's own process env
   `bash,sh,zsh,shell,console` (commands for you to run).
 - `CODE_FIRST_ALLOW_PATTERN` — regex on your last prompt that lifts the guard for that turn,
   default `\b(prompt|paste|inline|snippet|command)s?\b`.
-- `CODE_FIRST_STALE_DAYS` — SessionStart nudge threshold, default `7`; empty = no nudge.
+- `CODE_FIRST_TRIGGER_PATTERN` — regex (case-insensitive) on your prompt that applies the contract
+  to that one prompt, default `\b(propose|proposal|sketch)\b`. A bad regex falls back to the default.
+- `CODE_FIRST_INJECT` — `always` applies the contract to every prompt; unset = opt-in as above.
+- `CODE_FIRST_STALE_DAYS` — stale-idea note threshold, default `7`; empty = no note.
+- `NUDGES_IN_WORKTREE` — `1` shows the stale-idea note in a linked git worktree too (off there by
+  default).
 - `CODE_FIRST_CONTRACT_FILE` — explicit contract override (see above).
 
 ## Escape hatches
 
-- `CODE_FIRST_OFF=1` — everything: injection, Stop guard, nudge.
+- `CODE_FIRST_OFF=1` — everything: injection, Stop guard, stale-idea note.
 - `CODE_FIRST_GUARD_OFF=1` — keep the injected reminder, drop only the Stop enforcement.
 - A turn where you need inline text: say so ("paste-ready prompt", "inline snippet") and the
   allow-pattern lifts the guard for that turn.

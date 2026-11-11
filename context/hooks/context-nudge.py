@@ -4,16 +4,20 @@
 The CCD UI no longer shows a context bar, so this is the signal. Usage is read from the
 transcript: the last main-thread assistant message's `usage` (input + cache-creation +
 cache-read + output tokens) against CONTEXT_WINDOW_TOKENS. Each threshold in CONTEXT_NUDGE_AT
-nudges once per session; the LAST one is the handoff level, where the nudge says plainly that a
-handoff is needed (`/repack`, then `/clear` → `/continue`). A hook cannot clear or compact a
-session itself — it can only say so.
+nudges once per session. What a threshold says depends on its place in the sorted list:
+  hint      — every level before the last two: a line for the user only; the model is told nothing
+  action    — the second-to-last level: the user line plus model context saying a handoff is
+              needed at the next stopping point (`/repack`, then `/clear` → `/continue`)
+  red alert — the last level: both again, plainly — finish the step, start nothing new, hand off
+With two levels the first is the action level and the last the red alert; a single level is the
+action level. A hook cannot clear or compact a session itself — it can only say so.
 
 The user answers a pending nudge in plain words, caught on their next prompt:
   "remind me later" / "snooze" / "not now"   → nudge again after CONTEXT_SNOOZE_PCT more
   "keep going" / "no handoff" / "stop reminding" → silence this level (a higher one still nudges)
   "topic done" / "already done"              → the handoff is moot: no more nudges this session
 
-Config: CONTEXT_WINDOW_TOKENS (default 1000000), CONTEXT_NUDGE_AT (default 30,50,60 — percent),
+Config: CONTEXT_WINDOW_TOKENS (default 1000000), CONTEXT_NUDGE_AT (default 20,30,55 — percent),
         CONTEXT_SNOOZE_PCT (default 5)
 Off: CONTEXT_NUDGE_OFF=1
 """
@@ -28,6 +32,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import hookio  # noqa: E402
 
 TAIL_BYTES = 2 * 1024 * 1024
+ANSWER_MAX_CHARS = 200   # an answer to a nudge is a short line; a long prompt (a pasted document,
+                         # a subagent's report) that merely quotes one of the phrases is not
 SNOOZE = re.compile(r"\b(remind me( again)? later|snooze|not now|later please)\b", re.I)
 QUIET = re.compile(r"\b(keep going|no handoff|don'?t remind|stop reminding)\b", re.I)
 DONE = re.compile(r"\b(topic (is )?(already )?done|already done|topic'?s done)\b", re.I)
@@ -38,9 +44,17 @@ def window():
 
 
 def levels():
-    raw = hookio.setting("CONTEXT_NUDGE_AT", "30,50,60")
+    raw = hookio.setting("CONTEXT_NUDGE_AT", "20,30,55")
     out = sorted({int(x) for x in re.findall(r"\d+", raw) if 0 < int(x) <= 100})
-    return out or [30, 50, 60]
+    return out or [20, 30, 55]
+
+
+def tier(level):
+    """The tier of `level` — "hint", "action" or "alert" — by its place in the sorted list."""
+    after = len([l for l in levels() if l > level])
+    if after == 0 and len(levels()) > 1:
+        return "alert"
+    return "action" if after <= 1 else "hint"
 
 
 def snooze_tokens():
@@ -98,10 +112,18 @@ def fmt(tokens):
     return f"{tokens / 1_000_000:.2f}M" if tokens >= 1_000_000 else f"{tokens // 1000}k"
 
 
-def nudge(pct, level, tokens, handoff):
-    """(user-visible line, model context) for crossing `level`."""
+def nudge(pct, level, tokens):
+    """(user-visible line, model context or None) for crossing `level`."""
     head = f"[context] {pct}% of {fmt(window())} used ({fmt(tokens)} tokens)"
-    if handoff:
+    kind = tier(level)
+    if kind == "alert":
+        return (f"{head} — past the safe range: hand off now (/repack, then /clear → /continue). "
+                "Reply 'remind me later', 'keep going', or 'topic done' to override.",
+                f"Context usage is {pct}% of the window — past the safe range. Finish the step you "
+                "are in, start nothing new, and tell the user in your next report that a handoff is "
+                "needed now (/repack). If they say 'remind me later', 'keep going', or 'topic done', "
+                "accept it — this hook records the answer.")
+    if kind == "action":
         return (f"{head} — time for a handoff: /repack writes it, then /clear → /continue. "
                 "Reply 'remind me later', 'keep going', or 'topic done' to override.",
                 f"Context usage is {pct}% of the window — the handoff level. Tell the user plainly, "
@@ -109,9 +131,7 @@ def nudge(pct, level, tokens, handoff):
                 "needed now: offer /repack (writes the handoff; then they run /clear and /continue). "
                 "If they say 'remind me later', 'keep going', or 'topic done', accept it — this "
                 "hook records the answer.")
-    return (f"{head} — fine for now; plan a handoff at the next topic boundary.",
-            f"Context usage is {pct}% of the window (nudge level {level}%). Mention it in one line "
-            "at the next natural pause; no action is needed yet.")
+    return f"{head} — fine for now; plan a handoff at the next topic boundary.", None
 
 
 def emit(event, user_line=None, context=None):
@@ -137,7 +157,8 @@ def main():
 
     # the user's answer to a pending nudge
     prompt = data.get("prompt") or ""
-    if event == "UserPromptSubmit" and state.get("pending") and prompt:
+    if (event == "UserPromptSubmit" and state.get("pending") and prompt
+            and len(prompt) <= ANSWER_MAX_CHARS):
         ack = None
         if DONE.search(prompt):
             state.update(done=True, pending=None)
@@ -159,12 +180,12 @@ def main():
     crossed = [l for l in levels() if pct >= l]
     if not crossed:
         return
-    level, handoff = crossed[-1], crossed[-1] == levels()[-1]
+    level = crossed[-1]
     renudge = state.get("renudge_at")
     if level > state.get("shown", 0) or (renudge and tokens >= renudge):
         state.update(shown=level, pending=level, renudge_at=None)
         save(path, state)
-        emit(event, *nudge(pct, level, tokens, handoff))
+        emit(event, *nudge(pct, level, tokens))
 
 
 if __name__ == "__main__":

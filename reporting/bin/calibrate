@@ -7,6 +7,11 @@
   calibrate contracts
         the active contract and (when an override is in force) the shipped one, each framed by
         `--- active ---` / `--- shipped ---`, under a header: `active-source:` and `active-stamp:`
+  calibrate midturn [PATH ...]
+        how often text was written between tool calls, one row per model and contract stamp, over
+        the given transcripts (default: every session of this project). Turns with fewer than 3
+        tool calls are skipped. `reminded` texts followed the app's own "the user hasn't heard
+        from you" line; `unprompted` ones did not
 
 Project root: $CLAUDE_PROJECT_DIR, else the current directory. Reads only; never writes.
 """
@@ -18,20 +23,29 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.realpath
 import _contract as c  # noqa: E402
 
 
-def find_transcript(project):
-    """The project's most-recently-touched session transcript, or None.
+def transcripts(project):
+    """Every session transcript of the project, oldest-touched first — [] when there is none.
 
     Claude Code stores them at ~/.claude/projects/<slug>/<session>.jsonl, where <slug> is the
-    project path with every non-alphanumeric run turned to a dash. A skill has no hook payload to
-    read the path from, so newest-mtime is the best available signal for the live session.
+    project path with every non-alphanumeric run turned to a dash.
     """
     slug = re.sub(r"[^A-Za-z0-9]+", "-", os.path.realpath(project))
     base = os.path.join(os.path.expanduser("~"), ".claude", "projects", slug)
     try:
         files = [os.path.join(base, f) for f in os.listdir(base) if f.endswith(".jsonl")]
     except OSError:
-        return None
-    return max(files, key=os.path.getmtime) if files else None
+        return []
+    return sorted(files, key=os.path.getmtime)
+
+
+def find_transcript(project):
+    """The project's most-recently-touched session transcript, or None.
+
+    A skill has no hook payload to read the path from, so newest-mtime is the best available
+    signal for the live session.
+    """
+    files = transcripts(project)
+    return files[-1] if files else None
 
 
 def messages(args, project):
@@ -74,6 +88,32 @@ def contracts(project):
     return 0, "\n".join(out)
 
 
+MIN_TOOLS = 3   # a shorter turn has no room for progress text
+
+
+def midturn(args, project):
+    paths = [a for a in args if not a.startswith("-")] or transcripts(project)
+    if not paths:
+        return 1, "calibrate: no transcript found for this project"
+    rows = {}
+    for path in paths:
+        for turn in c.turns(path):
+            tools, reminders, unprompted, reminded = c.midturn(turn["events"])
+            if tools < MIN_TOOLS:
+                continue
+            row = rows.setdefault((turn["model"] or "?", turn["stamp"] or "no contract"), [0] * 6)
+            for i, n in enumerate((1, tools, reminders, unprompted, reminded, bool(unprompted))):
+                row[i] += n
+    if not rows:
+        return 1, f"calibrate: no turn with {MIN_TOOLS}+ tool calls in the transcript(s)"
+    out = ["model | contract | turns | tool calls | app reminders | unprompted texts | "
+           "reminded texts | unprompted per 100 tool calls | turns with unprompted text"]
+    for (model, stamp), r in sorted(rows.items()):
+        out.append(f"{model} | {stamp} | {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} | "
+                   f"{100 * r[3] / r[1]:.1f} | {100 * r[5] // r[0]}%")
+    return 0, "\n".join(out)
+
+
 def main(argv):
     args = argv[1:]
     cmd = args[0] if args else "help"
@@ -82,6 +122,8 @@ def main(argv):
         code, text = messages(args[1:], project)
     elif cmd == "contracts":
         code, text = contracts(project)
+    elif cmd == "midturn":
+        code, text = midturn(args[1:], project)
     else:
         print(__doc__.strip())
         return 0 if cmd in ("help", "-h", "--help") else 2

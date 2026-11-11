@@ -1,5 +1,5 @@
 {
-  "description": "guards — run project-owned .agent/guards.d tripwires on Bash commands, downgrade writes to enforcement surfaces (Claude settings, hook scripts) to an ask, and re-inject a trust reminder on every prompt while the session runs on an untrusted model (model-guard, default opus-5-5). Kill-switches: TRIPWIRE_GUARD_OFF=1, FILE_GUARD_OFF=1, MODEL_GUARD_OFF=1.",
+  "description": "guards — run project-owned .agent/guards.d tripwires on Bash commands, downgrade writes to enforcement surfaces (Claude settings, hook scripts) to an ask, and re-inject a scope reminder on every prompt while the session runs on a matched model (model-guard, default opus-5-5). Kill-switches: TRIPWIRE_GUARD_OFF=1, FILE_GUARD_OFF=1, MODEL_GUARD_OFF=1.",
   "hooks": {
     "PreToolUse": [
       {

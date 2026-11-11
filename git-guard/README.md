@@ -20,7 +20,7 @@ it's the separate opt-in [`commit`](../commit) plugin.
     `commit --amend`, and `checkout <ref> -- <path>` are **allowed** by default (rebase + FF
     landing flows need them) — re-block via `GIT_GUARD_STRICT`. Fails open; escape hatches
     `GIT_GUARD_OFF=1`, `GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`, `GIT_GUARD_STRICT`,
-    `GIT_GUARD_PROTECTED_BRANCH`.
+    `GIT_GUARD_PROTECTED_BRANCH`, `GIT_GUARD_INTEGRATION_BRANCH`.
 
 ## Pairs with `commit`
 
@@ -49,7 +49,9 @@ claude plugin install git-guard@optimiziramsi --scope project
 >
 > **Escape hatches** (the hook reads its **own process env** — an inline `GIT_GUARD_OFF=1 git …`
 > prefix does NOT disarm it; set these in your settings' `env` block or in the shell that launches
-> `claude`):
+> `claude`). They are documented here only: the reason the guard prints when it blocks never names
+> a switch — it says what was blocked, the allowed form when there is one, and otherwise tells the
+> agent to stop and ask you:
 >
 > - `GIT_GUARD_OFF=1` — disable the guard entirely.
 > - `GIT_GUARD_STRICT=rebase,amend,checkout-file,reset` — comma-separated tokens that **re-enable**

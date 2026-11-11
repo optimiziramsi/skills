@@ -40,9 +40,8 @@ WRITES_TODO = re.compile("|".join((
     r"\bof=\S*\.todo",                           # dd of=.todo
 )))
 
-REASON = (".todo is LLM-readonly (user-owned parking lot). Park deferrals in .todo-inbox "
-          "instead. If this write is genuinely wanted, the USER replies with 'ALLOW TODO' to "
-          "arm this session (or prefixes bash with TODO_GUARD_SKIP=1).")
+REASON = (".todo is the user's list and read-only for the agent. Put deferrals in .todo-inbox "
+          "instead. Writing .todo itself needs the user to reply 'ALLOW TODO' in this session.")
 
 
 def arm_flag(session_id):

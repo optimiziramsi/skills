@@ -63,10 +63,10 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`rename`](rename/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
 | [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message; `/calibrate` tunes the contract on real reports, and an `rc:`-stamped contract nudges for it once it's stale. |
 | [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot. |
-| [`context`](context/README.md) | Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh. |
+| [`context`](context/README.md) | Context-window awareness — nudges at 20% / 30% / 55% of a 1M window (configurable): a hint for the user, then that a handoff is needed, then that it is needed now; honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh. |
 | [`lessons`](lessons/README.md) | Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug. |
 | [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
-| [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a trust reminder while the session runs on an untrusted model (model-guard). |
+| [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a scope reminder while the session runs on a matched model (model-guard). |
 | [`review`](review/README.md) | Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents. |
 | [`qa-gate`](qa-gate/README.md) | The done-gate — typecheck, unit, e2e and visual verification before any claim of done. |
 | [`planning`](planning/README.md) | Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/. |
@@ -76,7 +76,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`worktree`](worktree/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK; plus relay, the pair-programming-by-worktree primary that turns your comments into worktree sub chats. Pairs with worktree-guards. |
 | [`worktree-guards`](worktree-guards/README.md) | Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree. |
 | [`setup`](setup/README.md) | One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md. |
-| [`upkeep`](upkeep/README.md) | Plugin upkeep — a session-start notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins. |
+| [`upkeep`](upkeep/README.md) | Plugin upkeep — an end-of-turn notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins. |
 
 ## Per-concern switches (env)
 
@@ -97,21 +97,25 @@ no concern is stuck on:
 | `GIT_GUARD_OFF=1` | the git safety net (see also `GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`, `GIT_GUARD_STRICT`, `GIT_GUARD_PROTECTED_BRANCH`) |
 | `COMMIT_FORMAT_OFF=1` | the single-line commit-message guard |
 | `STOP_NUDGE_OFF=1` | the end-of-session commit nudge (`COMMIT_NUDGE_EXTRA_DIRS` widens it) |
-| `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_PULSE_EVERY`, `REPORT_PULSE_TEXT`, `REPORT_GUARD_MAX_LINES`, `REPORT_RC_DAYS` tune it |
-| `CODE_FIRST_OFF=1` | the whole code-first plugin (`CODE_FIRST_GUARD_OFF=1` drops only its Stop guard on inline code) |
-| `SESSION_START_OFF=1` | the SessionStart state snapshot + freshness nudges |
+| `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_REACT_OFF=1` drops only the quote-back of text between tool calls; `REPORT_PULSE_EVERY`, `REPORT_PULSE_TEXT`, `REPORT_GUARD_MAX_LINES`, `REPORT_RC_DAYS` tune it |
+| `CODE_FIRST_OFF=1` | the whole code-first plugin (`CODE_FIRST_GUARD_OFF=1` drops only its Stop guard on inline code; it is opt-in per session via `/idea` — `CODE_FIRST_INJECT=always` makes it every prompt, `CODE_FIRST_TRIGGER_PATTERN` sets the per-prompt trigger) |
+| `SESSION_START_OFF=1` | the SessionStart state snapshot and the end-of-turn housekeeping notes (handoff age, `.todo` count, audit age) |
 | `CONTEXT_NUDGE_OFF=1` | the context-window nudges (`CONTEXT_WINDOW_TOKENS`, `CONTEXT_NUDGE_AT`, `CONTEXT_SNOOZE_PCT` tune them) |
 | `UPKEEP_OFF=1` | the plugin-update / new-plugin notice and its background refresh (`UPKEEP_REFRESH_HOURS=0` keeps the notice, drops the refresh) |
 | `TODO_GUARD_DISABLE=1` | the `.todo` readonly guard (`TODO_GUARD_SKIP=1` = one-shot) |
 | `FLOW_LINK_OFF=1` | re-stamping the runner-link pointer (`.agent/bin/{loop,grind}` then keep their current target) |
 | `FILE_GUARD_OFF=1` | the T3 enforcement-surface write guard (`FILE_GUARD_EXTRA` adds prefixes) |
-| `MODEL_GUARD_OFF=1` | the untrusted-model trust reminder (`MODEL_GUARD_MATCH` picks the models, default `opus-5-5`; `MODEL_GUARD_FILE` the text; `MODEL_GUARD_TAIL_KB` the transcript tail scanned, default 512) |
+| `MODEL_GUARD_OFF=1` | the matched-model scope reminder (`MODEL_GUARD_MATCH` picks the models, default `opus-5-5`; `MODEL_GUARD_FILE` the text; `MODEL_GUARD_TAIL_KB` the transcript tail scanned, default 512) |
 | `CAPS_GUARD_OFF=1` | instruction-surface size caps |
 | `META_LINT_OFF=1` | the meta-lint engine (already inert without `.agent/meta-lint.json`) |
 | `TRIPWIRE_GUARD_OFF=1` | project tripwires (`TRIPWIRE_SKIP=1` = one-shot) |
 | `PATTERN_GUARDS_OFF=1` | the pattern-registry edit gate |
 | `WORKTREE_GUARD_DISABLE=1` | worktree edit containment **and** the SessionStart worktree nudge |
 | `WORKTREE_LEAK_DETECT_DISABLE=1` | the post-edit worktree leak detector |
+
+Housekeeping notes (handoff age, `.todo` count, audit age, cap breaches, meta-lint findings, stale
+idea branches, plugin updates) are shown to the user at the end of a turn, never at session start,
+and not at all in a linked git worktree — `NUDGES_IN_WORKTREE=1` shows them there too.
 
 Opt-**in**, off by default: `WORKTREE_BASH_GUARD_ENABLE=1` (shell-channel worktree containment —
 false-positive-prone; the runners arm it for their own children in worktree mode). The runners take `FLOW_*` env; see [`runners`](runners/README.md).

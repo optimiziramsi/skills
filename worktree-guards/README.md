@@ -22,14 +22,17 @@ No-ops entirely when you're not in a linked worktree. The workflow on top is the
     Deny a shell write (`>`, `sed -i`, `tee`…) into the main checkout from a worktree. **Opt-in**
     (false-positive-prone): `WORKTREE_BASH_GUARD_ENABLE=1` — which the [`runners`](../runners) set for the
     headless children they launch in a worktree, where there is no human to un-block a false
-    positive and the shell is the widest way out.
+    positive and the shell is the widest way out. A command that names a path under the worktree
+    anywhere in it passes — that is how a deliberate cross-tree write (e.g. recovery) is made.
 
 - name: `worktree-leak-detector`
   kind: hook
   event: PostToolUse `Edit|Write|…`
   purpose:
-    After an in-worktree edit, warn loudly if the same path went dirty in the main checkout (a
-    leak already happened).
+    After an in-worktree edit, report it if the same path went dirty in the main checkout (a
+    leak may already have happened). The report lists the paths and tells the agent to leave the
+    main checkout alone and stop — that file can be your own edit, so recovery is your call
+    (`git -C <main> checkout -- <path>` discards a leaked copy).
 
 - name: `worktree-detect`
   kind: hook
@@ -40,7 +43,9 @@ No-ops entirely when you're not in a linked worktree. The workflow on top is the
 
 Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1` (write-guard **and** the SessionStart nudge),
 `WORKTREE_LEAK_DETECT_DISABLE=1`, `WORKTREE_BASH_GUARD_ENABLE=1` (opt-in),
-`WORKTREE_GUARD_MODE=json|exit2` (default `json`).
+`WORKTREE_GUARD_MODE=json|exit2` (default `json`). They are documented here only: what a guard
+prints when it blocks never names a switch or another way around it — it gives the allowed form
+(a path under the worktree) and otherwise tells the agent to stop and ask you.
 
 All four guards are python3 (stdlib only) over the shared [`lib/hookio.py`](lib/hookio.py) (vendored into each plugin that uses it), so
 they have no `jq` dependency and cannot disarm themselves on a missing tool. Their tests live in

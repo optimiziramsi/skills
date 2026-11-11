@@ -44,8 +44,8 @@ one on real reports; `grill` re-sets the knobs by asking.
 
 ## grill — re-set the knobs
 
-Ask these six, each with the current default in `[ ]`, each itself obeying the 3-am rule (plain,
-one line, a real fork). One message, numbered:
+Ask these six, each with the current default in `[ ]`, each itself plain, one line and a real
+fork. One message, numbered:
 
 1. length — `[1 line / 3 bullets / 5 bullets]`
 2. casualness — `[dry / buddy]`

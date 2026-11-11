@@ -25,16 +25,34 @@ Write the handoff at session close; boot the next session from it.
 - name: `session-start`
   kind: hook
   purpose:
-    SessionStart — injects a state snapshot (branch · uncommitted · last commit), handoff
-    freshness, todo count, an enforcement-health warning (loud if `python3` is missing → guards
-    disarmed), and an audit-staleness nudge. Every line beyond the state snapshot is conditional on
-    the file existing, so it is safe in any repo. Escape hatch `SESSION_START_OFF=1`; self-test
-    `--test`.
+    SessionStart — injects one state line as context (branch · uncommitted · last commit), plus
+    an enforcement-health warning when `python3` is missing (guards disarmed). Nothing else: a
+    chat starts on the work it was opened for.
+
+- name: `session-end`
+  kind: hook
+  purpose:
+    Stop — a note for the **user** (a `systemMessage`: not model context, never blocks the stop)
+    with the handoff age, the `.todo` item count, and the instructions-audit age when it is over
+    30 days. Each fact is shown once per session and again only when it changes; every line is
+    conditional on its file existing, so it is safe in any repo. Silent in a linked git worktree
+    (see Settings).
 
 Assumes the **`.agent/` house layout** (`.agent/handoff.md`, `.agent/lessons/`, `.agent/reviews/`,
 `.docs/`).
 
 _Planned:_ `collab`, a stop-nudge hook.
+
+## Settings
+
+In a settings.json `env` block (any scope):
+
+- `SESSION_START_OFF=1` — both hooks off.
+- `NUDGES_IN_WORKTREE=1` — show the Stop notes in a linked git worktree too. Off by default: a
+  worktree is for one topic, and cleanup belongs to the main checkout's chat. The same switch is
+  read by every plugin that ships such notes.
+
+Tests: `python3 tests/test_session_start.py`, `python3 tests/test_session_end.py`.
 
 ## Enable
 

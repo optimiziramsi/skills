@@ -149,11 +149,10 @@ def main():
     target = escapes(command, cwd, ctx["wt_root"], ctx["main_root"])
     if target:
         hookio.deny(
-            f"worktree-bash-guard (#36182 shell channel): this command writes to '{target}', "
+            f"worktree-bash-guard: this command writes to '{target}', "
             f"inside the main checkout '{ctx['main_root']}', from worktree '{ctx['wt_root']}'. "
-            f"Re-issue with a path under the worktree. If the cross-tree write is intentional "
-            f"(e.g. recovery), name the worktree path in the command, or unset "
-            f"WORKTREE_BASH_GUARD_ENABLE to turn this guard off.",
+            f"Re-issue with a path under the worktree. If the write really must go to the main "
+            f"checkout, stop and ask the user.",
             mode=os.environ.get("WORKTREE_GUARD_MODE", "json"),
         )
 

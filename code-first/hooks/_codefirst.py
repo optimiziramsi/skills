@@ -1,13 +1,14 @@
 """Shared logic for the code-first hooks and the `code-first` CLI (imported by path, not shipped as a hook).
 
 Everything resolves from env (the settings.json `env` block, read from the hook's own process env)
-and from git — so the injected text, the Stop guard, the stale-idea nudge, and `/idea` agree.
+and from git — so the injected text, the Stop guard, the stale-idea note, and `/idea` agree.
 """
 import json
 import os
 import pathlib
 import re
 import sys
+import tempfile
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
@@ -18,10 +19,52 @@ CONTRACT_CANDIDATES = (".agent/code-first.md", ".claude/code-first.md")
 
 DEFAULT_ALLOW = r"\b(prompt|paste|inline|snippet|command)s?\b"
 DEFAULT_EXEMPT_LANGS = "bash,sh,zsh,shell,console"
+DEFAULT_TRIGGER = r"\b(propose|proposal|sketch)\b"
+# The idea command as the user types it — the prompt STARTS with `/idea …` or
+# `/code-first:idea …` — and as the transcript records it
+# (`<command-name>/code-first:idea</command-name>`). A prompt that only mentions `/idea` in
+# passing, or a subagent report that quotes it, does not opt the session in.
+IDEA_COMMAND = re.compile(r"(?:\A\s*|<command-name>)/(?:code-first:)?idea(?=\s|<|$)")
 
 
 def off():
     return hookio.flag("CODE_FIRST_OFF")
+
+
+def inject_always():
+    """CODE_FIRST_INJECT=always — the contract applies to every prompt, opted in or not."""
+    return hookio.setting("CODE_FIRST_INJECT", "").strip().lower() == "always"
+
+
+def trigger_pattern():
+    raw = hookio.setting("CODE_FIRST_TRIGGER_PATTERN", "") or DEFAULT_TRIGGER
+    try:
+        return re.compile(raw, re.I)
+    except re.error:
+        return re.compile(DEFAULT_TRIGGER, re.I)
+
+
+def _session_marker(session_id):
+    return os.path.join(tempfile.gettempdir(), f"optimiziramsi-code-first-on-{session_id}")
+
+
+def code_first_turn(session_id, prompt, mark=False):
+    """True when the contract applies to this turn.
+
+    It applies when the session opted in — a prompt invoked the idea command; with `mark` that
+    is recorded in a temp marker keyed by session, so it holds for the rest of the session — or
+    when this one prompt matches CODE_FIRST_TRIGGER_PATTERN, or under CODE_FIRST_INJECT=always.
+    """
+    prompt = prompt or ""
+    invoked = bool(IDEA_COMMAND.search(prompt))
+    if invoked and mark and session_id:
+        try:
+            with open(_session_marker(session_id), "w"):
+                pass
+        except OSError:
+            pass
+    return (inject_always() or invoked or bool(trigger_pattern().search(prompt))
+            or bool(session_id and os.path.exists(_session_marker(session_id))))
 
 
 def prefix():
@@ -83,7 +126,7 @@ def idea_branches(cwd=None, now=None):
 
 
 def stale_days():
-    """CODE_FIRST_STALE_DAYS (default 7); None when set empty — the nudge is off."""
+    """CODE_FIRST_STALE_DAYS (default 7); None when set empty — the note is off."""
     raw = hookio.setting("CODE_FIRST_STALE_DAYS", "7")
     if not str(raw).strip():
         return None
@@ -114,6 +157,21 @@ def counted_fence_lines(text, exempt=None):
 
 def max_fence_lines():
     return max(0, hookio.setting_int("CODE_FIRST_MAX_FENCE_LINES", 5))
+
+
+# How the transcript records a slash-command prompt:
+#   <command-message>code-first:idea</command-message>
+#   <command-name>/code-first:idea</command-name>
+#   <command-args>what the user typed after the command</command-args>
+# Only the args are the user's words. The wrapper itself contains the word "command", which the
+# default allow pattern would read as the user asking for inline text.
+COMMAND_WRAPPER = re.compile(
+    r"<command-(?:name|message)>.*?</command-(?:name|message)>|</?command-[a-z]+>", re.S)
+
+
+def user_words(prompt):
+    """`prompt` without the slash-command wrapper — what the user actually typed."""
+    return COMMAND_WRAPPER.sub(" ", prompt or "")
 
 
 def allow_pattern():

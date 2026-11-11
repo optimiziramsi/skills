@@ -1,5 +1,5 @@
 {
-  "description": "session — inject a state snapshot + freshness nudges at session start (handoff age, .todo count). Self-gates: silent outside a git repo / where .agent/ is absent.",
+  "description": "session — a one-line state snapshot at session start (branch, uncommitted count, last commit); at Stop, a non-blocking note for the user with the handoff age, .todo count and instructions-audit age (each fact once per session; silent in a linked worktree unless NUDGES_IN_WORKTREE=1). Self-gates: silent outside a git repo / where the files are absent. Kill-switch: SESSION_START_OFF=1.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,6 +7,17 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-end.py\"",
             "timeout": 10
           }
         ]

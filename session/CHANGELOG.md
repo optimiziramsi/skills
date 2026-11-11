@@ -4,6 +4,13 @@ Versions of the `session@optimiziramsi` plugin. History before the split into on
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.2.0 — 2026-11-12
+
+- Session start injects the state line only (plus the missing-`python3` warning). The handoff
+  age, `.todo` count and instructions-audit age moved to a Stop note for the user — not model
+  context, never blocking, each fact once per session, worded as facts.
+- The Stop notes are silent in a linked git worktree; `NUDGES_IN_WORKTREE=1` shows them there.
+
 ## 0.1.1 — 2026-11-02
 
 - handoff: the "Active milestones / plans" section is a record list (one dash per item), never a

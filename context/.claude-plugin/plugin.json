@@ -1,8 +1,8 @@
 {
   "name": "context",
   "displayName": "optimiziramsi context",
-  "version": "0.1.0",
-  "description": "Context-window awareness — nudges at 30% / 50% / 60% of a 1M window (configurable), says plainly at the last one that a handoff is needed, honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh.",
+  "version": "0.2.0",
+  "description": "Context-window awareness — nudges at 20% / 30% / 55% of a 1M window (configurable): a hint for the user, then that a handoff is needed, then that it is needed now; honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"

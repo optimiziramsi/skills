@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Surface instruction-surface cap breaches, so the caps the docs DESCRIBE get enforced.
+"""Stop — tell the USER which instruction files are over their size / count caps.
 
-  SessionStart  list the current breaches as context (informational, every start/resume/clear)
-  Stop          nudge ONCE per distinct breach-set, and only if the session wrote files, so
-                bloat introduced this session is caught before the chat ends
+A note, not a job: it is a `systemMessage` (the user sees it, it is not model context), it never
+blocks the stop, and it is shown once per session per distinct breach-set — whether or not the
+session wrote files. Nothing is printed at session start, so a chat does the work it was opened
+for. Silent in a linked git worktree (a worktree is for one topic; cleanup belongs to the main
+checkout's chat) unless NUDGES_IN_WORKTREE=1.
 
 Only paths that EXIST are checked — a safe no-op in any repo. Nothing is ever raised to make
 content fit: compact instead (merge → route → tighten → retire).
@@ -42,10 +44,7 @@ COUNT_CAPS = (
     (".claude/rules/*.md", "MAX_RULES", 10, "rules"),
 )
 
-NUDGE = ("[caps] instruction-surface over cap — compact (merge → route → tighten → retire), "
-         "don't raise the cap:")
-CONTEXT = ("[caps] instruction-surface over cap — compact these when you touch them "
-           "(don't just raise caps):")
+NOTE = "[caps] instruction surface over cap:"
 
 
 def cap(env_var, default):
@@ -83,22 +82,17 @@ def main():
     if hookio.flag("CAPS_GUARD_OFF"):
         return
     data = hookio.payload()
+    if data.get("hook_event_name") != "Stop" or data.get("stop_hook_active"):
+        return                                       # a Stop note only — never start context
     project = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
     if os.path.isfile(os.path.join(project, ".agent", "meta-lint.json")):
         return                                       # the meta-lint engine's caps supersede these
-    found = breaches(project)
-    if not found:
+    if hookio.linked_worktree(project) and not hookio.flag("NUDGES_IN_WORKTREE"):
         return
-    bullets = "\n".join(f"  • {b}" for b in found)
-
-    if data.get("hook_event_name") == "Stop":
-        if data.get("stop_hook_active") or not hookio.wrote_files(data.get("transcript_path")):
-            return
-        if not hookio.first_time("caps", data.get("session_id"), "\n".join(found)):
-            return
-        print(f"{NUDGE}\n{bullets}", file=sys.stderr)
-        sys.exit(2)
-    print(f"{CONTEXT}\n{bullets}")                   # SessionStart (or anything else) → context
+    found = breaches(project)
+    if not found or not hookio.first_time("caps", data.get("session_id"), "\n".join(found)):
+        return
+    hookio.notice(NOTE + "\n" + "\n".join(f"  • {b}" for b in found))
 
 
 hookio.guard(main)

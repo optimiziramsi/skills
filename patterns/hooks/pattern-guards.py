@@ -204,10 +204,9 @@ def handle(payload: dict) -> int:
         if unblessed and not blessed:
             listing = ", ".join(f"{p} [{s}]" for p, s in sorted(unblessed.items()))
             sys.stderr.write(
-                f"⛔ pattern-gate: `{rel}` is governed only by a non-blessed pattern — {listing}. "
-                "Per the pattern-gating rule: STOP, don't improvise. Bless/walk the pattern via the "
-                "manage-patterns skill (or get an explicit human go) before editing this area. "
-                "(Set PATTERN_GUARDS_OFF=1 to disable.)"
+                f"pattern-gate: `{rel}` is governed only by a non-blessed pattern — {listing}. "
+                "Editing here waits until the pattern is walked and blessed with the user "
+                "(manage-patterns skill). Stop and tell the user what you wanted to do."
             )
             return 2
         return 0

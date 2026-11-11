@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Self-tests for the four worktree guards. Run: python3 worktree/tests/test_worktree.py"""
+import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -14,6 +16,13 @@ LEAK = hook("hooks/worktree-leak-detector.py")
 BASH = hook("hooks/worktree-bash-guard.py")
 DETECT = hook("hooks/worktree-detect.py")
 ON = {"WORKTREE_BASH_GUARD_ENABLE": "1"}
+# What the MODEL reads when blocked never names an env switch or another way to turn a guard off —
+# those are documented in the README only.
+SWITCH = re.compile(r"[A-Z][A-Z0-9]+_[A-Z0-9_]+")
+
+
+def deny_reason(stdout):
+    return json.loads(stdout)["hookSpecificOutput"]["permissionDecisionReason"]
 
 with scratch_repo({"f.ts": "a\n"}) as repo:
     # a second worktree parked UNDER the main checkout — the layout the `worktree` skill
@@ -38,6 +47,10 @@ with scratch_repo({"f.ts": "a\n"}) as repo:
     check("kill-switch disarms", writes(f"{repo.main}/x.ts", env={"WORKTREE_GUARD_DISABLE": "1"})[1] == "")
     rc, _, err = writes(f"{repo.main}/x.ts", env={"WORKTREE_GUARD_MODE": "exit2"})
     check("exit2 mode reports on stderr", rc == 2 and "worktree-write-guard" in err)
+    reason = deny_reason(writes(f"{repo.main}/x.ts")[1])
+    check("the write-guard reason gives the allowed form and names no switch",
+          f"Re-issue with a path under {repo.wt}/." in reason
+          and not SWITCH.search(reason.replace(repo.tmp, "")), reason)
     check("notebook_path is guarded", '"deny"' in invoke(
         WRITE, {"cwd": repo.wt, "tool_input": {"notebook_path": f"{repo.main}/n.ipynb"}})[1])
     check("MultiEdit's nested paths are guarded", '"deny"' in invoke(
@@ -60,6 +73,13 @@ with scratch_repo({"f.ts": "a\n"}) as repo:
     check("allow a read-only command (2>&1 is not a write)",
           runs(f"ls {repo.main}/ 2>&1")[1] == "")
     check("main checkout cwd → inert", runs(f"echo hi > {repo.main}/x.ts", cwd=repo.main)[1] == "")
+    reason = deny_reason(runs(f"echo hi > {repo.main}/x.ts")[1])
+    check("the bash-guard reason gives the allowed form, then sends the rest to the user",
+          "Re-issue with a path under the worktree." in reason
+          and reason.endswith("stop and ask the user."), reason)
+    check("the bash-guard reason names no switch and no way around the guard",
+          not SWITCH.search(reason.replace(repo.tmp, ""))
+          and "name the worktree path" not in reason and "turn this guard off" not in reason, reason)
     check("off without WORKTREE_BASH_GUARD_ENABLE",
           runs(f"echo hi > {repo.main}/x.ts", env={"WORKTREE_BASH_GUARD_ENABLE": "0"})[1] == "")
 
@@ -139,7 +159,13 @@ with scratch_repo({"f.ts": "a\n"}) as repo:
     with open(os.path.join(repo.main, "f.ts"), "a") as fh:
         fh.write("dirty\n")
     rc, _, err = detect_leak(f"{repo.wt}/f.ts")
-    check("a dirtied twin in main is reported", rc == 2 and "LEAK SUSPECTED" in err)
+    check("a dirtied twin in main is reported",
+          rc == 2 and "leak suspected" in err and os.path.join(repo.main, "f.ts") in err, err)
+    check("the leak report hands the main checkout to the user, with no command to run",
+          "Do not change anything in the main checkout" in err
+          and err.strip().endswith("Stop and tell the user.")
+          and "checkout --" not in err and "git -C" not in err, err)
+    check("the leak report names no switch", not SWITCH.search(err.replace(repo.tmp, "")), err)
     check("a main-rooted path is not its own leak", detect_leak(f"{repo.main}/f.ts")[0] == 0)
     check("kill-switch disarms",
           detect_leak(f"{repo.wt}/f.ts", env={"WORKTREE_LEAK_DETECT_DISABLE": "1"})[0] == 0)

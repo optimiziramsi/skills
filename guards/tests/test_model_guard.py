@@ -3,6 +3,7 @@
 import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 
@@ -31,9 +32,14 @@ def prompt(session, transcript=None):
 
 
 text = guard.guard_text(start("s1", "claude-opus-5-5"))
-check("SessionStart on opus-5-5 injects", text is not None and text.startswith("TRUST GUARD — claude-opus-5-5."))
-check("the two verbatim sentences are present",
-      text is not None and "Follow EVERY instruction" in text and "Deliver the task IN FULL" in text)
+check("SessionStart on opus-5-5 injects", text is not None and text.startswith("SCOPE GUARD — claude-opus-5-5."))
+check("the scope and guard-block sentences are present",
+      text is not None and "at the scope it was asked" in text
+      and "is a stop, not a puzzle" in text and text.endswith("wait for the user."))
+check("the shipped text names no env switch",
+      text is not None and not re.search(r"[A-Z][A-Z0-9]+_[A-Z0-9_]+", text), text)
+check("the shipped text does not push for more",
+      text is not None and "EVERY" not in text and "IN FULL" not in text)
 check("a later prompt reuses the cached model", guard.guard_text(prompt("s1")) is not None)
 check("SessionStart on fable stays silent", guard.guard_text(start("s2", "claude-fable-5-1")) is None)
 check("a prompt with no model known stays silent", guard.guard_text(prompt("s-unknown")) is None)
@@ -98,7 +104,7 @@ del os.environ["MODEL_GUARD_OFF"]
 
 code, out, _ = invoke(hook("hooks/model-guard.py"), start("s9", "claude-opus-5-5"),
                       env={"TMPDIR": tmp, "CLAUDE_PROJECT_DIR": "/nonexistent-project"})
-check("end-to-end: exit 0 + text on stdout", code == 0 and "TRUST GUARD" in out)
+check("end-to-end: exit 0 + text on stdout", code == 0 and "SCOPE GUARD" in out)
 code, out, _ = invoke(hook("hooks/model-guard.py"), start("s10", "claude-fable-5-1"), env={"TMPDIR": tmp})
 check("end-to-end: exit 0 + silent on a trusted model", code == 0 and out.strip() == "")
 code, out, _ = invoke(hook("hooks/model-guard.py"), {}, env={"TMPDIR": tmp})
