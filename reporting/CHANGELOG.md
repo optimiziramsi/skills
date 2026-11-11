@@ -11,7 +11,13 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
   waiting for the next 1-in-N pulse. When the app's own "the user hasn't heard from you" reminder
   asked for the text, the line says progress lines stay off then too. `REPORT_REACT_OFF=1` turns
   this half off; the cadence pulse is unchanged.
-- The shipped contract says the app's reminder is not an exception to mid-task silence.
+- The shipped contract is replaced by the text a consumer project tuned on real reports (user:
+  "replace"): the answer first, answers in levels, stay on what was asked with no side offers, "a
+  short report is no reason for shallow work", and the dev-to-dev voice. It names the app's reminder
+  as no exception to mid-task silence and allows one line when a turn must end while background
+  work still runs. Gone with the old text: "pick, state the assumption, move on" (it told the model
+  to decide a fork by itself), "one recommendation max", "order and dependencies, never calendar"
+  and "never 'confirm as written'".
 - `calibrate midturn [PATH ...]` (read-only): text written between tool calls per model and
   contract stamp — turns, tool calls, app reminders, unprompted texts, reminded texts, unprompted
   per 100 tool calls — over the project's session transcripts.

@@ -3,11 +3,15 @@
 The `reporting@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 The house **output contract**: total silence while working (zero text between tool calls), then
-exactly one report — **1 outcome line + ≤5 fact bullets + a numbered `Q:` list** (omitted if empty).
-The bullets are **plain** — a tired dev reads them at 3 am without looking anything up: plain names
-not ids, the decision itself not "confirm as written", order-and-dependency not calendar, and a
-question is the thing + the two choices + your pick. No narration, headers, tables, or "next steps".
-Blocked on a decision mid-task → send only the `Q:` list and wait.
+exactly one short report — **the answer first (1–2 plain sentences) + 0–5 bullets that each carry
+a fact or decision + a numbered `Q:` list** (omitted if empty). The answer comes at the barest
+level that answers; more only when asked. It is written the way one dev talks to another: real
+names not placeholders, plain words, a question is the thing + the two choices + your pick. It
+stays on what was asked — no side-topics, no offers of other work — and a short report is no
+reason for shallow work. No narration, headers or tables. Two things may be said mid-task: only the
+`Q:` list when blocked on a decision, and one line naming what is being waited for when a turn has
+to end while background work still runs. The app's own "the user hasn't heard from you" reminder
+is not an exception.
 
 **Opt-in and opinionated** (like the `commit` plugin): enable it only if you want this specific
 convention. It's aggressive by design — the Stop guard *blocks* a violating final message and forces
