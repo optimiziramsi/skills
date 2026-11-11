@@ -2,6 +2,14 @@
 
 Versions of the `code-first@optimiziramsi` plugin.
 
+## 0.1.1 — unreleased
+
+- The contract is opt-in: it is injected, and the Stop guard acts, only once a session ran `/idea`
+  (for the rest of that session) or for a prompt matching `CODE_FIRST_TRIGGER_PATTERN` (default
+  propose / proposal / sketch). `CODE_FIRST_INJECT=always` restores every-prompt injection.
+- The stale-idea line moved from SessionStart to Stop: a note for the user only, once per session,
+  silent in a linked worktree unless `NUDGES_IN_WORKTREE=1`.
+
 ## 0.1.0 — 2026-10-18
 
 - New: the code-first working style as its own plugin — an injected contract with a per-repo

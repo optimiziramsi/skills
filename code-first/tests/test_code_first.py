@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(GUARD))
 guard = load_module(GUARD, "idea_guard")
 
 # Settings the developer's own shell may carry must not leak into the fixtures.
-for var in [v for v in os.environ if v.startswith(("CODE_FIRST_", "GIT_GUARD_", "CLAUDE_PLUGIN_OPTION_"))]:
+for var in [v for v in os.environ if v.startswith(("CODE_FIRST_", "GIT_GUARD_", "CLAUDE_PLUGIN_OPTION_", "NUDGES_IN_WORKTREE"))]:
     del os.environ[var]
 
 FENCE6 = "```python\n" + "".join(f"line{i}\n" for i in range(6)) + "```"
@@ -76,9 +76,15 @@ try:
     check("last_turn returns the final assistant text", final == FENCE6)
 
     def stop(path, env=None, **extra):
-        return invoke(GUARD, {"transcript_path": path, **extra}, env=env)[1]
+        return invoke(GUARD, {"transcript_path": path, **extra}, env={"TMPDIR": tmp, **(env or {})})[1]
 
-    check("the Stop hook blocks an over-limit reply", '"decision": "block"' in stop(t))
+    plain = transcript(("user", "add a retry to the client"), ("assistant", [{"type": "text", "text": FENCE6}]))
+    check("the Stop hook is silent in a turn that is not code-first", stop(plain) == "")
+    check("…and blocks there under CODE_FIRST_INJECT=always",
+          '"decision": "block"' in stop(plain, {"CODE_FIRST_INJECT": "always"}))
+    check("the idea command is recognized as the transcript records it", guard.cf.code_first_turn(
+        None, "<command-message>code-first:idea</command-message>\n<command-name>/code-first:idea</command-name>"))
+    check("the Stop hook blocks an over-limit reply to a 'propose' prompt", '"decision": "block"' in stop(t))
     check("the block names the idea branch prefix", "idea/<topic>" in stop(t))
     check("stop_hook_active prevents a re-block loop", stop(t, stop_hook_active=True) == "")
     check("CODE_FIRST_GUARD_OFF=1 drops the Stop guard", stop(t, {"CODE_FIRST_GUARD_OFF": "1"}) == "")
@@ -110,8 +116,41 @@ try:
     check("CODE_FIRST_BRANCH_PREFIX overrides it", cli("prefix", env={"CODE_FIRST_BRANCH_PREFIX": "spike/"})[1].strip() == "spike/")
     check("the tag defaults to IDEA", cli("tag")[1].strip() == "IDEA")
 
-    def inject(env=None):
-        return invoke(INJECT, {"cwd": repo}, env={"CLAUDE_PROJECT_DIR": repo, **(env or {})})[1]
+    sessions = [0]
+
+    def inject(env=None, prompt="/idea cache", session=None):
+        """One UserPromptSubmit call — a fresh session id unless one is named."""
+        if session is None:
+            sessions[0] += 1
+            session = f"cf-{os.getpid()}-{sessions[0]}"
+        return invoke(INJECT, {"cwd": repo, "session_id": session, "prompt": prompt},
+                      env={"TMPDIR": tmp, "CLAUDE_PROJECT_DIR": repo, **(env or {})})[1]
+
+    # ── when the contract is injected: opt-in per session, or per prompt ──────────
+    on = lambda out: "CODE-FIRST" in out
+    check("a plain prompt injects nothing", inject(prompt="add a retry to the client") == "")
+    check("design talk injects nothing", inject(prompt="brainstorm: how would you split it, what if we merge them?") == "")
+    check("a path that ends in /idea is not the command", inject(prompt="look at src/idea and /ideas/x") == "")
+    check("a prompt that only mentions /idea does not opt the session in",
+          inject(prompt="do not use /idea here, write the decision down", session="s-mention") == ""
+          and inject(prompt="go on", session="s-mention") == "")
+    check("/idea <topic> injects the contract", on(inject(prompt="/idea cache", session="s-idea")))
+    check("…and it stays on for a later plain prompt in that session",
+          on(inject(prompt="now add the tests", session="s-idea")))
+    check("…but not in another session", inject(prompt="now add the tests", session="s-other") == "")
+    check("/code-first:idea <topic> turns it on too", on(inject(prompt="/code-first:idea cache", session="s-qual"))
+          and on(inject(prompt="go on", session="s-qual")))
+    check("a 'propose' prompt injects for that prompt", on(inject(prompt="Propose a cache layer", session="s-once")))
+    check("…and the next plain prompt does not", inject(prompt="thanks, go on", session="s-once") == "")
+    check("CODE_FIRST_TRIGGER_PATTERN replaces the default",
+          on(inject({"CODE_FIRST_TRIGGER_PATTERN": r"\bdraft\b"}, prompt="draft the cache layer"))
+          and inject({"CODE_FIRST_TRIGGER_PATTERN": r"\bdraft\b"}, prompt="propose a cache layer") == "")
+    check("a bad CODE_FIRST_TRIGGER_PATTERN falls back to the default",
+          on(inject({"CODE_FIRST_TRIGGER_PATTERN": "("}, prompt="sketch the cache layer")))
+    check("CODE_FIRST_INJECT=always injects on a plain prompt",
+          on(inject({"CODE_FIRST_INJECT": "always"}, prompt="add a retry to the client")))
+    check("the Stop hook blocks a plain turn once the session opted in",
+          '"decision": "block"' in stop(plain, session_id="s-idea") and stop(plain, session_id="s-other") == "")
 
     out = inject({"CODE_FIRST_BASE_BRANCH": "develop", "CODE_FIRST_REVIEW_SURFACE": "the GitLab MR"})
     check("the shipped contract renders BASE / PREFIX / SURFACE",
@@ -142,14 +181,31 @@ try:
     check("list shows idea branches oldest first with age + subject",
           out.splitlines()[0].startswith("idea/old\t") and "IDEA: fresh sketch" in out, out)
 
-    def stale(env=None):
-        return invoke(STALE, {"cwd": repo}, env={"CLAUDE_PROJECT_DIR": repo, **(env or {})})[1]
+    def stale(env=None, project=repo, session=None, **extra):
+        """One stale-ideas call (Stop unless `hook_event_name` says otherwise) — a fresh session by default."""
+        if session is None:
+            sessions[0] += 1
+            session = f"cf-{os.getpid()}-{sessions[0]}"
+        return invoke(STALE, {"cwd": project, "session_id": session, "hook_event_name": "Stop", **extra},
+                      env={"TMPDIR": tmp, "CLAUDE_PROJECT_DIR": project, **(env or {})})[1]
 
-    out = stale()
-    check("the stale nudge names only branches past the threshold", "idea/old" in out and "idea/fresh" not in out, out)
-    check("CODE_FIRST_STALE_DAYS empty turns the nudge off", stale({"CODE_FIRST_STALE_DAYS": ""}) == "")
+    events = json.loads(pathlib.Path(hook("hooks/hooks.json")).read_text())["hooks"]
+    check("the stale note is registered at Stop, not SessionStart",
+          "SessionStart" not in events and "stale-ideas.py" in json.dumps(events["Stop"]))
+    check("the stale note prints nothing at SessionStart", stale(hook_event_name="SessionStart") == "")
+    out = stale(session="s-stale")
+    check("at Stop it names only branches past the threshold", "idea/old" in out and "idea/fresh" not in out, out)
+    check("…as a user-visible note that blocks nothing",
+          list(json.loads(out)) == ["systemMessage"] and "/idea list" in out and "promote" not in out, out)
+    check("…once per session", stale(session="s-stale") == "")
+    check("stop_hook_active stays silent", stale(stop_hook_active=True) == "")
+    check("CODE_FIRST_STALE_DAYS empty turns the note off", stale({"CODE_FIRST_STALE_DAYS": ""}) == "")
     check("no stale branches → silent", stale({"CODE_FIRST_STALE_DAYS": "100000"}) == "")
-    check("CODE_FIRST_OFF=1 silences the nudge", stale({"CODE_FIRST_OFF": "1"}) == "")
+    check("CODE_FIRST_OFF=1 silences the note", stale({"CODE_FIRST_OFF": "1"}) == "")
+    wt = os.path.join(tmp, "wt")
+    git("worktree", "add", "-q", wt, "-b", "wtbranch", "develop")
+    check("a linked worktree gets no stale note", stale(project=wt) == "")
+    check("…unless NUDGES_IN_WORKTREE=1", "idea/old" in stale({"NUDGES_IN_WORKTREE": "1"}, project=wt))
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
