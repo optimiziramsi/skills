@@ -222,6 +222,10 @@ try:
     fresh = transcript("fresh.jsonl", [prompt, called("u1"), said("t1", "All done."),
                                        {"type": "user", "message": {"content": "next"}}, called("u2")])
     check("the previous turn's final report is not corrected", react(f"{sid}-r6", fresh) == "")
+    lagging = transcript("lagging.jsonl", [prompt, called("u1"), said("t1", "All done."),
+                                           {"type": "user", "message": {"content": "next"}}])
+    check("the previous turn's final report is not corrected when the new turn's tool call "
+          "is not in the transcript yet", react(f"{sid}-r6b", lagging) == "")
     side = transcript("side.jsonl", [prompt, called("u1"), said("t1", "subagent talk", isSidechain=True), called("u2")])
     check("a subagent's text is not corrected", react(f"{sid}-r7", side) == "")
     check("the react line replaces that call's pulse, never doubles it",

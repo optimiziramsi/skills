@@ -214,10 +214,15 @@ def midturn(events):
 
 
 def last_text(events):
-    """(uuid, text, reminded) of the turn's newest assistant text, or None."""
+    """(uuid, text, reminded) of the turn's newest assistant text that a tool call follows, or None.
+
+    A text with no tool call after it is not a mid-turn text: it is the turn's final report —
+    which is what a hook sees when the next turn's first tool call is not in the transcript yet —
+    or a text whose own tool call is still unwritten.
+    """
     for i in range(len(events) - 1, -1, -1):
         kind, uuid, text = events[i]
-        if kind == "T":
+        if kind == "T" and any(k == "U" for k, _, _ in events[i + 1:]):
             before = [k for k, _, _ in events[:i]]
             since = before[len(before) - before[::-1].index("T"):] if "T" in before else before
             return uuid, text, "N" in since
