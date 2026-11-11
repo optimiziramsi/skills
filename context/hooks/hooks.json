@@ -1,5 +1,5 @@
 {
-  "description": "context — say how full the context window is (read from the transcript's usage) at configurable thresholds, and at the last one that a handoff is needed; the user's 'remind me later' / 'keep going' / 'topic done' answers are honored. Kill-switch: CONTEXT_NUDGE_OFF=1.",
+  "description": "context — say how full the context window is (read from the transcript's usage) at configurable thresholds: a hint for the user only, then that a handoff is needed, then at the last one that it is needed now; the user's 'remind me later' / 'keep going' / 'topic done' answers are honored. Kill-switch: CONTEXT_NUDGE_OFF=1.",
   "hooks": {
     "UserPromptSubmit": [
       {
