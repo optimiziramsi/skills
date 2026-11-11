@@ -7,6 +7,8 @@ Versions of the `code-first@optimiziramsi` plugin.
 - The contract is opt-in: it is injected, and the Stop guard acts, only once a session ran `/idea`
   (for the rest of that session) or for a prompt matching `CODE_FIRST_TRIGGER_PATTERN` (default
   propose / proposal / sketch). `CODE_FIRST_INJECT=always` restores every-prompt injection.
+- The `idea` skill's description no longer triggers on design talk ("brainstorm", "how would you do
+  X", "what if we"): in a design session the user wants decisions written down, not code.
 - The stale-idea line moved from SessionStart to Stop: a note for the user only, once per session,
   silent in a linked worktree unless `NUDGES_IN_WORKTREE=1`.
 

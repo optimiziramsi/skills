@@ -27,7 +27,8 @@ through the normal gate.
     topic branch (cherry-pick per commit, tag dropped — no merge commit, no interactive rebase);
     `/idea drop <topic>` deletes the branch locally after confirming. Every command passes
     [`git-guard`](../git-guard) as shipped and [`commit`](../commit)'s single-line format. Also
-    auto-triggers on technical proposals ("sketch this", "how would you do X").
+    auto-triggers when a proposal is asked for as code ("sketch this", "propose an approach") — not on
+    design talk.
 
 - name: `inject`
   kind: hook

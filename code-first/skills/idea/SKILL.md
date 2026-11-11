@@ -1,11 +1,12 @@
 ---
 name: idea
 description: >-
-  Code-first brainstorming — the proposal IS code, committed on an `idea/<topic>` branch the user
+  Code-first proposals — the proposal IS code, committed on an `idea/<topic>` branch the user
   reviews as a diff in their IDE; chat carries only the branch name, key decisions and open
-  questions. Use for any technical proposal ("how would you do X", "sketch this", "propose an
-  approach", "brainstorm", "what if we"), and on /idea <topic> | list | promote | drop. Not for a
-  prose plan the user explicitly asked for, or for paste-ready text they asked for inline.
+  questions. Use on /idea <topic> | list | promote | drop, or when the user asks for a proposal as
+  code ("sketch this", "propose an approach"). Not for design or architecture talk (a brainstorm,
+  "how would you do X", "what if we") — there the user wants decisions written down, not code. Not
+  for a prose plan the user explicitly asked for, or for paste-ready text they asked for inline.
 ---
 
 # idea — the proposal is a branch diff
