@@ -4,7 +4,7 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.2 — unreleased
+## 0.3.0 — 2026-11-12
 
 - The mid-turn hook now **reacts**: the first time a tool call follows a piece of assistant text,
   that text is quoted back ("you wrote text between tool calls …"), once per text, instead of

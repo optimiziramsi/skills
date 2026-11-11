@@ -2,7 +2,7 @@
 
 Versions of the `upkeep@optimiziramsi` plugin.
 
-## 0.1.1 — unreleased
+## 0.2.0 — 2026-11-12
 
 - The notice moved from session start to Stop and is for the user only (a `systemMessage`; the
   model-context copy is gone). One check per session, never blocking; the once-a-day repeat

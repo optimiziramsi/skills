@@ -2,7 +2,7 @@
 
 Versions of the `code-first@optimiziramsi` plugin.
 
-## 0.1.1 — unreleased
+## 0.2.0 — 2026-11-12
 
 - The contract is opt-in: it is injected, and the Stop guard acts, only once a session ran `/idea`
   (for the rest of that session) or for a prompt matching `CODE_FIRST_TRIGGER_PATTERN` (default

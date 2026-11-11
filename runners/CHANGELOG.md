@@ -4,7 +4,7 @@ Versions of the `runners@optimiziramsi` plugin. History before the split into on
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.1 — unreleased
+## 0.1.1 — 2026-11-12
 
 - Vendored `worktree-guards` copy refreshed (`vendor/worktree-guards/`): the bash-guard deny reason and
   the leak-detector report no longer name an off switch, a way around the guard, or a command that

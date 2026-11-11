@@ -2,7 +2,7 @@
 
 Versions of the `context@optimiziramsi` plugin.
 
-## 0.1.1 — unreleased
+## 0.2.0 — 2026-11-12
 
 - Three tiers by position in `CONTEXT_NUDGE_AT`: a hint that is shown to the user only (the model
   is no longer asked to mention it), the action level (the former handoff text), and a new red
