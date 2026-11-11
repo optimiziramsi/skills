@@ -30,7 +30,7 @@ def verdict(prompt, final):
     """The block reason for this turn, or None."""
     if not final:
         return None
-    if prompt and cf.allow_pattern().search(prompt):
+    if prompt and cf.allow_pattern().search(cf.user_words(prompt)):
         return None
     lines, limit = cf.counted_fence_lines(final), cf.max_fence_lines()
     if lines <= limit:

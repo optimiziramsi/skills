@@ -9,6 +9,10 @@ Versions of the `code-first@optimiziramsi` plugin.
   propose / proposal / sketch). `CODE_FIRST_INJECT=always` restores every-prompt injection.
 - The `idea` skill's description no longer triggers on design talk ("brainstorm", "how would you do
   X", "what if we"): in a design session the user wants decisions written down, not code.
+- The Stop guard now acts on the `/idea` turn itself. The transcript records a slash command as
+  `<command-name>/idea</command-name>`, and the word "command" in that wrapper matched the allow
+  pattern, so the turn that opens an idea was never guarded. Only what the user typed after the
+  command is read now.
 - The stale-idea line moved from SessionStart to Stop: a note for the user only, once per session,
   silent in a linked worktree unless `NUDGES_IN_WORKTREE=1`.
 

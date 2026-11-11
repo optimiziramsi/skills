@@ -53,6 +53,12 @@ chk("CODE_FIRST_ALLOW_PATTERN replaces the default", True, "give me a prompt to 
     {"CODE_FIRST_ALLOW_PATTERN": r"\bverbatim\b"})
 chk("a bad CODE_FIRST_ALLOW_PATTERN falls back to the default", False, "paste it", FENCE6,
     {"CODE_FIRST_ALLOW_PATTERN": "("})
+IDEA_TURN = ("<command-message>code-first:idea</command-message>\n"
+             "<command-name>/code-first:idea</command-name>\n<command-args>{}</command-args>")
+chk("the /idea turn itself is guarded (the command wrapper is not the user's words)", True,
+    IDEA_TURN.format("cache layer"), FENCE6)
+chk("'paste' in the /idea arguments still lifts the guard", False,
+    IDEA_TURN.format("a prompt to paste"), FENCE6)
 chk("CODE_FIRST_MAX_FENCE_LINES raises the limit", False, "how?", FENCE6, {"CODE_FIRST_MAX_FENCE_LINES": "10"})
 chk("CODE_FIRST_MAX_FENCE_LINES=0 allows no counted fence", True, "how?", "```py\na\n```",
     {"CODE_FIRST_MAX_FENCE_LINES": "0"})
