@@ -43,7 +43,7 @@ The `review@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../REA
 
 Assumes the **`.agent/` house layout** (`.agent/reviews/` for assessments, `.docs/` for specs). The
 `review` skill delegates to these agents. (A `pattern-verifier` agent lives in the `patterns`
-plugin; the done-gate is [`qa-gate`](../qa-gate).)
+plugin; the done-gate is [`testing`](../testing).)
 
 ## Enable
 

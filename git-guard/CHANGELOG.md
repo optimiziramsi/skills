@@ -4,6 +4,10 @@ Versions of the `git-guard@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.2 — unreleased
+
+- README and a code comment name the renamed `git` plugin (was `commit`).
+
 ## 0.1.1 — 2026-11-12
 
 - Block reasons no longer name an env switch or allow token (`GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`,

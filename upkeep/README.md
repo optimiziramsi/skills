@@ -5,7 +5,7 @@ The `upkeep@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../REA
 Claude Code's own auto-update is off by default for third-party marketplaces, only updates what
 is already installed, and never tells you either way. This plugin tells you — in a note at the
 end of a turn, never at session start — when an installed plugin has a newer version, or when a
-marketplace you install from has gained a plugin; `/upkeep` applies it.
+marketplace you install from has gained a plugin; `/upkeep:apply` applies it.
 
 ## Contents
 
@@ -23,7 +23,7 @@ marketplace you install from has gained a plugin; `/upkeep` applies it.
     session sees what's new. The hook itself never touches the network. Silent in a linked git
     worktree (see Settings).
 
-- name: `upkeep`
+- name: `apply`
   kind: skill + command
   purpose:
     Refresh the marketplaces, update every outdated plugin at its own scope, offer the new ones

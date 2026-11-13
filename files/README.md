@@ -1,6 +1,6 @@
 # rename — move a file and cascade every reference
 
-The `rename@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
+The `files@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 ## Contents
 
@@ -13,5 +13,5 @@ The `rename@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../REA
 ## Enable
 
 ```bash
-claude plugin install rename@optimiziramsi --scope project
+claude plugin install files@optimiziramsi --scope project
 ```

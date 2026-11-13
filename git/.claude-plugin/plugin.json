@@ -1,13 +1,13 @@
 {
-  "name": "commit",
-  "displayName": "optimiziramsi commit",
-  "version": "0.1.1",
+  "name": "git",
+  "displayName": "optimiziramsi git",
+  "version": "0.1.2-dev.1",
   "description": "House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"
   },
-  "homepage": "https://github.com/optimiziramsi/skills/tree/main/commit#readme",
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/git#readme",
   "repository": "https://github.com/optimiziramsi/skills",
   "license": "MIT",
   "keywords": [

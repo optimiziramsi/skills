@@ -1,9 +1,9 @@
 ---
-name: upkeep
+name: apply
 description: >-
   Keep a project's plugins current — refresh the marketplaces, update installed plugins that have
   a newer version, and offer plugins new to the marketplaces the project uses, then hand over
-  /reload-plugins. Use on /upkeep, when the upkeep notice says updates or new plugins exist, or
+  /reload-plugins. Use on /upkeep:apply, when the upkeep notice says updates or new plugins exist, or
   when the user says "update the plugins", "any plugin updates?", "refresh plugins", "what's new
   in the marketplace".
 ---

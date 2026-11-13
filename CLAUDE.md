@@ -29,7 +29,7 @@ not restated.
   unreleased code use [`.agent/dev-marketplace.md`](.agent/dev-marketplace.md), never a release.
   `init-marketplace` is the retained build history.
 - **Commit as you go.** Small, focused commits, terse imperative single-line subject — the
-  `commit` plugin's own house style, dogfooded here. Don't batch into one final commit; don't wait
+  `git` plugin's own house style, dogfooded here. Don't batch into one final commit; don't wait
   to be asked.
 - **"Done" means validated**, not just written: **`./tests.sh`** ALL GREEN (its header lists the
   checks), and **no project-specific content leaked in** — the plugins ship the *system*, never

@@ -13,7 +13,7 @@ reason for shallow work. No narration, headers or tables. Two things may be said
 to end while background work still runs. The app's own "the user hasn't heard from you" reminder
 is not an exception.
 
-**Opt-in and opinionated** (like the `commit` plugin): enable it only if you want this specific
+**Opt-in and opinionated** (like the `git` plugin): enable it only if you want this specific
 convention. It's aggressive by design — the Stop guard *blocks* a violating final message and forces
 a rewrite.
 

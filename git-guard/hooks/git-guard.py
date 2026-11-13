@@ -201,7 +201,7 @@ def check(command):
                             "since you branched, the squash silently reverts other commits. "
                             "Soft-reset only against your own base: `HEAD~<N>` or a sha.")
 
-        # commit safety (history / hooks) — message FORMAT lives in the commit plugin
+        # commit safety (history / hooks) — message FORMAT lives in the git plugin
         if sub == "commit":
             if "--amend" in args and "amend" in strict:
                 return ("`git commit --amend` rewrites history — blocked in this project. "

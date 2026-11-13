@@ -108,7 +108,7 @@ restated* — fix drift at the source, never by copying it here.
   may hold the user's WIP.
   *(The `git-guard` plugin blocks the remote/destructive/history ops mechanically.)*
 - **Commit as you go.** Small, focused commits with a terse imperative subject — don't batch into one
-  final commit, don't wait to be asked. Message format: the `commit` plugin.
+  final commit, don't wait to be asked. Message format: the `git` plugin.
 - **"Done" means verified by a real run**, not by reading code. Define the success check before coding
   and loop until it passes; report failures honestly, with output. For UI work, look at it.
 - **Lean reporting.** No narration, no tool-output dumps. While working, stay quiet; report once at the

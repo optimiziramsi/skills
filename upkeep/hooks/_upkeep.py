@@ -153,4 +153,4 @@ def summary(rep):
         parts.append("updates: " + ", ".join(f"{pid} {old} → {new}" for pid, _, old, new in rep["updates"]))
     if rep["new"]:
         parts.append("new: " + ", ".join(f"{n}@{m}" for m, n, _ in rep["new"]))
-    return ("[upkeep] " + "; ".join(parts) + " — /upkeep to apply.") if parts else ""
+    return ("[upkeep] " + "; ".join(parts) + " — /upkeep:apply to apply.") if parts else ""

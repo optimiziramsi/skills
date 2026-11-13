@@ -8,6 +8,7 @@ Versions of the `setup@optimiziramsi` plugin. History before the split into one 
 
 - `/scaffold-claude-md` renamed to `/setup:claude-md`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.
 - `scaffold`: the layout table names the renamed `lessons:capture`, `planning:new` and `worktree:topic` skills.
+- `claude-md`: the message-format pointer names the renamed `git` plugin (was `commit`).
 
 ## 0.1.0 — 2026-10-18
 

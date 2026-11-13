@@ -2,6 +2,10 @@
 
 Versions of the `upkeep@optimiziramsi` plugin.
 
+## 0.2.1 — unreleased
+
+- `/upkeep` renamed to `/upkeep:apply`, so the plugin name no longer overlaps its own command in the `/` menu. The end-of-turn note now says `/upkeep:apply to apply`. Plugin id, hook, CLI and env switches are unchanged.
+
 ## 0.2.0 — 2026-11-12
 
 - The notice moved from session start to Stop and is for the user only (a `systemMessage`; the

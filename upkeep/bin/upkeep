@@ -2,7 +2,7 @@
 """upkeep — what the upkeep plugin sees for the current project.
 
   upkeep status          updates available + plugins new to the watched marketplaces
-  upkeep status --json   the same, machine-readable (for the /upkeep skill)
+  upkeep status --json   the same, machine-readable (for the /upkeep:apply skill)
   upkeep marketplaces    the marketplaces watched for this project
 """
 import json

@@ -20,8 +20,8 @@
       "category": "workflow"
     },
     {
-      "name": "commit",
-      "source": "./commit",
+      "name": "git",
+      "source": "./git",
       "description": "House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge.",
       "category": "workflow"
     },
@@ -32,8 +32,8 @@
       "category": "workflow"
     },
     {
-      "name": "rename",
-      "source": "./rename",
+      "name": "files",
+      "source": "./files",
       "description": "Move a file and cascade every reference to it across docs, skills and config.",
       "category": "workflow"
     },
@@ -80,8 +80,8 @@
       "category": "workflow"
     },
     {
-      "name": "qa-gate",
-      "source": "./qa-gate",
+      "name": "testing",
+      "source": "./testing",
       "description": "The done-gate — typecheck, unit, e2e and visual verification before any claim of done.",
       "category": "workflow"
     },
@@ -130,7 +130,7 @@
     {
       "name": "upkeep",
       "source": "./upkeep",
-      "description": "Plugin upkeep — an end-of-turn notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins.",
+      "description": "Plugin upkeep — an end-of-turn notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep:apply to apply updates and pick new plugins.",
       "category": "workflow"
     }
   ]

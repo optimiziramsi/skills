@@ -4,7 +4,7 @@ A personal [Claude Code plugin marketplace](https://docs.claude.com/en/docs/clau
 `optimiziramsi`, shipping **one plugin per concern**: reusable **skills, commands, agents, and
 hooks** shared across my projects — solve something once, get it everywhere, update it in one
 place. Each project enables only the plugins that suit it. The repo root is the marketplace
-(`.claude-plugin/marketplace.json`); every top-level concern folder (`git-guard/ commit/ runners/ …`) is a
+(`.claude-plugin/marketplace.json`); every top-level concern folder (`git-guard/ git/ runners/ …`) is a
 self-contained plugin with its own `.claude-plugin/plugin.json`, `skills/ commands/ agents/
 hooks/`, `README.md` and `CHANGELOG.md`.
 
@@ -34,7 +34,7 @@ their machine, since an enable alone installs nothing:
 {
   "enabledPlugins": {
     "git-guard@optimiziramsi": true,
-    "commit@optimiziramsi": true,
+    "git@optimiziramsi": true,
     "session@optimiziramsi": true
   }
 }
@@ -58,9 +58,9 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 |---|---|
 | [`git-guard`](git-guard/README.md) | Git safety net — a hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards of uncommitted work. |
 | [`hotfix`](hotfix/README.md) | Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch. |
-| [`commit`](commit/README.md) | House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge. |
+| [`git`](git/README.md) | House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge. |
 | [`code-first`](code-first/README.md) | Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge. |
-| [`rename`](rename/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
+| [`files`](files/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
 | [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message; `/calibrate` tunes the contract on real reports, and an `rc:`-stamped contract nudges for it once it's stale. |
 | [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, summary, and a SessionStart state snapshot. |
 | [`context`](context/README.md) | Context-window awareness — nudges at 20% / 30% / 55% of a 1M window (configurable): a hint for the user, then that a handoff is needed, then that it is needed now; honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh. |
@@ -68,7 +68,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (maintenance, rules-change), the audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
 | [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a scope reminder while the session runs on a matched model (model-guard). |
 | [`review`](review/README.md) | Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents. |
-| [`qa-gate`](qa-gate/README.md) | The done-gate — typecheck, unit, e2e and visual verification before any claim of done. |
+| [`testing`](testing/README.md) | The done-gate — typecheck, unit, e2e and visual verification before any claim of done. |
 | [`planning`](planning/README.md) | Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/. |
 | [`todo`](todo/README.md) | The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with "ALLOW TODO"). |
 | [`runners`](runners/README.md) | Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree. |
@@ -76,7 +76,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`worktree`](worktree/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK; plus relay, the pair-programming-by-worktree primary that turns your comments into worktree sub chats. Pairs with worktree-guards. |
 | [`worktree-guards`](worktree-guards/README.md) | Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree. |
 | [`setup`](setup/README.md) | One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md. |
-| [`upkeep`](upkeep/README.md) | Plugin upkeep — an end-of-turn notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep to apply updates and pick new plugins. |
+| [`upkeep`](upkeep/README.md) | Plugin upkeep — an end-of-turn notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep:apply to apply updates and pick new plugins. |
 
 ## Per-concern switches (env)
 

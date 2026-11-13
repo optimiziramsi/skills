@@ -1,6 +1,6 @@
 # qa-gate — the done-gate
 
-The `qa-gate@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
+The `testing@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 ## Contents
 
@@ -14,5 +14,5 @@ The `qa-gate@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../RE
 ## Enable
 
 ```bash
-claude plugin install qa-gate@optimiziramsi --scope project
+claude plugin install testing@optimiziramsi --scope project
 ```
