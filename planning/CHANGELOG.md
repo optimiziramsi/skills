@@ -4,6 +4,12 @@ Versions of the `planning@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.3.0 — 2026-11-13
+
+- `/plan` renamed to `/planning:new`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.
+- References to the renamed `worktree:topic` skill updated.
+- `new`: points at the renamed `review:inspect` skill.
+
 ## 0.2.1 — 2026-11-02
 
 - milestone/`ledger`: `ledger why <ID>` prints the transitive chain of unlanded `needs:` for one

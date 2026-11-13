@@ -7,7 +7,7 @@ across many sessions (**milestone**).
 
 ## Contents
 
-- name: `plan`
+- name: `new`
   kind: skill + command
   purpose:
     Single-topic implementation plans in `.agent/plan/`. One plan = one topic = its source of
@@ -50,4 +50,4 @@ move to an `archive/` subdir — never edited again, never referenced by a live 
 claude plugin install planning@optimiziramsi --scope project
 ```
 
-Then `/plan`, `/milestone` — or describe the work and the matching skill triggers.
+Then `/planning:new`, `/planning:milestone` — or describe the work and the matching skill triggers.

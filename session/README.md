@@ -18,7 +18,7 @@ Write the handoff at session close; boot the next session from it.
     Resume from `.agent/handoff.md` — sanity-check git state, surface pending todos, state a
     one-line plan, start.
 
-- name: `session-summary`
+- name: `summary`
   kind: skill + command
   purpose: Shareable changelog of what a session shipped — themes, decisions, pending.
 
@@ -33,7 +33,7 @@ Write the handoff at session close; boot the next session from it.
   kind: hook
   purpose:
     Stop — a note for the **user** (a `systemMessage`: not model context, never blocks the stop)
-    with the handoff age, the `.todo` item count, and the instructions-audit age when it is over
+    with the handoff age, the `.todo` item count, and the /instructions:audit age when it is over
     30 days. Each fact is shown once per session and again only when it changes; every line is
     conditional on its file existing, so it is safe in any repo. Silent in a linked git worktree
     (see Settings).

@@ -1,8 +1,8 @@
 {
   "name": "instructions",
   "displayName": "optimiziramsi instructions",
-  "version": "0.2.0",
-  "description": "Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks.",
+  "version": "0.3.0",
+  "description": "Keep the agent instruction system small and true — its rules (maintenance, rules-change), the audit sweep + auditor agent, and the caps / meta-lint size and structure checks.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"

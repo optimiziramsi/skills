@@ -62,7 +62,7 @@ project names branches differently (else use `<topic>`).
    - `git cherry-pick --no-commit <sha>` then
      `git commit -m "<that commit's subject without the leading TAG:>"`.
    If the user wants it squashed instead, cherry-pick them all `--no-commit` and make one commit.
-4. Show `git log --oneline <base>..` and hand off to the project's gate (e.g. `qa-gate` when that
+4. Show `git log --oneline <base>..` and hand off to the project's gate (e.g. `testing:qa-gate` when that
    plugin is enabled) — promote does not run the gate itself, and does not land anything.
 5. Offer `/idea drop <topic>` for the now-replayed idea branch; don't delete it unasked.
 

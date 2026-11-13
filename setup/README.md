@@ -14,7 +14,7 @@ the house style — once, with no ongoing machinery.
     Create a static `.agent/README.md` index of the workspace layout, and add **one** pointer to
     it from `CLAUDE.md`/`AGENTS.md` (idempotent, asks before editing).
 
-- name: `scaffold-claude-md`
+- name: `claude-md`
   kind: skill + command
   purpose:
     Write a house-style **`CLAUDE.md`** — a slim router of routing + the hard rules that bind
@@ -43,5 +43,5 @@ once. After that, skills discover themselves and the `session-start` hook keeps 
 }
 ```
 
-Then, once in the project: `/scaffold-claude-md` to write the house-style entrypoint (if the repo
+Then, once in the project: `/setup:claude-md` to write the house-style entrypoint (if the repo
 has none), and `/scaffold` to create the `.agent/` index and point the entrypoint at it.

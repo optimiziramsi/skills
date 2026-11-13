@@ -4,6 +4,10 @@ Versions of the `worktree-guards@optimiziramsi` plugin. History before the split
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.2 — 2026-11-13
+
+- `worktree-detect`: the nudge names the renamed `/worktree:topic` skill (was `/worktree`).
+
 ## 0.1.1 — 2026-11-12
 
 - `worktree-bash-guard`: the deny reason no longer tells the model to name the worktree path in the

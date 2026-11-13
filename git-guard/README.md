@@ -4,7 +4,7 @@ The `git-guard@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../
 
 A single PreToolUse guard that stops Claude from doing the git things you almost never want an agent
 to do on its own — regardless of how you write commits. Commit *style* is deliberately **not** here;
-it's the separate opt-in [`commit`](../commit) plugin.
+it's the separate opt-in [`git`](../git) plugin.
 
 ## Contents
 
@@ -25,7 +25,7 @@ it's the separate opt-in [`commit`](../commit) plugin.
 ## Pairs with `commit`
 
 - **This plugin** = the git *safety net* (destructive/remote/history ops). Enable it anywhere.
-- **[`commit`](../commit)** = the opinionated house *commit style* (bare single-line messages,
+- **[`git`](../git)** = the opinionated house *commit style* (bare single-line messages,
   cadence, a format guard, and an end-of-session nudge). Opt in only if you want that convention.
 
 Enable `git-guard` alone to get the guardrails while keeping your own commit format.

@@ -38,7 +38,7 @@ No-ops entirely when you're not in a linked worktree. The workflow on top is the
   kind: hook
   event: SessionStart
   purpose:
-    Flag a session rooted in a linked worktree and nudge toward the `/worktree` protocol. Silent
+    Flag a session rooted in a linked worktree and nudge toward the `/worktree:topic` protocol. Silent
     in the main checkout; honors `WORKTREE_GUARD_DISABLE=1`.
 
 Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1` (write-guard **and** the SessionStart nudge),

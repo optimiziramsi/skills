@@ -26,7 +26,7 @@ through the normal gate.
     shows open idea branches with their age; `/idea promote` replays an endorsed idea onto a real
     topic branch (cherry-pick per commit, tag dropped — no merge commit, no interactive rebase);
     `/idea drop <topic>` deletes the branch locally after confirming. Every command passes
-    [`git-guard`](../git-guard) as shipped and [`commit`](../commit)'s single-line format. Also
+    [`git-guard`](../git-guard) as shipped and [`git`](../git)'s single-line format. Also
     auto-triggers when a proposal is asked for as code ("sketch this", "propose an approach") — not on
     design talk.
 
@@ -124,7 +124,7 @@ or `~/.claude/settings.json` for yourself), read from the hook's own process env
   inline (a prompt to paste, a config snippet); a language allowlist covers shell commands, which
   the house style puts in `bash` fences for you to run. Neither alone was enough: a language list
   can't tell "here's the 60-line module" in `text` from a requested paste.
-- **`/idea promote` hands off to the gate, it doesn't run it.** Gates are per project (`qa-gate`
+- **`/idea promote` hands off to the gate, it doesn't run it.** Gates are per project (`testing:qa-gate`
   where enabled, CI, a manual check); promote ends by naming it, and lands nothing.
 - **Its own plugin, not a `reporting` sub-mode.** It depends on git conventions (branches, base
   resolution, the commit tag) that `reporting` doesn't — and a project may want either alone.

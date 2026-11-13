@@ -4,6 +4,11 @@ Versions of the `session@optimiziramsi` plugin. History before the split into on
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.3.0 — 2026-11-13
+
+- `/session-summary` renamed to `/session:summary`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.
+- The Stop note names the audit as `/instructions:audit` (renamed in the `instructions` plugin).
+
 ## 0.2.0 — 2026-11-12
 
 - Session start injects the state line only (plus the missing-`python3` warning). The handoff

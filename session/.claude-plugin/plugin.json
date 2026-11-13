@@ -1,8 +1,8 @@
 {
   "name": "session",
   "displayName": "optimiziramsi session",
-  "version": "0.2.0",
-  "description": "Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot.",
+  "version": "0.3.0",
+  "description": "Session continuity — handoff (next-session notes, ≤4k), continue, summary, and a SessionStart state snapshot.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"

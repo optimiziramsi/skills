@@ -34,7 +34,7 @@ the narrative.
 
 - learning: Durable fact, gotcha, working agreement, engineering lesson
   store: `.agent/lessons/`
-  via: the `lessons` skill
+  via: the `lessons:capture` skill
 
 - learning: Binding rule (must / never)
   store:

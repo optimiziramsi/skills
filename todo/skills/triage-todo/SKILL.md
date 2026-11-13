@@ -37,7 +37,7 @@ divider):
 2. **Propose a destination**:
    - **Milestone** (`.agent/milestone/{date}_{slug}/`) — strategic, multi-session, multi-topic. Use
      the `milestone` skill.
-   - **Plan** (`.agent/plan/YYMMDD_HHMMSS_{topic}.md`) — single topic, multi-step. Use the `plan`
+   - **Plan** (`.agent/plan/YYMMDD_HHMMSS_{topic}.md`) — single topic, multi-step. Use the `planning:new`
      skill.
    - **Scheduled task** — recurring or one-time future action.
    - **Scope-cut** — if the item is "remove X". Use the `scope-cut` skill.

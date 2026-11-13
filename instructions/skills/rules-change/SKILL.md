@@ -10,7 +10,7 @@ description: >-
 
 # rules-change
 
-The controlled door for T3 changes (tiers are defined in the `instructions-maintenance`
+The controlled door for T3 changes (tiers are defined in the `instructions:maintenance`
 constitution). **Precondition: an explicit user request or approval.** If you arrived here mid-task
 because a rule is in the way, STOP — present the conflict; the user picks "one-time exception" or
 "change the rule". Execution resumes only after.

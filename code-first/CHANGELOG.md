@@ -2,6 +2,10 @@
 
 Versions of the `code-first@optimiziramsi` plugin.
 
+## 0.2.1 — 2026-11-13
+
+- `idea` and README name the done-gate as `testing:qa-gate` (the `qa-gate` plugin is now `testing`) and the commit-format plugin as `git`.
+
 ## 0.2.0 — 2026-11-12
 
 - The contract is opt-in: it is injected, and the Stop guard acts, only once a session ran `/idea`
