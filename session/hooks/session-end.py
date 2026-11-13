@@ -60,7 +60,7 @@ def facts(project):
     days = audit_age_days(os.path.join(project, ".agent", "instructions-changelog.md"))
     if days is not None and days > AUDIT_STALE_DAYS:
         found.append(("audit", str(days),
-                      f"[session] last instructions-audit {days}d ago (>{AUDIT_STALE_DAYS})."))
+                      f"[session] last /instructions:audit {days}d ago (>{AUDIT_STALE_DAYS})."))
     return found
 
 

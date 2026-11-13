@@ -1,5 +1,5 @@
 ---
-name: scaffold-claude-md
+name: claude-md
 description: >-
   Write a house-style `CLAUDE.md` for a project — a slim router carrying only routing + the hard
   rules that bind every session, in the optimiziramsi-skills convention (session bootstrap, never-push /

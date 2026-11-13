@@ -7,7 +7,7 @@ description: >-
   context window per initiative. Use when the user says: "let's start a milestone", "switch to the X
   milestone", "what milestones are active", "close this milestone", or opens a strategic initiative
   that will take multiple sessions. Do NOT use for single-topic plans (those go in `.agent/plan/` —
-  use the `plan` skill).
+  use the `planning:new` skill).
 ---
 
 # Milestone
@@ -18,7 +18,7 @@ progress. The folder is the working surface for one strategic initiative across 
 ## When to use milestones vs plans vs direct work
 
 - Single focused task finishable in one session: direct
-- One topic, one execution plan: `.agent/plan/` + `plan` skill
+- One topic, one execution plan: `.agent/plan/` + `planning:new` skill
 - Strategic initiative spanning many topics and multiple sessions: `.agent/milestone/` (this)
 - Parallel initiatives where context-switching needs a clean workspace: multiple
   `.agent/milestone/*/`
@@ -156,7 +156,7 @@ milestone:
 ## When NOT to use this skill
 
 - Single-session task: just do it in chat.
-- One-topic plan with clear scope: use the `plan` skill (`.agent/plan/`).
+- One-topic plan with clear scope: use the `planning:new` skill (`.agent/plan/`).
 - Recurring mechanical / batch work: a job-runner flow (`grind`/`looper`), not a milestone.
 
 Milestones are for strategic, multi-session, multi-topic initiatives. Don't over-use them.

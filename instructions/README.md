@@ -7,7 +7,7 @@ checks that keep them inside their size caps.
 
 ## Contents
 
-- name: `instructions-maintenance`
+- name: `maintenance`
   kind: skill + command
   purpose:
     The **constitution** — design principles, ownership matrix, extension criteria, governance
@@ -20,7 +20,7 @@ checks that keep them inside their size caps.
     The sanctioned **T3-change door** — explicit approval, coherence + cap check, re-test
     enforcement, reality check, changelog. What retro/audit route approved changes through.
 
-- name: `instructions-audit`
+- name: `audit`
   kind: skill + command
   purpose:
     De-rot sweep — broken pointers, dead/duplicate rules, truth-vs-reality drift, cap breaches,
@@ -30,7 +30,7 @@ checks that keep them inside their size caps.
   kind: agent
   purpose:
     Read-only sweep of the instruction surface → severity-ranked findings with `file:line`
-    evidence. Used by `instructions-audit`.
+    evidence. Used by `instructions:audit`.
 
 - name: `caps`
   kind: hook

@@ -4,6 +4,11 @@ Versions of the `setup@optimiziramsi` plugin. History before the split into one 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.1 — unreleased
+
+- `/scaffold-claude-md` renamed to `/setup:claude-md`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.
+- `scaffold`: the layout table names the renamed `lessons:capture`, `planning:new` and `worktree:topic` skills.
+
 ## 0.1.0 — 2026-10-18
 
 - Split out of the single `optimiziramsi-skills` plugin (its `setup` topic). Enable it per project with `claude plugin install setup@optimiziramsi --scope project`.

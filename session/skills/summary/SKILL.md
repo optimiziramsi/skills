@@ -1,5 +1,5 @@
 ---
-name: session-summary
+name: summary
 description: >-
   Generate a shareable changelog of what happened in this session — different from `handoff` (which
   is private continuity context for the next chat). Use when the user says: "session summary", "what
@@ -10,7 +10,7 @@ description: >-
 
 # Session-Summary
 
-`handoff` is private — it captures working-style observations and where to resume. `session-summary`
+`handoff` is private — it captures working-style observations and where to resume. `session:summary`
 is shareable — it captures what shipped and why, in a form the user can post somewhere.
 
 ## When invoked
@@ -66,7 +66,7 @@ another tool (Slack, a journal, a release note draft).
   lifecycle: per session
   content: working style + where we left off
 
-- skill: `session-summary`
+- skill: `session:summary`
   audience: Human (shareable)
   lifecycle: per session
   content: what shipped + decisions made

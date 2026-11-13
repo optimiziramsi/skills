@@ -14,7 +14,7 @@ looks up prior art before you re-debug something.
     Session-end harvest — route learnings to lessons/rules/docs, merge-don't-append, compact at
     caps, **apply-safe / propose-risky**, changelog, commit.
 
-- name: `lessons`
+- name: `capture`
   kind: skill + command
   purpose:
     Capture + curate one durable lesson in `.agent/lessons/` — kebab-slug file, README index,

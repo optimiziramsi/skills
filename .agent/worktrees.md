@@ -1,6 +1,6 @@
 # Worktrees — the parallel-work board
 
-The `worktree` skill is the protocol; this file is only the board.
+The `worktree:topic` skill is the protocol; this file is only the board.
 
 ## Active
 

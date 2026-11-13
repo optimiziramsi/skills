@@ -4,6 +4,11 @@ Versions of the `instructions@optimiziramsi` plugin. History before the split in
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.2.1 — unreleased
+
+- `/instructions-audit` renamed to `/instructions:audit` and `/instructions-maintenance` to `/instructions:maintenance`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.
+- References to the renamed `lessons:capture` and `planning:new` skills updated.
+
 ## 0.2.0 — 2026-11-12
 
 - Nothing runs at session start any more. `caps` is a Stop note for the user (a `systemMessage`:

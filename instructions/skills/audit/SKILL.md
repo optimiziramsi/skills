@@ -1,5 +1,5 @@
 ---
-name: instructions-audit
+name: audit
 description: >-
   De-rot the agent instruction system — after many sessions of accretion, keep it SMALL, TRUE, and
   NON-DUPLICATED. Sweeps for broken pointers, dead/duplicate rules, truth-vs-reality drift, cap

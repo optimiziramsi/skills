@@ -1,5 +1,5 @@
 ---
-name: instructions-maintenance
+name: maintenance
 description: >-
   The constitution of the agent instruction system — the rules for how CLAUDE.md, .claude/ (skills,
   rules, hooks, settings, agents), and .agent/ evolve. Load this BEFORE creating or modifying any
@@ -13,8 +13,8 @@ description: >-
 This skill owns the rules for how the instruction system itself evolves. If it conflicts with
 another instruction file, this file wins — then fix the other. Assumes the `.agent/` house layout.
 
-The other `instructions` skills apply what this defines: `retro` harvests into it, `lessons`
-captures into it, `instructions-audit` repairs it, `rules-change` changes it. This is the shared
+The other `instructions` skills apply what this defines: `retro` harvests into it, `lessons:capture`
+captures into it, `instructions:audit` repairs it, `rules-change` changes it. This is the shared
 model.
 
 ## Design principles
@@ -66,7 +66,7 @@ class of fact, so nothing is documented twice. A typical house layout:
 > file **in the same commit.**
 
 When you and a doc disagree about reality, reality wins — fix the doc; if the misread caused a wrong
-action, also write a lesson (`lessons` skill).
+action, also write a lesson (`lessons:capture` skill).
 
 ## File format — 100-col wrap + record lists
 

@@ -21,7 +21,7 @@ Assumes the `.agent/` house layout: `.agent/handoff.md`, `.agent/lessons/`, `.do
   queued, recent project-state changes. Rewritten (overwritten) each handoff. **HARD CAP: 4k
   characters.**
 - **Durable knowledge → `.agent/lessons/`** (working style, operational gotchas, engineering
-  lessons), via the `lessons` skill. It is NEVER in handoff.
+  lessons), via the `lessons:capture` skill. It is NEVER in handoff.
 - **Architecture / code-shape → `.docs/`** (and a patterns registry if the project keeps one).
 - **Pending work → the project's todo INBOX file (e.g. `.todo-inbox`)** (the user triages), or the
   relevant plan/milestone steps. `.todo` itself may be guard-protected (user-owned) — never write
@@ -38,7 +38,7 @@ handoff content — route it to the list above.
 3. **Rewrite the session-context** (sections below).
 4. **Update the `_Last updated:_` line.**
 5. **If you observed a new durable lesson** (a repeatable preference/gotcha the user established),
-   capture it via the `lessons` skill — NOT in handoff.
+   capture it via the `lessons:capture` skill — NOT in handoff.
 6. **Check the 4k cap** (below) before committing.
 7. **Commit** single-line: `update handoff for next session`.
 

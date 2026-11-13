@@ -184,7 +184,7 @@ phases produces empty templates nobody can use.
 - phase: 2
   name: **Plan**
   what-happens:
-    Identify the reference file(s) to build/refactor + what cascades. Use the `plan` skill for
+    Identify the reference file(s) to build/refactor + what cascades. Use the `planning:new` skill for
     big walks.
   pause: YES
 

@@ -1,5 +1,5 @@
 ---
-name: plan
+name: new
 description: >-
   Create and manage implementation plans in .agent/plan/ files. Use this skill when: starting a new
   feature or refactor, the user says "plan this", "think about how to", "design the approach",

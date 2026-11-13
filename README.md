@@ -62,10 +62,10 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`code-first`](code-first/README.md) | Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge. |
 | [`rename`](rename/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
 | [`reporting`](reporting/README.md) | Lean-reporting output contract, enforced — injected per prompt, re-pulsed every Nth tool call, and a Stop guard that blocks a narrating or over-long final message; `/calibrate` tunes the contract on real reports, and an `rc:`-stamped contract nudges for it once it's stale. |
-| [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, session-summary, and a SessionStart state snapshot. |
+| [`session`](session/README.md) | Session continuity — handoff (next-session notes, ≤4k), continue, summary, and a SessionStart state snapshot. |
 | [`context`](context/README.md) | Context-window awareness — nudges at 20% / 30% / 55% of a 1M window (configurable): a hint for the user, then that a handoff is needed, then that it is needed now; honors 'remind me later' / 'keep going' / 'topic done', and /repack writes the handoff for a /clear → /continue refresh. |
 | [`lessons`](lessons/README.md) | Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug. |
-| [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (instructions-maintenance, rules-change), the instructions-audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
+| [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (maintenance, rules-change), the audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
 | [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a scope reminder while the session runs on a matched model (model-guard). |
 | [`review`](review/README.md) | Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents. |
 | [`qa-gate`](qa-gate/README.md) | The done-gate — typecheck, unit, e2e and visual verification before any claim of done. |
@@ -130,8 +130,8 @@ executable code — `.agent/guards.d/` tripwires — takes `*.sh`, `*.py`, or an
 a shebang, so your guards are written in whatever your repo already speaks.
 
 **No branch name is hardcoded.** `main` is not assumed anywhere: the git guard detects the repo's
-own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `worktree` skill takes
-`<integration>` / `<protected>` from the project, `scaffold-claude-md` reads the branch layout out
+own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `worktree:topic` skill takes
+`<integration>` / `<protected>` from the project, `setup:claude-md` reads the branch layout out
 of the repo before writing a rule about it, and the tripwire examples take
 `TRIPWIRE_INTEGRATION_BRANCH`. `develop`-, `trunk`-, and `master`-based projects need no config.
 **Single-branch repos need one line:** where the integration branch *is* the protected branch, set

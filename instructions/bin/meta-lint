@@ -284,12 +284,12 @@ def check_lessons_priority(root: str, cfg: dict) -> list[str]:
     if len(set(sections["high"])) > prio["high_max"]:
         findings.append(
             f"[lessons-prio] High holds {len(set(sections['high']))} lessons (cap {prio['high_max']}) "
-            "— promotion requires demotion (lessons skill § Priority router)"
+            "— promotion requires demotion (lessons:capture skill § Priority router)"
         )
     if len(set(sections["mid"])) > prio["mid_max"]:
         findings.append(
             f"[lessons-prio] Mid holds {len(set(sections['mid']))} lessons (cap {prio['mid_max']}) "
-            "— demote to Low or fold (lessons skill § Priority router)"
+            "— demote to Low or fold (lessons:capture skill § Priority router)"
         )
     max_age = prio["confirm_max_age_days"]
     cutoff = time.time() - max_age * 86400
@@ -742,7 +742,7 @@ def check_counts(root: str, cfg: dict) -> list[str]:
         if n > cap:
             findings.append(
                 f"[count] {lay['plan']}/ holds {n} active plans (cap {cap}) — archive closed "
-                "plans per the plan skill (git mv to an archive/ subdir)"
+                "plans per the planning:new skill (git mv to an archive/ subdir)"
             )
     ldir = os.path.join(root, lay["lessons"])
     cap = over("lessons_max")
@@ -833,7 +833,7 @@ def check_audit_freshness(root: str, cfg: dict) -> list[str]:
     if age > a["max_age_days"]:
         return [
             f"[audit] last instructions audit was {age:.0f}d ago (cap {a['max_age_days']}d) — "
-            "run instructions-audit (mechanical + truth pass), stamp the changelog"
+            "run /instructions:audit (mechanical + truth pass), stamp the changelog"
         ]
     return []
 

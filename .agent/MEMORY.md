@@ -138,7 +138,7 @@ Load-bearing facts behind the design:
 
 Decisions: `main` stays GitHub's default branch (the `github` source resolves the default branch).
 History is kept on both sides — no orphan restart. Hotfixes are ordinary releases; no cherry-pick
-path back from `main`. No separate examples repo — `scaffold-claude-md` / `scaffold` already
+path back from `main`. No separate examples repo — `setup:claude-md` / `setup:scaffold` already
 generate the example, and a checked-in copy would become the third drifting version of it.
 `instructions/examples/` stays on `main`: it is shipped payload the meta-lint and tripwire engines
 reference, not a showcase. `other/` stays public by user call.

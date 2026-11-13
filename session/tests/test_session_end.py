@@ -66,7 +66,7 @@ with scratch_repo(files={".agent/handoff.md": "next up\n"}) as r:
     changelog.write_text(f"Last audit: {datetime.date.today() - datetime.timedelta(days=45)}\n")
     got = note(r.main, "s1")
     check("a stale audit stamp is noted, as a fact",
-          got == "[session] last instructions-audit 45d ago (>30).", got)
+          got == "[session] last /instructions:audit 45d ago (>30).", got)
     changelog.write_text("no stamp here\n")
     check("an unparseable stamp is ignored", "audit" not in note(r.main, "s6"))
 

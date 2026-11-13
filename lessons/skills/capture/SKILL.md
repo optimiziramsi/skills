@@ -1,5 +1,5 @@
 ---
-name: lessons
+name: capture
 description: >-
   Capture and curate durable lessons in `.agent/lessons/` — one file per lesson, indexed in its
   README, surfaced by tier (enforced hook / routed doc / indexed). Use whenever the user corrects a
@@ -21,7 +21,7 @@ established — capture the lesson so it sticks.
 
 Explicit triggers (phrases): "don't do that anymore" · "I already told you" · "we agreed (not) to" ·
 "you keep doing X" / "every time" · "remember (not) to X" / "from now on" · "add this as a lesson" /
-"/lessons".
+"/lessons:capture".
 
 **Proactive trigger (no phrase needed):** the moment you notice you're being corrected on something
 *repeatable* — a mistake any future session could repeat, or a preference the user just stated —

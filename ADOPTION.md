@@ -27,6 +27,18 @@ re-aims existing `.agent/bin/{loop,grind}` symlinks on its first run.
 Re-verified 2026-08-19 against CCD/CC 2.1.235 and the `develop`/`main` split (0.0.11): the install
 and update mechanics below still hold, and the CLI equivalents of every UI step are named inline.
 
+## Renamed commands
+
+Renamed so a plugin name and a command never share a start in the `/` menu. Update any project file
+or habit that names the old one:
+
+- `/session-summary` → `/session:summary`
+- `/lessons` → `/lessons:capture`
+- `/instructions-audit` → `/instructions:audit`, `/instructions-maintenance` → `/instructions:maintenance`
+- `/plan` → `/planning:new`
+- `/worktree` → `/worktree:topic`
+- `/scaffold-claude-md` → `/setup:claude-md`
+
 ## What you receive: `main`, and only `main`
 
 - **Two branches, one of them yours.** `main` is the published marketplace — `.claude-plugin/`,

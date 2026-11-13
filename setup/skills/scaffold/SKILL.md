@@ -31,7 +31,7 @@ nothing to generate or re-sync afterward.
 ## Steps
 
 1. **Find the entrypoint.** Prefer `CLAUDE.md`, else `AGENTS.md`, at the repo root. If neither
-   exists, tell the user and offer the **`scaffold-claude-md`** skill — it writes a house-style
+   exists, tell the user and offer the **`setup:claude-md`** skill — it writes a house-style
    CLAUDE.md (a slim router of the hard rules), then this skill adds the pointer. (Claude Code's
    built-in `/init` writes a full codebase-doc CLAUDE.md instead, if they'd rather.) Never silently
    create one.
@@ -92,16 +92,16 @@ stays out of your repo root. Files/dirs appear as you use the matching skill —
 | `handoff.md` | next-session continuity notes (≤4k) | `handoff` / session |
 | `bin/` | your own symlinks to the runners — machine-local, gitignored | `scaffold` / runners |
 | `FEEDBACK.md` | agent-owned ledger of processed `.todo` items | `feedback` / flow |
-| `lessons/` | durable, hard-won lessons + a README index | `lessons` / instructions |
+| `lessons/` | durable, hard-won lessons + a README index | `lessons:capture` / instructions |
 | `instructions-changelog.md` | tier-tagged log of instruction changes | `retro` / instructions |
 | `milestones.md` | active-milestones index (what's in flight) | `milestone` / flow |
 | `milestone/{date}_{slug}/` | strategic multi-session initiatives | `milestone` / flow |
-| `plan/` | single-topic implementation plans | `plan` / flow |
+| `plan/` | single-topic implementation plans | `planning:new` / flow |
 | `loop/` | background job queue + logs | `looper` / flow |
 | `grind/` | grind missions + cross-iteration memory logs | `grind` / flow |
 | `reviews/` | point-in-time review/audit outputs | `review` / review |
 | `patterns/` | the per-topic pattern registry (blessed code shapes) | `manage-patterns` / patterns |
-| `worktrees.md` | the parallel-work board | `worktree` / worktree |
+| `worktrees.md` | the parallel-work board | `worktree:topic` / worktree |
 
 **Not here (on purpose):** `.docs/` is your own architecture/specs (skills *link* to it, never write
 it); `.todo` / `.todo-inbox` are your parking lot at the repo root; `.claude/rules/` is Claude config.

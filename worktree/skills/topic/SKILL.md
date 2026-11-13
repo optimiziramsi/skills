@@ -1,8 +1,8 @@
 ---
-name: worktree
+name: topic
 description: >-
   Drive a worktree topic — parallel, isolated work in a dedicated git worktree that lands into the
-  integration branch only on the human's explicit OK. Invoke as `/worktree ...`, or when this chat
+  integration branch only on the human's explicit OK. Invoke as `/worktree:topic ...`, or when this chat
   is doing worktree work: "let's worktree this", "new worktree for X", "do this on a worktree",
   "you're working in a worktree", "parallel work" / "you are worker N", "worktree mode", "continue
   this in a fresh session" / "pause this for a fresh session" (→ Pause + resume), "resume the
@@ -120,7 +120,7 @@ plan or code:
   project's local-env hub instead (§ Worktree + isolation) — the hub is the collision check.
 
 **2 — Plan + example slice** (the direction check):
-- Write the **whole plan** in the topic's `.agent/plan/<slug>.md` (use the `plan` skill) — full
+- Write the **whole plan** in the topic's `.agent/plan/<slug>.md` (use the `planning:new` skill) — full
   decomposition into slices; the source of truth and your cross-session handoff.
 - Implement **one small, representative slice** of the real code — a worked example of the plan's
   shape.
@@ -356,7 +356,7 @@ The human triggers it. **Never you.** It authorizes you to **PREPARE** the pause
 6. Commit the board + `.agent/plan` changes **to your branch only**, show the diff, then **ask**
    *"merge pause-state to `<integration>`?"* and **wait**.
 
-### Resume — `/worktree lets continue work for <id>`
+### Resume — `/worktree:topic lets continue work for <id>`
 
 A fresh session on a fresh worktree takes a **paused** topic back over. First response is **still**
 the § First-response order — HARD GATE first — but the reserve is a **re-claim**:

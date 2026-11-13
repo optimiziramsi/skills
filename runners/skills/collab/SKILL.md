@@ -45,7 +45,7 @@ trade-offs, not every file path.
 
 Where decisions happen. Don't rush to implementation. Present trade-offs honestly — if the human
 says "fight me", give real counterarguments. Use a scratch location (e.g. `.scratches/`) for design
-iteration (v1 → v2 → v3). Use `.agent/plan/` files (the `plan` skill) for anything that touches
+iteration (v1 → v2 → v3). Use `.agent/plan/` files (the `planning:new` skill) for anything that touches
 multiple systems, before any loop jobs.
 
 ### 5. Create loop jobs
