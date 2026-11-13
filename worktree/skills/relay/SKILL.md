@@ -164,7 +164,7 @@ shared branch's), note the facts the sub chat must know, and write the brief.
 The sub chat **never sees the shared branch**. Everything it needs is in the brief:
 
 ```
-`<slug>` — relay topic.  /worktree
+`<slug>` — relay topic.  /worktree:topic
 
 You are a worktree worker (the `worktree:topic` skill is the protocol). <integration> = `<integration>`,
 <protected> = `<protected>`. Your worktree is cut off `<integration>`; land ONLY there.
