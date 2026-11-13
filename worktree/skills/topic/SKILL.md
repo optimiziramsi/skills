@@ -349,7 +349,7 @@ The human triggers it. **Never you.** It authorizes you to **PREPARE** the pause
    remove the row** (that's close).
 4. **Record the worktree for teardown** — a `## Pending cleanup` line tagged worktree-only: `-
    <branch> (<path>) — worktree only; the <id> topic CONTINUES (paused in Active; resume via
-   /worktree lets continue work for <id>; handoff in <plan link>).`
+   /worktree:topic lets continue work for <id>; handoff in <plan link>).`
 5. **Stop everything this worktree is running** (dev servers, processes, your stack in the
    project's local-env hub — § Worktree + isolation) so nothing holds resources; the resume
    registers anew.
