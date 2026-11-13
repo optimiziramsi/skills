@@ -8,6 +8,8 @@
 #   3. declared component paths + dependencies resolve
 #   4. every script a hooks.json invokes via ${CLAUDE_PLUGIN_ROOT} exists inside that plugin
 #   5. every /command has the same-named skill it shims, in the same plugin
+#   5b. no `/` menu overlap: a plugin name and a skill/command name are never a prefix of one
+#      another (plugins with no skills/commands skipped; a single item named like its plugin exempt)
 #   6. `claude plugin validate --strict` on the marketplace and each plugin (skipped without the CLI)
 #   7. every plugin test suite and every hook / bin tool that ships a --test self-test passes;
 #      every vendored copy matches its source (./vendor.sh --check)
@@ -142,6 +144,34 @@ EOF
   note "ok    command/skill pairing intact ($out)"
 else
   fail "command/skill pairing broken:"
+  echo "$out"
+fi
+
+note ""
+note "=== 5b. no / menu overlap between plugin and skill/command names ==="
+if out=$(python3 - <<'EOF'
+import glob, os, sys
+plugins = sorted(os.path.dirname(os.path.dirname(f)) for f in glob.glob('*/.claude-plugin/plugin.json'))
+items = {p: sorted({os.path.basename(os.path.dirname(f)) for f in glob.glob(f'{p}/skills/*/SKILL.md')}
+                   | {os.path.basename(f)[:-3] for f in glob.glob(f'{p}/commands/*.md')}) for p in plugins}
+# what the / menu lists: every plugin that has skills/commands, and every skill/command
+ents = [('plugin', p, p) for p in plugins if items[p]] + [('item', i, p) for p in plugins for i in items[p]]
+def exempt(a, b):  # a plugin whose single item shares its name (deferred; see CLAUDE.md)
+    for x, y in ((a, b), (b, a)):
+        if x[0] == 'plugin' and y[0] == 'item' and y[2] == x[1] == y[1] and len(items[x[1]]) == 1:
+            return True
+    return False
+show = lambda e: f"plugin {e[1]}" if e[0] == 'plugin' else f"/{e[2]}:{e[1]}"
+bad = [f"{show(a)} <-> {show(b)}" for i, a in enumerate(ents) for b in ents[i + 1:]
+       if (a[1].startswith(b[1]) or b[1].startswith(a[1])) and not exempt(a, b)]
+if bad:
+    print('\n'.join(bad)); sys.exit(1)
+print(f"{len(ents)} menu names")
+EOF
+); then
+  note "ok    no / menu overlap ($out)"
+else
+  fail "/ menu overlap (rename one side):"
   echo "$out"
 fi
 
