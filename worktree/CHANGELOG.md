@@ -4,7 +4,7 @@ Versions of the `worktree@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.1 — unreleased
+## 0.2.1 — 2026-11-13
 
 - relay: the sub-chat brief starts with `/worktree:topic` (was `/worktree`, which no longer exists since 0.2.0); topic: the pause note's resume line says `/worktree:topic lets continue work for <id>`.
 
