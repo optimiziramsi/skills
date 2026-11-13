@@ -1,5 +1,5 @@
 ---
-name: review
+name: inspect
 description: >-
   Conduct architectural reviews, code audits, and deep-dive analyses. Use this skill when asked to:
   review code quality, audit architecture, check for drift from specs, deep review a subsystem,

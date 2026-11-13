@@ -57,7 +57,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | Plugin | Provides |
 |---|---|
 | [`git-guard`](git-guard/README.md) | Git safety net — a hook that blocks push/pull/fetch, bulk adds, non-FF merges, protected-branch moves, hard resets, --no-verify and discards of uncommitted work. |
-| [`hotfix`](hotfix/README.md) | Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch. |
+| [`playbooks`](playbooks/README.md) | Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch. |
 | [`git`](git/README.md) | House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge. |
 | [`code-first`](code-first/README.md) | Code-first working style — technical proposals are commits on an idea/<topic> branch the user reviews as a diff; an injected contract, a Stop guard on inline code, /idea to start, list, promote and drop ideas, and a stale-idea nudge. |
 | [`files`](files/README.md) | Move a file and cascade every reference to it across docs, skills and config. |
@@ -67,7 +67,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`lessons`](lessons/README.md) | Learn once, keep it — retro harvests a session's learnings, lessons curates them in .agent/lessons/, and the lesson-scout agent finds prior art before you re-debug. |
 | [`instructions`](instructions/README.md) | Keep the agent instruction system small and true — its rules (maintenance, rules-change), the audit sweep + auditor agent, and the caps / meta-lint size and structure checks. |
 | [`guards`](guards/README.md) | Project-owned enforcement — run your own .agent/guards.d checks on every shell command (tripwire-guard), ask before the agent edits Claude settings or hook scripts (file-guard), and re-inject a scope reminder while the session runs on a matched model (model-guard). |
-| [`review`](review/README.md) | Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents. |
+| [`review`](review/README.md) | Structured review — the inspect skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents. |
 | [`testing`](testing/README.md) | The done-gate — typecheck, unit, e2e and visual verification before any claim of done. |
 | [`planning`](planning/README.md) | Plans and milestones — single-topic implementation plans in .agent/plan/, multi-session initiatives in .agent/milestone/. |
 | [`todo`](todo/README.md) | The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with "ALLOW TODO"). |
@@ -148,7 +148,7 @@ force/delete refspecs and `checkout` onto it stay blocked.
   logic (single source of truth). Commands are `disable-model-invocation: true` — they exist so you
   can *type* `/x`; the skill's own description is what Claude auto-triggers on, so nothing is
   duplicated. Claude Code namespaces plugin components as `<plugin>:<name>` in menus and
-  autocomplete (`git:hotfix`, `review:doc-auditor`); the bare `/<name>` invokes them too
+  autocomplete (`playbooks:hotfix`, `review:doc-auditor`); the bare `/<name>` invokes them too
   (CC ≥ 2.1.216).
 - **House layout.** Everything the toolkit creates lives under **`.agent/`** — `handoff.md`,
   `lessons/`, `worktrees.md`, `milestones.md`, `plan/`, `milestone/`, `loop/`, `grind/`,

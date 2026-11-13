@@ -54,8 +54,7 @@ Full overview + rationale: [README.md](README.md). The load-bearing rules:
   repo-local [`skills-maintenance`](.claude/skills/skills-maintenance/SKILL.md) skill.
 - **No `/` menu overlap.** A plugin name and a skill or command name (its own or another plugin's)
   must not be a prefix of one another — typing one would also offer the other. A plugin with no
-  skills or commands doesn't count; one whose single item shares its name is exempt for now.
-  tests.sh checks it.
+  skills or commands doesn't count. tests.sh checks it.
 - **`/command` = a thin shim → the same-named `skill`.** The skill's `SKILL.md` is the single
   source of the logic; the command wrapper carries none — not steps, and **not a duplicated
   description**. Every command carries `disable-model-invocation: true`: inside a plugin a command

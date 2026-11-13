@@ -4,7 +4,7 @@ The `review@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../REA
 
 ## Contents
 
-- name: `review`
+- name: `inspect`
   kind: skill + command
   purpose:
     Structured review/audit → `.agent/reviews/YYMMDD_*.md` with P0/HIGH/MED/LOW findings,
@@ -42,7 +42,7 @@ The `review@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../REA
   purpose: Diff a wireframe's functional spec vs the implementation → gap report. Read-only.
 
 Assumes the **`.agent/` house layout** (`.agent/reviews/` for assessments, `.docs/` for specs). The
-`review` skill delegates to these agents. (A `pattern-verifier` agent lives in the `patterns`
+`review:inspect` skill delegates to these agents. (A `pattern-verifier` agent lives in the `patterns`
 plugin; the done-gate is [`testing`](../testing).)
 
 ## Enable

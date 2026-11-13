@@ -14,8 +14,8 @@
       "category": "workflow"
     },
     {
-      "name": "hotfix",
-      "source": "./hotfix",
+      "name": "playbooks",
+      "source": "./playbooks",
       "description": "Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch.",
       "category": "workflow"
     },
@@ -76,7 +76,7 @@
     {
       "name": "review",
       "source": "./review",
-      "description": "Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents.",
+      "description": "Structured review — the inspect skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents.",
       "category": "workflow"
     },
     {

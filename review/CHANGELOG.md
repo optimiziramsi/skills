@@ -6,6 +6,7 @@ Versions of the `review@optimiziramsi` plugin. History before the split into one
 
 ## 0.1.1 — unreleased
 
+- `/review` renamed to `/review:inspect`, so the plugin name no longer overlaps its own command in the `/` menu. The plugin id is unchanged.
 - README names the renamed `testing` plugin (was `qa-gate`).
 
 ## 0.1.0 — 2026-10-18

@@ -1,13 +1,13 @@
 {
-  "name": "hotfix",
-  "displayName": "optimiziramsi hotfix",
-  "version": "0.1.0",
+  "name": "playbooks",
+  "displayName": "optimiziramsi playbooks",
+  "version": "0.1.1-dev.1",
   "description": "Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"
   },
-  "homepage": "https://github.com/optimiziramsi/skills/tree/main/hotfix#readme",
+  "homepage": "https://github.com/optimiziramsi/skills/tree/main/playbooks#readme",
   "repository": "https://github.com/optimiziramsi/skills",
   "license": "MIT",
   "keywords": [

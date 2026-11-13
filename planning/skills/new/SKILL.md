@@ -141,4 +141,4 @@ one.
 
 - Quick bug fixes you can diagnose and fix in minutes — just do it.
 - Single-file changes with an obvious approach.
-- Reviews and audits — use the review skill instead.
+- Reviews and audits — use the `review:inspect` skill instead.

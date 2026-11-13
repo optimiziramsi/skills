@@ -37,6 +37,7 @@ and env switches keep their names.
 - `commit` → `git` (`/git:commit`)
 - `rename` → `files` (`/files:rename`)
 - `qa-gate` → `testing` (`/testing:qa-gate`)
+- `hotfix` → `playbooks` (`/playbooks:hotfix`)
 
 ## Renamed commands
 
@@ -50,6 +51,7 @@ or habit that names the old one:
 - `/worktree` → `/worktree:topic`
 - `/scaffold-claude-md` → `/setup:claude-md`
 - `/upkeep` → `/upkeep:apply`
+- `/review` → `/review:inspect`
 
 ## What you receive: `main`, and only `main`
 

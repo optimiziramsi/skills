@@ -1,8 +1,8 @@
 {
   "name": "review",
   "displayName": "optimiziramsi review",
-  "version": "0.1.1-dev.1",
-  "description": "Structured review — the review skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents.",
+  "version": "0.1.1-dev.2",
+  "description": "Structured review — the inspect skill (P0/HIGH/MED/LOW → .agent/reviews/) plus semantic-bug, spec, doc-drift, multi-tenant isolation and wireframe reviewer agents.",
   "author": {
     "name": "optimiziramsi",
     "url": "https://github.com/optimiziramsi"

@@ -5,7 +5,7 @@
   },
   "enabledPlugins": {
     "git-guard@optimiziramsi-dev": true,
-    "hotfix@optimiziramsi-dev": true,
+    "playbooks@optimiziramsi-dev": true,
     "git@optimiziramsi-dev": true,
     "code-first@optimiziramsi-dev": true,
     "files@optimiziramsi-dev": true,

@@ -8,6 +8,7 @@ Versions of the `planning@optimiziramsi` plugin. History before the split into o
 
 - `/plan` renamed to `/planning:new`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.
 - References to the renamed `worktree:topic` skill updated.
+- `new`: points at the renamed `review:inspect` skill.
 
 ## 0.2.1 — 2026-11-02
 

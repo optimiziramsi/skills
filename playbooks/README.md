@@ -1,6 +1,6 @@
-# hotfix — test-first hotfix protocol
+# playbooks — protocols for a type of work
 
-The `hotfix@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
+The `playbooks@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 ## Contents
 
@@ -17,5 +17,5 @@ blocked for the agent anyway.
 ## Enable
 
 ```bash
-claude plugin install hotfix@optimiziramsi --scope project
+claude plugin install playbooks@optimiziramsi --scope project
 ```
