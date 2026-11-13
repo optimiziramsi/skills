@@ -110,8 +110,8 @@
       "category": "workflow"
     },
     {
-      "name": "worktree",
-      "source": "./worktree",
+      "name": "parallel-work",
+      "source": "./parallel-work",
       "description": "The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK; plus relay, the pair-programming-by-worktree primary that turns your comments into worktree sub chats. Pairs with worktree-guards.",
       "category": "workflow"
     },

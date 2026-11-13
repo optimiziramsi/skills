@@ -1,6 +1,6 @@
-# worktree — the parallel-work protocol
+# parallel-work — the worktree protocol and relay
 
-The `worktree@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
+The `parallel-work@optimiziramsi` plugin, one of the [optimiziramsi marketplace](../README.md)'s per-concern plugins — enable it in the projects that want it.
 
 Drive one topic on its own git worktree as small reviewed slices, landing to the integration
 branch only on the human's explicit OK — and, with `relay`, pair-program by worktree: you comment
@@ -11,7 +11,7 @@ together with [`worktree-guards`](../worktree-guards), which keeps the edits ins
 
 - name: `worktree`
   kind: skill + command
-  event: `/worktree:topic`, or worktree-mode triggers
+  event: `/worktree`, or worktree-mode triggers
   purpose:
     The **parallel-work protocol**: drive one topic on its own worktree as small reviewed
     slices, landing to the integration branch only on the human's explicit OK. No captain — the
@@ -26,7 +26,7 @@ together with [`worktree-guards`](../worktree-guards), which keeps the edits ins
     branch cut off the integration branch (any name the app gives it); the human edits and leaves comments
     there (the human's edits stay unstaged; only the primary's state files are committed, never
     landed — reference only). The primary turns comments
-    into topics, spawns one `worktree:topic` sub chat per topic (fresh session, own worktree off
+    into topics, spawns one `parallel-work:worktree` sub chat per topic (fresh session, own worktree off
     the integration branch, title `Relay: <slug>`, self-contained brief with the project's hard
     rules verbatim and a `Done =` line), never codes a topic itself and never proxies the sub
     chat's questions — review, "merge?", "close?" are the human's, in the sub chat. After each
@@ -111,5 +111,5 @@ chat). Running the primary at the top of its list avoids the confirmations.
 ## Enable
 
 ```bash
-claude plugin install worktree@optimiziramsi --scope project
+claude plugin install parallel-work@optimiziramsi --scope project
 ```

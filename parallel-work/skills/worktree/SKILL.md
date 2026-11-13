@@ -1,8 +1,8 @@
 ---
-name: topic
+name: worktree
 description: >-
   Drive a worktree topic — parallel, isolated work in a dedicated git worktree that lands into the
-  integration branch only on the human's explicit OK. Invoke as `/worktree:topic ...`, or when this chat
+  integration branch only on the human's explicit OK. Invoke as `/worktree ...`, or when this chat
   is doing worktree work: "let's worktree this", "new worktree for X", "do this on a worktree",
   "you're working in a worktree", "parallel work" / "you are worker N", "worktree mode", "continue
   this in a fresh session" / "pause this for a fresh session" (→ Pause + resume), "resume the
@@ -349,14 +349,14 @@ The human triggers it. **Never you.** It authorizes you to **PREPARE** the pause
    remove the row** (that's close).
 4. **Record the worktree for teardown** — a `## Pending cleanup` line tagged worktree-only: `-
    <branch> (<path>) — worktree only; the <id> topic CONTINUES (paused in Active; resume via
-   /worktree:topic lets continue work for <id>; handoff in <plan link>).`
+   /parallel-work:worktree lets continue work for <id>; handoff in <plan link>).`
 5. **Stop everything this worktree is running** (dev servers, processes, your stack in the
    project's local-env hub — § Worktree + isolation) so nothing holds resources; the resume
    registers anew.
 6. Commit the board + `.agent/plan` changes **to your branch only**, show the diff, then **ask**
    *"merge pause-state to `<integration>`?"* and **wait**.
 
-### Resume — `/worktree:topic lets continue work for <id>`
+### Resume — `/parallel-work:worktree lets continue work for <id>`
 
 A fresh session on a fresh worktree takes a **paused** topic back over. First response is **still**
 the § First-response order — HARD GATE first — but the reserve is a **re-claim**:

@@ -4,6 +4,10 @@ Versions of the `runners@optimiziramsi` plugin. History before the split into on
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.3 — unreleased
+
+- Vendored worktree-guards copy refreshed: its SessionStart nudge points at `/parallel-work:worktree`.
+
 ## 0.1.2 — 2026-11-13
 
 - `collab`: points at the renamed `planning:new` skill.

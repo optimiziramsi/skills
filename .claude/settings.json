@@ -21,7 +21,7 @@
     "todo@optimiziramsi-dev": true,
     "runners@optimiziramsi-dev": true,
     "patterns@optimiziramsi-dev": true,
-    "worktree@optimiziramsi-dev": true,
+    "parallel-work@optimiziramsi-dev": true,
     "worktree-guards@optimiziramsi-dev": true,
     "setup@optimiziramsi-dev": true,
     "upkeep@optimiziramsi-dev": true

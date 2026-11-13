@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# relay-watch — the `relay` skill's comment watcher (on PATH while the worktree plugin is enabled).
+# relay-watch — the `relay` skill's comment watcher (on PATH while the parallel-work plugin is enabled).
 #
 # Watches the shared relay worktree for NEW comment lines in the user's uncommitted edits (staged or
 # not: `git diff HEAD`) and prints one event line per:
