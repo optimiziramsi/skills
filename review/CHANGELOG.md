@@ -4,7 +4,7 @@ Versions of the `review@optimiziramsi` plugin. History before the split into one
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.1 — unreleased
+## 0.2.0 — 2026-11-13
 
 - `/review` renamed to `/review:inspect`, so the plugin name no longer overlaps its own command in the `/` menu. The plugin id is unchanged.
 - README names the renamed `testing` plugin (was `qa-gate`).

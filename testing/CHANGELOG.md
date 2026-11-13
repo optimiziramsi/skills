@@ -4,7 +4,7 @@ Versions of the `testing@optimiziramsi` plugin (named `qa-gate` up to 0.1.0). Hi
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.1 — unreleased
+## 0.2.0 — 2026-11-13
 
 - Plugin renamed `qa-gate` → `testing`, so its name no longer overlaps its own command in the `/` menu. The command stays `/qa-gate` (now `/testing:qa-gate`). Install `testing@optimiziramsi` and uninstall `qa-gate@optimiziramsi` (ADOPTION.md § Renamed plugins).
 

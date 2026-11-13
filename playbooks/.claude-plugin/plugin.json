@@ -1,7 +1,7 @@
 {
   "name": "playbooks",
   "displayName": "optimiziramsi playbooks",
-  "version": "0.1.1-dev.1",
+  "version": "0.2.0",
   "description": "Test-first hotfix for a deployed bug — reproduce as a failing test, minimal fix, land it on both the mainline and the release branch.",
   "author": {
     "name": "optimiziramsi",

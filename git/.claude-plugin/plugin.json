@@ -1,7 +1,7 @@
 {
   "name": "git",
   "displayName": "optimiziramsi git",
-  "version": "0.1.2-dev.1",
+  "version": "0.2.0",
   "description": "House commit style — bare single-line messages, topic-close + pause-for-review cadence, safe staging; a commit-format guard and an end-of-session commit nudge.",
   "author": {
     "name": "optimiziramsi",

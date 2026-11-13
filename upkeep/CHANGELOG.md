@@ -2,7 +2,7 @@
 
 Versions of the `upkeep@optimiziramsi` plugin.
 
-## 0.2.1 — unreleased
+## 0.3.0 — 2026-11-13
 
 - `/upkeep` renamed to `/upkeep:apply`, so the plugin name no longer overlaps its own command in the `/` menu. The end-of-turn note now says `/upkeep:apply to apply`. Plugin id, hook, CLI and env switches are unchanged.
 

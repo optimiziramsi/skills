@@ -1,7 +1,7 @@
 {
   "name": "files",
   "displayName": "optimiziramsi files",
-  "version": "0.1.1-dev.1",
+  "version": "0.2.0",
   "description": "Move a file and cascade every reference to it across docs, skills and config.",
   "author": {
     "name": "optimiziramsi",
