@@ -77,20 +77,44 @@ def strip_quotes(text: str):
     return re.sub(r"'[^']*'|\"[^\"]*\"", "", text)
 
 
+ARG_SHORT_FLAGS = set("CcFtSu")  # commit's short flags that take an argument — it ends the cluster
+
+
+def short_m(token):
+    """For a short-flag cluster carrying -m (`-m`, `-am`, `-sm<msg>`): the attached message, or ""
+    when the message is the next token. None when the token carries no -m — a long flag, or an
+    argument-taking flag before the `m` (`-Cmain` is -C main, not -m)."""
+    if not re.match(r"^-[a-zA-Z]", token):
+        return None
+    for i, ch in enumerate(token[1:], 1):
+        if ch == "m":
+            return token[i + 1:]
+        if ch in ARG_SHORT_FLAGS or not ch.isalpha():
+            return None
+    return None
+
+
 def m_values(tokens):
     """Yield the message values of -m/--message flags in a token list."""
     i = 0
     while i < len(tokens):
         t = tokens[i]
-        if t in ("-m", "--message"):
+        if t == "--message":
             if i + 1 < len(tokens):
                 yield tokens[i + 1]
             i += 2
             continue
         if t.startswith("--message="):
             yield t[len("--message="):]
-        elif t.startswith("-m") and len(t) > 2:
-            yield t[2:]
+        else:
+            attached = short_m(t)
+            if attached == "":
+                if i + 1 < len(tokens):
+                    yield tokens[i + 1]
+                i += 2
+                continue
+            if attached is not None:
+                yield attached
         i += 1
 
 

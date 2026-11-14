@@ -79,6 +79,13 @@ blocks("a listed scope is allowed when scopes_open is false", False,
 blocks("the single-line rule still applies under a convention", True,
        "git commit -m 'fix(api): a' -m 'body'", open_conv)
 blocks("a non-commit command ignores the convention", False, "git status", open_conv)
+blocks("-am with a bad message is blocked", True, "git commit -am 'reject empty queries'", open_conv)
+blocks("-am with a good message is allowed", False,
+       "git commit -am 'fix(api): reject empty queries'", open_conv)
+blocks("-sm with a good message is allowed", False,
+       "git commit -sm 'fix(api): reject empty queries'", open_conv)
+check("--amend carries no message", guard.commit_messages("git commit --amend --no-edit") == [])
+check("-Cmain is -C main, not a -m message", guard.commit_messages("git commit -Cmain") == [])
 
 project = project_with(json.dumps({**CONFIG, "scopes_open": False}))
 code, _, err = invoke(hook("hooks/commit-format.py"),
