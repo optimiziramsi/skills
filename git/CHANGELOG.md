@@ -4,7 +4,7 @@ Versions of the `git@optimiziramsi` plugin (named `commit` up to 0.1.1). History
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.1 — unreleased
+## 0.2.1 — 2026-11-14
 
 - A project can now set its own commit message convention in `.agent/commit.json` (`pattern`, `types`, `scopes` with what each `covers`, `scopes_open`, `examples`). The `commit` skill reads it in place of the bare-imperative shape; single line, no body, no trailers still apply. The `commit-format` hook blocks a model commit whose message doesn't match `pattern`, and, when `scopes_open` is false, one whose `type(scope):` scope isn't listed. A missing or invalid file changes nothing. Before this a project could override only the cadence, so a `type(scope): summary` repo needed its own skill delta and tripwire.
 
