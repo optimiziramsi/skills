@@ -1,11 +1,11 @@
 ---
 description: >-
   Drive a parallel, isolated worktree topic — reserve, plan, execute reviewed slices, land to the
-  integration branch (runs the `worktree:topic` skill)
+  integration branch (runs the `parallel-work:worktree` skill)
 disable-model-invocation: true
 ---
 
-Invoke the `worktree:topic` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper
+Invoke the `parallel-work:worktree` skill via the Skill tool and follow its SKILL.md steps exactly. This wrapper
 carries no logic — the skill is the single source of the protocol.
 
 Arguments: $ARGUMENTS

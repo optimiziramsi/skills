@@ -25,7 +25,7 @@ def deny_reason(stdout):
     return json.loads(stdout)["hookSpecificOutput"]["permissionDecisionReason"]
 
 with scratch_repo({"f.ts": "a\n"}) as repo:
-    # a second worktree parked UNDER the main checkout — the layout the `worktree:topic` skill
+    # a second worktree parked UNDER the main checkout — the layout the `parallel-work:worktree` skill
     # actually uses (.claude/worktrees/<name>), and the one a stray write can land in
     sibling = os.path.join(repo.main, ".claude", "worktrees", "other")
     subprocess.run(["git", "-C", repo.main, "worktree", "add", "-q", sibling, "-b", "other"],

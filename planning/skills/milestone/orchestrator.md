@@ -7,7 +7,7 @@ in [`ledger.md`](ledger.md). The orchestrator writes exactly two things — the 
 through its **own worktree + fast-forward land**: a dirty integration checkout refuses every
 worker's push. Format and vocab for everything below live in [`ledger.md`](ledger.md); the
 `README.md` scaffold in [`readme-template.md`](readme-template.md); who lands how (gate,
-FF-only, land-report mechanics) in the `worktree:topic` skill + `.agent/worktrees.md`. Umbrella
+FF-only, land-report mechanics) in the `parallel-work:worktree` skill + `.agent/worktrees.md`. Umbrella
 milestones only — a single-chat milestone keeps `steps.md` and needs none of this.
 
 ## Opening a session (or a phase)

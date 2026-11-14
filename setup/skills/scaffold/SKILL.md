@@ -101,7 +101,7 @@ stays out of your repo root. Files/dirs appear as you use the matching skill —
 | `grind/` | grind missions + cross-iteration memory logs | `grind` / flow |
 | `reviews/` | point-in-time review/audit outputs | `review` / review |
 | `patterns/` | the per-topic pattern registry (blessed code shapes) | `manage-patterns` / patterns |
-| `worktrees.md` | the parallel-work board | `worktree:topic` / worktree |
+| `worktrees.md` | the parallel-work board | `parallel-work:worktree` / worktree |
 
 **Not here (on purpose):** `.docs/` is your own architecture/specs (skills *link* to it, never write
 it); `.todo` / `.todo-inbox` are your parking lot at the repo root; `.claude/rules/` is Claude config.

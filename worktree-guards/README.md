@@ -6,7 +6,7 @@ Guards that keep file edits inside the **active git worktree** so they don't sil
 main checkout or a sibling worktree — mitigating [claude-code
 #36182](https://github.com/anthropics/claude-code/issues/36182).
 No-ops entirely when you're not in a linked worktree. The workflow on top is the
-[`worktree`](../worktree) plugin.
+[`parallel-work`](../parallel-work) plugin.
 
 ## Contents
 
@@ -38,7 +38,7 @@ No-ops entirely when you're not in a linked worktree. The workflow on top is the
   kind: hook
   event: SessionStart
   purpose:
-    Flag a session rooted in a linked worktree and nudge toward the `/worktree:topic` protocol. Silent
+    Flag a session rooted in a linked worktree and nudge toward the `/parallel-work:worktree` protocol. Silent
     in the main checkout; honors `WORKTREE_GUARD_DISABLE=1`.
 
 Env toggles (hooks): `WORKTREE_GUARD_DISABLE=1` (write-guard **and** the SessionStart nudge),

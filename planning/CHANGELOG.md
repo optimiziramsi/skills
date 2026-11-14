@@ -4,6 +4,10 @@ Versions of the `planning@optimiziramsi` plugin. History before the split into o
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.3.1 — 2026-11-14
+
+- References to the worktree skill say `parallel-work:worktree` (the `worktree` plugin is now `parallel-work`, and its `topic` skill is `worktree` again).
+
 ## 0.3.0 — 2026-11-13
 
 - `/plan` renamed to `/planning:new`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.

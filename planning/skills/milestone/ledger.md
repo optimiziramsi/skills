@@ -81,14 +81,14 @@ entry: API0 landed · exit: every GATE-A record landed · files: apps/api/src/**
   get `[prio:now]`, the request flips `[status:filed]`; when the provider lands, `[status:done]` and
   the requester is told. Done requests are struck at the next land relay (the Log keeps them).
 - `impact:blocked` with no independent record left → the requester's record flips `blocked` with
-  `[by:<id>]` and the chat pauses (`worktree:topic` skill § Pause + resume).
+  `[by:<id>]` and the chat pauses (`parallel-work:worktree` skill § Pause + resume).
 
 ## Reports — the shapes that feed the ledger
 
 Workers never edit `ledger.md`; they report in these one-line shapes and the orchestrator writes the
 ledger. Each line starts with its verb so a scan finds it.
 
-- **Land report** = the `worktree:topic` skill's land-report shape (Ready / Summary / Significant /
+- **Land report** = the `parallel-work:worktree` skill's land-report shape (Ready / Summary / Significant /
   Follow-ups) plus, when the milestone has a ledger: `Record: [id:API3]`; `Verify:` the record's
   `verify:` line as run, with its result; `Design:` design file + tab ↔ the slice's screenshot
   (screen slices only); `Deferred:` `[id:<new>]…` or `none`. These ledger lines are the minimum, not
@@ -139,7 +139,7 @@ bash + awk, read-only. `ledger <cmd> [-m <milestone-dir>]`; without `-m` it take
   `planning:milestone` skill. For an umbrella milestone `ledger.md` replaces `steps.md`.
 - Prose status in `README.md` (tracker, Log, Blocked): the `milestone` / `new` skills' "prose, no
   checkboxes" rule — the ledger's `[status:…]` tags are the machine view, the README the narrative.
-- Who lands how (gate, FF-only, land-report mechanics): the `worktree:topic` skill + `.agent/worktrees.md`
+- Who lands how (gate, FF-only, land-report mechanics): the `parallel-work:worktree` skill + `.agent/worktrees.md`
   header; the land-report lines above are the extra ledger fields on that shape.
 - Where a dropped finding goes when no milestone owns it: the project's todo inbox (e.g.
   `.todo-inbox`, when the `todo` plugin is enabled); the orchestrator folds it into records at each

@@ -38,6 +38,7 @@ and env switches keep their names.
 - `rename` → `files` (`/files:rename`)
 - `qa-gate` → `testing` (`/testing:qa-gate`)
 - `hotfix` → `playbooks` (`/playbooks:hotfix`)
+- `worktree` → `parallel-work` (`/parallel-work:worktree`, `/parallel-work:relay`) — its skill and command are named `worktree` again
 
 ## Renamed commands
 
@@ -48,7 +49,7 @@ or habit that names the old one:
 - `/lessons` → `/lessons:capture`
 - `/instructions-audit` → `/instructions:audit`, `/instructions-maintenance` → `/instructions:maintenance`
 - `/plan` → `/planning:new`
-- `/worktree` → `/worktree:topic`
+- `/worktree:topic` (0.2.0–0.2.1) → `/parallel-work:worktree` (bare `/worktree` again)
 - `/scaffold-claude-md` → `/setup:claude-md`
 - `/upkeep` → `/upkeep:apply`
 - `/review` → `/review:inspect`

@@ -52,7 +52,7 @@ Full adoption protocol and gotchas: **[ADOPTION.md](ADOPTION.md)**.
 ## Plugins
 
 Twenty-one plugins, each a top-level folder; the id is `<folder>@optimiziramsi`. Usually enabled
-together: `worktree` + `worktree-guards`; `todo` + `planning`.
+together: `parallel-work` + `worktree-guards`; `todo` + `planning`.
 
 | Plugin | Provides |
 |---|---|
@@ -73,7 +73,7 @@ together: `worktree` + `worktree-guards`; `todo` + `planning`.
 | [`todo`](todo/README.md) | The .todo parking lot — triage-todo, feedback and scope-cut, plus a guard that keeps .todo the user's (arm with "ALLOW TODO"). |
 | [`runners`](runners/README.md) | Unattended background work — looper / grind / collab prepare jobs that the shipped loop and grind runners execute as headless claude sessions, confined when run in a worktree. |
 | [`patterns`](patterns/README.md) | Per-topic pattern registry under .agent/patterns/ — manage-patterns, pattern-compliance / pattern-verifier agents, and hooks that gate edits governed only by non-blessed patterns. |
-| [`worktree`](worktree/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK; plus relay, the pair-programming-by-worktree primary that turns your comments into worktree sub chats. Pairs with worktree-guards. |
+| [`parallel-work`](parallel-work/README.md) | The parallel-work protocol — drive one topic on its own git worktree as review-gated slices, landing only on the human's OK; plus relay, the pair-programming-by-worktree primary that turns your comments into worktree sub chats. Pairs with worktree-guards. |
 | [`worktree-guards`](worktree-guards/README.md) | Guards that keep edits inside the active git worktree — write and shell guards, a leak detector, and a SessionStart worktree notice. No-ops outside a linked worktree. |
 | [`setup`](setup/README.md) | One-time bootstrap — scaffold the .agent/ workspace and write a house-style slim-router CLAUDE.md. |
 | [`upkeep`](upkeep/README.md) | Plugin upkeep — an end-of-turn notice when an installed plugin has a newer version or a marketplace you use gained a plugin, a throttled background marketplace refresh, and /upkeep:apply to apply updates and pick new plugins. |
@@ -130,7 +130,7 @@ executable code — `.agent/guards.d/` tripwires — takes `*.sh`, `*.py`, or an
 a shebang, so your guards are written in whatever your repo already speaks.
 
 **No branch name is hardcoded.** `main` is not assumed anywhere: the git guard detects the repo's
-own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `worktree:topic` skill takes
+own default branch (override with `GIT_GUARD_PROTECTED_BRANCH`), the `parallel-work:worktree` skill takes
 `<integration>` / `<protected>` from the project, `setup:claude-md` reads the branch layout out
 of the repo before writing a rule about it, and the tripwire examples take
 `TRIPWIRE_INTEGRATION_BRANCH`. `develop`-, `trunk`-, and `master`-based projects need no config.

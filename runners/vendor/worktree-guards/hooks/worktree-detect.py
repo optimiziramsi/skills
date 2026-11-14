@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SessionStart — nudge toward the `/worktree:topic` protocol when this chat is rooted in one.
+"""SessionStart — nudge toward the `/parallel-work:worktree` protocol when this chat is rooted in one.
 
 A session whose cwd is a LINKED worktree is almost certainly parallel, isolated work. Nudge,
 never force; silent in the main checkout or outside a repo.
@@ -15,7 +15,7 @@ import hookio  # noqa: E402
 NUDGE = (
     "Worktree detected: this session is rooted in a linked git worktree, so this is almost "
     "certainly **worktree work** (parallel, isolated development). Consider invoking the "
-    "`/worktree:topic` skill to load the protocol — by default it reserves a board row in "
+    "`/parallel-work:worktree` skill to load the protocol — by default it reserves a board row in "
     "`.agent/worktrees.md` and lands work chunk-by-chunk. Skip only if the coordinator said "
     "no reserve / no announcement / no worktree record is needed."
 )

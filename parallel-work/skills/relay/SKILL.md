@@ -2,7 +2,7 @@
 name: relay
 description: >-
   Pair-programming by worktree — the human edits and leaves comments in ONE shared worktree; this
-  chat is the PRIMARY that turns those comments into topics, spawns one `worktree:topic` sub chat per
+  chat is the PRIMARY that turns those comments into topics, spawns one `parallel-work:worktree` sub chat per
   topic (fresh session, own worktree cut off the integration branch), rebases the shared branch after
   every land, strips the comments that landed and archives the sub chat. Invoke as `/relay ...`, or
   when the human says "relay mode", "you are the relay / primary chat", "pair-program by worktree",
@@ -20,7 +20,7 @@ skill](../worktree/SKILL.md) on its own worktree. Work lands on `<integration>` 
 skill's gate, **in the sub chat, approved by the human there**. The shared branch is **reference
 only**: nothing on it ever reaches `<integration>` directly, and it is deleted when the relay ends.
 
-`<integration>` / `<protected>` resolve exactly as in the `worktree:topic` skill (`GIT_GUARD_INTEGRATION_BRANCH`
+`<integration>` / `<protected>` resolve exactly as in the `parallel-work:worktree` skill (`GIT_GUARD_INTEGRATION_BRANCH`
 / `GIT_GUARD_PROTECTED_BRANCH`, else probe and confirm). Everything here assumes the Claude desktop
 app's session tools (`start_session`, `SendMessage`, `archive_session`, `set_session_model`,
 `set_session_effort`, `Monitor`); without them, the primary can only prepare briefs for the human
@@ -28,7 +28,7 @@ to paste.
 
 ## Voice
 
-Same as the `worktree:topic` skill: silent execution, terse required beats. The required beats here are:
+Same as the `parallel-work:worktree` skill: silent execution, terse required beats. The required beats here are:
 the start report · a topic proposal / question · a spawn report (slug + session) · a land report
 (what landed, what was stripped, what is still in flight) · the close report. **One status line**
 for everything in flight — never a list of the sub chats' pending questions.
@@ -41,7 +41,7 @@ for everything in flight — never a list of the sub chats' pending questions.
    `git rev-parse --abbrev-ref HEAD` = this worktree's own branch — **any name the app gave it**
    (typically `feature/relay-<topic>-<hash>`; the app names worktree branches, never rename it) —
    that is neither `<integration>` nor `<protected>`; cut off `<integration>` (fork-point compare
-   as in the `worktree:topic` skill). That branch is **`<relay-branch>`** below. Mismatch → HARD STOP,
+   as in the `parallel-work:worktree` skill). That branch is **`<relay-branch>`** below. Mismatch → HARD STOP,
    hand the human a restart prompt (new session, worktree ON, base `<integration>`).
 2. **Check the models**: `RELAY_PRIMARY_MODELS` is the preference list for *this* chat,
    `RELAY_SUB_MODELS` for sub chats — both `model@effort` lists, first available wins (`echo
@@ -56,7 +56,7 @@ for everything in flight — never a list of the sub chats' pending questions.
    (§ The shared branch) — it is never landed, it dies with the branch.
 4. **Check the landing wiring once**: `git worktree list` — if `<integration>` is checked out in the
    **main checkout**, every sub chat's land is refused the moment that checkout is dirty, and the
-   primary can do nothing about it but report. Say so in one line (the fix is the `worktree:topic` skill's
+   primary can do nothing about it but report. Say so in one line (the fix is the `parallel-work:worktree` skill's
    one-time `_integration` worktree); a sub chat blocked on a dirty `<integration>` checkout is a
    one-line report to the human, never a reason to touch that tree.
 5. **Keep the watcher's state out of git**: append `.agent/relay-watch/` to
@@ -164,9 +164,9 @@ shared branch's), note the facts the sub chat must know, and write the brief.
 The sub chat **never sees the shared branch**. Everything it needs is in the brief:
 
 ```
-`<slug>` — relay topic.  /worktree:topic
+`<slug>` — relay topic.  /parallel-work:worktree
 
-You are a worktree worker (the `worktree:topic` skill is the protocol). <integration> = `<integration>`,
+You are a worktree worker (the `parallel-work:worktree` skill is the protocol). <integration> = `<integration>`,
 <protected> = `<protected>`. Your worktree is cut off `<integration>`; land ONLY there.
 
 Title of this session: exactly `Relay: <slug>`. Your first message: the slug in code formatting,
@@ -217,7 +217,7 @@ gate + claim row). The result names the level that will apply — record it in `
 (the result lists the ids the app offers) is not an error: take the next entry of the list that the
 app offers, silently, and record what applied — the list is a preference, not a promise.
 
-**Don't ration sub chats.** With a project local-env hub (the `worktree:topic` skill's § Worktree +
+**Don't ration sub chats.** With a project local-env hub (the `parallel-work:worktree` skill's § Worktree +
 isolation) the hub queue is the cap — registrations are cheap, heavy jobs wait their turn — so
 spawn one sub chat per topic as usual. The hub rules (the project's `.agent/hub/README.md`) say
 how to see the load; any chat, the primary included, may stop a stack nobody needs.
@@ -317,7 +317,7 @@ Set them in the project's `.claude/settings.json` `env` block (shared) or `setti
 
 ## Non-negotiables
 
-- **Sub work happens only through the `worktree:topic` skill**, on its own worktree cut off
+- **Sub work happens only through the `parallel-work:worktree` skill**, on its own worktree cut off
   `<integration>` — never in the shared worktree, never by the primary.
 - **The shared branch never lands**, and dies at the end. The human's edits stay **unstaged**; only
   the primary's own state files are committed (one never-landed commit) — reference only.
