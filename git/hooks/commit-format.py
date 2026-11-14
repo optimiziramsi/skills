@@ -8,6 +8,11 @@ isn't a bare single line:
   - a message read from a file (`-F` / `--file` — multi-line by construction)
   - multiple `-m` / `--message`, or a quoted `-m` value containing a newline
 
+Where the project ships `.agent/commit.json`, its convention replaces the bare-imperative shape:
+the `-m` message must match the file's `pattern`, and — only when `scopes_open` is false — the
+scope of a leading `type(scope):` must be one of its `scopes`. A missing or invalid file adds
+nothing (the single-line checks still run).
+
 This is the OPINIONATED half of the old git plugin — the commit *style*, split out so a project can
 adopt the git safety net (the `git-guard` plugin) WITHOUT this house commit format. It says nothing
 about destructive git ops; that's the `git-guard` plugin's job.
@@ -17,9 +22,16 @@ Escape hatch (user-set only): COMMIT_FORMAT_OFF=1.
 """
 import json
 import os
+import pathlib
 import re
 import shlex
 import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+import hookio  # noqa: E402
+
+CONVENTION = os.path.join(".agent", "commit.json")
+SCOPE = re.compile(r"^\w[\w-]*\(([^)]*)\)!?:")  # the scope of a leading `type(scope):`
 
 
 def deny(reason: str):
@@ -99,7 +111,67 @@ def multiline_m(command: str):
     return any("\n" in v for v in m_values(tokens))
 
 
-def check(command: str):
+def load_convention(project: str):
+    """The project's `.agent/commit.json` as {pattern, scopes, example}, or None.
+
+    None — no convention to enforce — when the file is missing, unreadable, not JSON, or its
+    pattern doesn't compile: fail open. `scopes` is None while the list is open (the default).
+    """
+    try:
+        with open(os.path.join(project, CONVENTION), encoding="utf-8") as handle:
+            config = json.load(handle)
+        scopes = None
+        if config.get("scopes_open", True) is False:
+            scopes = {s["name"] if isinstance(s, dict) else str(s) for s in config.get("scopes") or []}
+        examples = config.get("examples") or []
+        return {"pattern": re.compile(config["pattern"]), "scopes": scopes,
+                "example": examples[0] if examples else None}
+    except Exception:
+        return None
+
+
+def commit_messages(command: str):
+    """The -m message of each `git commit` in `command`.
+
+    Split on shell operators quote-aware, so a `;` or `|` inside the message doesn't cut it.
+    [] when the quoting is unparseable.
+    """
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|\n")
+    lexer.whitespace_split = True
+    lexer.whitespace = " \t\r"
+    try:
+        tokens = list(lexer)
+    except ValueError:
+        return []
+    found, seg = [], []
+    for tok in tokens + [";"]:
+        if tok and set(tok) <= set(";&|\n"):
+            while seg and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", seg[0]):
+                seg = seg[1:]  # skip leading env assignments
+            parsed = parse_git(seg)
+            if parsed and parsed[0] == "commit":
+                found.extend(m_values(parsed[1]))
+            seg = []
+        else:
+            seg.append(tok)
+    return found
+
+
+def check_convention(command: str, convention):
+    """Return a block reason when a commit message breaks the project's convention, else None."""
+    for message in commit_messages(command):
+        if not convention["pattern"].search(message):
+            hint = f" — e.g. `{convention['example']}`" if convention["example"] else ""
+            return (f"this project's commit convention ({CONVENTION}) wants messages matching "
+                    f"`{convention['pattern'].pattern}`{hint}")
+        scope = SCOPE.match(message)
+        if convention["scopes"] is not None and scope and scope.group(1) not in convention["scopes"]:
+            return (f"scope `{scope.group(1)}` isn't in this project's closed scope list "
+                    f"({CONVENTION}): {', '.join(sorted(convention['scopes']))}")
+    return None
+
+
+def check(command: str, convention=None):
     """Return a block reason, or None if clean."""
     if re.search(r"\bgit\b", command) and multiline_m(command):
         return "commit messages are a single line — the -m message contains a newline (no body)"
@@ -120,6 +192,8 @@ def check(command: str):
                     "`-F/--file` reads a multi-line message from a file")
         if sum(1 for a in args if a in ("-m", "--message")) > 1:
             return "commit messages are a single line — use one `-m`, no body"
+    if convention:
+        return check_convention(command, convention)
     return None
 
 
@@ -130,7 +204,8 @@ def main():
     if data.get("tool_name") != "Bash":
         return
     command = (data.get("tool_input") or {}).get("command", "")
-    reason = check(command)
+    convention = load_convention(hookio.project_dir(data)) if "commit" in command else None
+    reason = check(command, convention)
     if reason:
         deny(reason)
 

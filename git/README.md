@@ -21,8 +21,10 @@ commit format? Enable [`git-guard`](../git-guard) and skip this.
   kind: hook
   purpose:
     PreToolUse `Bash` — blocks a model `git commit` whose message isn't a bare single line:
-    `Co-Authored-By`, a heredoc body, or multiple `-m`. Fails open; escape hatch
-    `COMMIT_FORMAT_OFF=1`.
+    `Co-Authored-By`, a heredoc body, or multiple `-m`. Where the project ships
+    `.agent/commit.json` (its own `pattern`, `types`, `scopes` — see the `commit` skill), it also
+    blocks a message that doesn't match `pattern`, and a scope outside a closed list. Fails open;
+    escape hatch `COMMIT_FORMAT_OFF=1`.
 
 - name: `commit-nudge`
   kind: hook

@@ -71,6 +71,29 @@ git commit -m "commit for review"
 If a commit unavoidably touches several things, summarize the dominant change:
 `refactor server package into boot/services/utils structure`.
 
+### Project convention — `.agent/commit.json`
+
+If the project ships `.agent/commit.json`, read it before committing: its convention replaces the
+bare-imperative shape above. Single line, no body, no trailers still apply.
+
+```json
+{
+  "pattern": "^(feat|fix|docs|chore)\\([a-z0-9._-]+\\): ",
+  "types": ["feat", "fix", "docs", "chore"],
+  "scopes": [{"name": "api", "covers": "the HTTP API"}, {"name": "ui", "covers": "the web frontend"}],
+  "scopes_open": true,
+  "examples": ["fix(api): reject empty search queries"]
+}
+```
+
+- The message must match `pattern` (a regex), using one of `types`.
+- Pick the scope from `scopes` by what each one `covers`. `scopes_open: true` (the default) lets
+  you coin a new scope when none fits; `false` means only the listed ones.
+- `examples` show the expected shape — match their voice.
+
+The `commit-format` hook enforces `pattern` and, when `scopes_open` is false, the scope of a
+leading `type(scope):`. A missing or invalid file falls back to the default format.
+
 ## Staging — stage by name
 
 Stage specific files. Avoid `git add -A` / `git add .` unless you're certain the working tree holds

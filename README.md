@@ -95,7 +95,7 @@ no concern is stuck on:
 | Switch | Silences |
 |---|---|
 | `GIT_GUARD_OFF=1` | the git safety net (see also `GIT_GUARD_ALLOW`, `GIT_GUARD_ALLOW_FETCH`, `GIT_GUARD_STRICT`, `GIT_GUARD_PROTECTED_BRANCH`) |
-| `COMMIT_FORMAT_OFF=1` | the single-line commit-message guard |
+| `COMMIT_FORMAT_OFF=1` | the single-line commit-message guard (and its `.agent/commit.json` convention check) |
 | `STOP_NUDGE_OFF=1` | the end-of-session commit nudge (`COMMIT_NUDGE_EXTRA_DIRS` widens it) |
 | `REPORT_GUARD_OFF=1` | the whole reporting contract (inject + pulse + Stop guard); `REPORT_REACT_OFF=1` drops only the quote-back of text between tool calls; `REPORT_PULSE_EVERY`, `REPORT_PULSE_TEXT`, `REPORT_GUARD_MAX_LINES`, `REPORT_RC_DAYS` tune it |
 | `CODE_FIRST_OFF=1` | the whole code-first plugin (`CODE_FIRST_GUARD_OFF=1` drops only its Stop guard on inline code; it is opt-in per session via `/idea` — `CODE_FIRST_INJECT=always` makes it every prompt, `CODE_FIRST_TRIGGER_PATTERN` sets the per-prompt trigger) |
