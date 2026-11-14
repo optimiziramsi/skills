@@ -112,7 +112,7 @@ def multiline_m(command: str):
 
 
 def load_convention(project: str):
-    """The project's `.agent/commit.json` as {pattern, scopes, example}, or None.
+    """The project's `.agent/commit.json` as {pattern, scopes}, or None.
 
     None — no convention to enforce — when the file is missing, unreadable, not JSON, or its
     pattern doesn't compile: fail open. `scopes` is None while the list is open (the default).
@@ -123,9 +123,7 @@ def load_convention(project: str):
         scopes = None
         if config.get("scopes_open", True) is False:
             scopes = {s["name"] if isinstance(s, dict) else str(s) for s in config.get("scopes") or []}
-        examples = config.get("examples") or []
-        return {"pattern": re.compile(config["pattern"]), "scopes": scopes,
-                "example": examples[0] if examples else None}
+        return {"pattern": re.compile(config["pattern"]), "scopes": scopes}
     except Exception:
         return None
 
@@ -158,16 +156,19 @@ def commit_messages(command: str):
 
 
 def check_convention(command: str, convention):
-    """Return a block reason when a commit message breaks the project's convention, else None."""
+    """Return a block reason when a commit message breaks the project's convention, else None.
+
+    The reason names the file but never quotes it: the file is repo content, and hook output
+    carries more weight with the model than a file it reads itself.
+    """
     for message in commit_messages(command):
         if not convention["pattern"].search(message):
-            hint = f" — e.g. `{convention['example']}`" if convention["example"] else ""
-            return (f"this project's commit convention ({CONVENTION}) wants messages matching "
-                    f"`{convention['pattern'].pattern}`{hint}")
+            return (f"the message doesn't match this project's commit convention — read "
+                    f"`{CONVENTION}` (pattern, types, scopes, examples) and retry")
         scope = SCOPE.match(message)
         if convention["scopes"] is not None and scope and scope.group(1) not in convention["scopes"]:
-            return (f"scope `{scope.group(1)}` isn't in this project's closed scope list "
-                    f"({CONVENTION}): {', '.join(sorted(convention['scopes']))}")
+            return (f"scope `{scope.group(1)}` isn't in this project's closed scope list — "
+                    f"pick one from `{CONVENTION}`")
     return None
 
 
