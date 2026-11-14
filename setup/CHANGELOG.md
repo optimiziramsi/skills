@@ -4,7 +4,7 @@ Versions of the `setup@optimiziramsi` plugin. History before the split into one 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.1 — unreleased
+## 0.2.1 — 2026-11-14
 
 - The scaffold table names the worktree skill as `parallel-work:worktree` (the `worktree` plugin is now `parallel-work`).
 

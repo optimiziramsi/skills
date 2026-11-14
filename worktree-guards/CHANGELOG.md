@@ -4,7 +4,7 @@ Versions of the `worktree-guards@optimiziramsi` plugin. History before the split
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.3 — unreleased
+## 0.1.3 — 2026-11-14
 
 - The SessionStart nudge points at `/parallel-work:worktree` (the `worktree` plugin is now `parallel-work`, and its `topic` skill is `worktree` again).
 
