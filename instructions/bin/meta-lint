@@ -17,6 +17,10 @@ detects the config and stands down.
     meta-lint --stop      # Stop-hook BLOCK: exit 2 when a file-writing session leaves a
                           #   size/count cap breached (one-shot per breach-set). The ONLY
                           #   mode that can block.
+    meta-lint --changed B # land-time check: only the findings that name a file changed since
+                          #   branch/commit B (committed, uncommitted and untracked; a deleted
+                          #   file counts, so a pointer it left dangling is reported). Lints the
+                          #   checkout it is run in. Exit 1 on findings, 2 when B cannot be diffed.
     meta-lint --test      # self-test against a synthetic tree
     meta-lint --config P  # explicit config path (bypasses the .agent/meta-lint.json gate)
     meta-lint --root D    # lint D (default: $CLAUDE_PROJECT_DIR, else cwd)
@@ -1443,6 +1447,35 @@ def run_tests() -> int:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def git_lines(root: str, *args: str):
+    """stdout lines of `git -C root <args>`, or None when git fails."""
+    try:
+        done = subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, timeout=10)
+    except Exception:
+        return None
+    return done.stdout.splitlines() if done.returncode == 0 else None
+
+
+def changed_files(root: str, base: str):
+    """Root-relative paths this checkout changed since it forked from `base` — committed on the
+    branch, uncommitted, and untracked; a delete or rename lists the old path too. None when
+    `base` cannot be diffed."""
+    committed = git_lines(root, "diff", "--name-only", "--no-renames", f"{base}...HEAD")
+    if committed is None:
+        return None
+    dirty = git_lines(root, "diff", "--name-only", "--no-renames", "HEAD") or []
+    untracked = git_lines(root, "ls-files", "--others", "--exclude-standard") or []
+    return sorted({p for p in committed + dirty + untracked if p})
+
+
+def names_a_file(finding: str, paths: list[str]) -> bool:
+    """True when `finding` names one of `paths` as a whole path — `README.md` does not match
+    inside `.agent/lessons/README.md`. The engine's own failures (`[meta-lint] …`) always count."""
+    if finding.startswith("[meta-lint]"):
+        return True
+    return any(re.search(r"(?<![\w./-])" + re.escape(p) + r"(?![\w/-])", finding) for p in paths)
+
+
 def main() -> int:
     argv = sys.argv[1:]
     if "--test" in argv:
@@ -1461,7 +1494,16 @@ def main() -> int:
                 return argv[i + 1]
         return None
 
-    root = arg_after("--root") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    base = arg_after("--changed")
+    if "--changed" in argv and not base:
+        print("meta-lint: --changed needs a branch or commit to compare with", file=sys.stderr)
+        return 2
+    root = arg_after("--root")
+    if not root and base:
+        # the checkout the command is run in: in a worktree chat $CLAUDE_PROJECT_DIR may name the
+        # main checkout, and the land-time check is about THIS branch's files
+        root = (git_lines(os.getcwd(), "rev-parse", "--show-toplevel") or [""])[0]
+    root = root or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
     cfg_path = arg_after("--config")
     if cfg_path is None:
         cfg_path = os.path.join(root, CONFIG_REL)
@@ -1472,6 +1514,20 @@ def main() -> int:
         findings = run_all(root, cfg)
     except Exception as e:
         findings = [f"[meta-lint] config {cfg_path} unusable: {e}"]
+    if base:
+        changed = changed_files(root, base)
+        if changed is None:
+            print(f"meta-lint: cannot list the files changed since `{base}` — not a branch or "
+                  "commit in this checkout", file=sys.stderr)
+            return 2
+        findings = [f for f in findings if names_a_file(f, changed)]
+        for f in findings:
+            print(f)
+        if findings:
+            print(f"\nmeta-lint: {len(findings)} finding(s) in the files changed since {base}")
+        else:
+            print(f"meta-lint: clean for the {len(changed)} file(s) changed since {base}")
+        return 1 if findings else 0
     if "--fast" in argv:
         # Pulse mode: findings ride the summary line; exit 0 so a wrapper's `||` fallback fires
         # ONLY on real execution failure, never on findings.

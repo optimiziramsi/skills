@@ -85,8 +85,14 @@ file+regex, `generated` file globs, and the `allow_marker` opt-out (repo-wide al
   for running by hand), `--end-note` (Stop-hook **NOTE** — the findings count as a
   `systemMessage` for the user, exit 0, one-shot per session per distinct text, silent when
   clean), `--stop` (Stop-hook **BLOCK** — exit 2 when the session wrote files and a size/count
-  cap is breached, one-shot per breach-set), `--test` (self-test), `--config P` / `--root D`
-  overrides.
+  cap is breached, one-shot per breach-set), `--changed <branch>` (the land-time check, below),
+  `--test` (self-test), `--config P` / `--root D` overrides.
+- **Land-time check:** `meta-lint --changed <branch>` runs every enabled check on the checkout it
+  is run in and keeps only the findings that name a file changed since `<branch>` — committed on
+  the current branch, uncommitted or untracked; a deleted file counts, so a pointer it left
+  dangling is reported. It is what a worktree chat runs before landing: its own findings, not
+  the repo's backlog. Findings that name no file (`[count]`, `[audit]`, a lesson named without
+  its path) stay with the full run. Exit 1 on findings, 2 when `<branch>` cannot be diffed.
 - **Format checks:** `[wrap]` flags prose lines over `wrap.width` (default 100) — code fences,
   single-unsplittable-token lines (long URLs/paths), and GENERATED files exempt; frontmatter is
   not (use folded scalars). `[no-tables]` flags markdown tables in governed files — convert to

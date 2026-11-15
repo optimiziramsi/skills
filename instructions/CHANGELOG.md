@@ -7,6 +7,7 @@ Versions of the `instructions@optimiziramsi` plugin. History before the split in
 ## 0.3.1 — unreleased
 
 - The caps note and the meta-lint note are now silent in a desktop-app worktree chat too (its project dir is the main checkout, only the cwd is the worktree), and the meta-lint cap gate checks that worktree's files instead of the main checkout's.
+- `meta-lint --changed <branch>` — the land-time check: only the findings that name a file changed since `<branch>` (committed, uncommitted, untracked, deleted), on the checkout it is run in. A worktree chat sees its own findings before landing instead of the whole repo backlog.
 
 ## 0.3.0 — 2026-11-13
 
