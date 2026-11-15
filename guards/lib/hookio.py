@@ -287,6 +287,19 @@ def linked_worktree(cwd):
     return ctx if ctx and ctx["is_linked"] else None
 
 
+def session_root(data=None):
+    """The checkout this session works in — what a per-session hook should look at.
+
+    Not always `project_dir`: a desktop-app worktree chat runs with the payload's `cwd` inside
+    the linked worktree while $CLAUDE_PROJECT_DIR still names the MAIN checkout. So a linked
+    worktree under the payload's `cwd` wins (its root, even when cwd has drifted into a
+    subdirectory); anything else is `project_dir`.
+    """
+    cwd = (data or {}).get("cwd")
+    ctx = linked_worktree(cwd) if cwd else None
+    return ctx["wt_root"] if ctx else project_dir(data)
+
+
 def under(path, root):
     """True when `path` sits inside directory `root` (both compared as realpaths)."""
     return os.path.realpath(path).startswith(root.rstrip("/") + os.sep)

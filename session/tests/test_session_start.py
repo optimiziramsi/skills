@@ -54,6 +54,10 @@ try:
     with scratch_repo() as r:
         check("a linked worktree still gets the state line",
               "[session] branch=wtbranch" in run(r.wt), run(r.wt))
+        # the desktop app's worktree chat: the project dir is the MAIN checkout, the cwd the worktree
+        out = invoke(START, {"cwd": r.wt}, env={"CLAUDE_PROJECT_DIR": r.main})[1]
+        check("a worktree chat whose project dir is the main checkout reports the worktree",
+              "[session] branch=wtbranch" in out, out)
 
     wired = json.load(open(hook("hooks/hooks.json")))["hooks"]
     check("SessionStart runs the snapshot only",

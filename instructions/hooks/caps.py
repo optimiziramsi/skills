@@ -84,7 +84,7 @@ def main():
     data = hookio.payload()
     if data.get("hook_event_name") != "Stop" or data.get("stop_hook_active"):
         return                                       # a Stop note only — never start context
-    project = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    project = hookio.session_root(data)
     if os.path.isfile(os.path.join(project, ".agent", "meta-lint.json")):
         return                                       # the meta-lint engine's caps supersede these
     if hookio.linked_worktree(project) and not hookio.flag("NUDGES_IN_WORKTREE"):

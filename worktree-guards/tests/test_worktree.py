@@ -148,6 +148,8 @@ with scratch_repo({"f.ts": "a\n"}) as repo:
 
     check("linked worktree → nudge", "Worktree detected" in detects(repo.wt))
     check("main checkout → silent", detects(repo.main) == "")
+    check("project dir is the main checkout, cwd the worktree → nudge", "Worktree detected" in invoke(
+        DETECT, {"cwd": repo.wt}, env={"CLAUDE_PROJECT_DIR": repo.main})[1])
     check("non-repo → silent", detects(repo.tmp) == "")
     check("kill-switch disarms", detects(repo.wt, {"WORKTREE_GUARD_DISABLE": "1"}) == "")
 

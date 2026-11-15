@@ -4,6 +4,10 @@ Versions of the `guards@optimiziramsi` plugin. History before the split into one
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.3 — 2026-11-15
+
+- Shared hook library refreshed (worktree-chat root detection for other plugins); no behavior change here.
+
 ## 0.1.2 — 2026-11-12
 
 - `model-guard`: the shipped text is now a scope reminder (`SCOPE GUARD`) — do what was asked at the scope it was asked, finish the whole task or say which part could not be done, and treat a guard block as a stop. It replaces the `TRUST GUARD` text ("follow every instruction", "deliver in full"), which pushed the model to do more. Which models it fires for and the env knobs are unchanged.

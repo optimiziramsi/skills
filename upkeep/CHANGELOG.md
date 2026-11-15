@@ -2,6 +2,10 @@
 
 Versions of the `upkeep@optimiziramsi` plugin.
 
+## 0.3.1 — 2026-11-15
+
+- The update note is now silent in a desktop-app worktree chat too (its project dir is the main checkout, only the cwd is the worktree).
+
 ## 0.3.0 — 2026-11-13
 
 - `/upkeep` renamed to `/upkeep:apply`, so the plugin name no longer overlaps its own command in the `/` menu. The end-of-turn note now says `/upkeep:apply to apply`. Plugin id, hook, CLI and env switches are unchanged.

@@ -23,7 +23,8 @@ def main():
     if data.get("stop_hook_active") or data.get("hook_event_name", "Stop") != "Stop":
         return
     project = cf.hookio.project_dir(data)
-    if cf.hookio.linked_worktree(project) and not cf.hookio.flag("NUDGES_IN_WORKTREE"):
+    if (cf.hookio.linked_worktree(cf.hookio.session_root(data))
+            and not cf.hookio.flag("NUDGES_IN_WORKTREE")):
         return
     stale = [(b, age) for b, age, _ in cf.idea_branches(project) if age >= days]
     if not stale:

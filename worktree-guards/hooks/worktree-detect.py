@@ -5,7 +5,6 @@ A session whose cwd is a LINKED worktree is almost certainly parallel, isolated 
 never force; silent in the main checkout or outside a repo.
 Off: WORKTREE_GUARD_DISABLE=1 (the same switch as the write guard)
 """
-import os
 import pathlib
 import sys
 
@@ -24,8 +23,8 @@ NUDGE = (
 def main():
     if hookio.flag("WORKTREE_GUARD_DISABLE"):
         return
-    # SessionStart carries no cwd worth trusting — the project dir is the session's root
-    if hookio.linked_worktree(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()):
+    # the payload's cwd first: in a desktop-app worktree chat the project dir is the main checkout
+    if hookio.linked_worktree(hookio.session_root(hookio.payload())):
         print(NUDGE)
 
 

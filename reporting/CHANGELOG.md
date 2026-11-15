@@ -4,6 +4,10 @@ Versions of the `reporting@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.3.2 — 2026-11-15
+
+- Shared hook library refreshed (worktree-chat root detection for other plugins); no behavior change here.
+
 ## 0.3.1 — 2026-11-13
 
 - README names the renamed `git` plugin (was `commit`).

@@ -4,6 +4,10 @@ Versions of the `parallel-work@optimiziramsi` plugin (named `worktree` up to 0.2
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.3.1 — 2026-11-15
+
+- The land gate runs `meta-lint --changed <integration>` where that command exists (the `instructions` plugin is enabled) and fixes the findings in the files the branch changed before pushing.
+
 ## 0.3.0 — 2026-11-14
 
 - Plugin renamed `worktree` → `parallel-work`, and the `topic` skill + command renamed back to `worktree`: `/worktree` again (`/parallel-work:worktree`), relay is `/parallel-work:relay`. `/topic` pulled in every skill whose description says "topic"; `/worktree` now ranks this skill first. Install `parallel-work@optimiziramsi` and uninstall `worktree@optimiziramsi` (ADOPTION.md § Renamed plugins).

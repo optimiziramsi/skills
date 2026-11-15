@@ -211,6 +211,8 @@ try:
     wt = os.path.join(tmp, "wt")
     git("worktree", "add", "-q", wt, "-b", "wtbranch", "develop")
     check("a linked worktree gets no stale note", stale(project=wt) == "")
+    check("…also when the project dir is the main checkout and only the cwd is the worktree",
+          stale(cwd=wt) == "")
     check("…unless NUDGES_IN_WORKTREE=1", "idea/old" in stale({"NUDGES_IN_WORKTREE": "1"}, project=wt))
 finally:
     shutil.rmtree(tmp, ignore_errors=True)

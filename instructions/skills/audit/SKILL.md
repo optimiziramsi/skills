@@ -93,3 +93,8 @@ doubtful-but-possibly-alive, flag it in the report — don't delete on suspicion
   actual status.
 - Report a compact list (respect the project's output contract if it has one): check, status,
   fixed / needs-user — then list any decisions awaited.
+- **Suggest a schedule, once.** Repo-wide findings are not pushed into every chat (a worktree chat
+  sees only its own files), so a recurring run is what keeps them from piling up. If the user has
+  no recurring run of this audit — ask when you can't tell — add one line to the report: schedule
+  it roughly monthly as a task with the prompt `/instructions:audit` (Claude Code's `/schedule`,
+  or the desktop app's scheduled tasks). Suggest only: the user creates it, never you.

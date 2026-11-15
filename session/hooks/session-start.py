@@ -9,7 +9,6 @@ every start / resume / clear.
 Off: SESSION_START_OFF=1 (the git line fires in ANY git repo, not just scaffolded ones,
 so a project that doesn't want it needs a switch)
 """
-import os
 import pathlib
 import shutil
 import sys
@@ -21,7 +20,7 @@ import hookio  # noqa: E402
 def main():
     if hookio.flag("SESSION_START_OFF"):
         return
-    project = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    project = hookio.session_root(hookio.payload())   # the worktree, in a worktree chat
     if hookio.git(project, "rev-parse", "--is-inside-work-tree") != "true":
         return
 

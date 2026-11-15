@@ -218,7 +218,10 @@ The loop, in your worktree on your branch:
    **again** (a clean rebase can still break things) + confirm the main checkout is clean (leak
    check) **and** that the tree holding `<integration>`, if any, is clean (the push is refused
    otherwise). If the project keeps pattern/style checks and the diff touches governed areas, run
-   them and fix findings before pushing.
+   them and fix findings before pushing. Where the `meta-lint` command exists (the `instructions`
+   plugin is enabled), run `meta-lint --changed <integration>` — it reports the instruction-file
+   findings in the files this branch changed, and nothing from the rest of the repo; fix those
+   before pushing.
 4. **obsolete-check** — if the diff collapsed to ~nothing (a sibling did it), stop: report
    done-by-sibling.
 5. **squash** — `git reset --soft HEAD~<N> && git commit` (N = the commits in your slice, **counted

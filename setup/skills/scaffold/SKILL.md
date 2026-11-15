@@ -76,7 +76,14 @@ nothing to generate or re-sync afterward.
    instead would publish one person's `$HOME` to everyone. A pre-existing `bin/loop` from the old
    committed-wrapper era can be deleted once these exist.
 
-6. **Stop.** Do not register individual skills, do not create a cron/generator, do not add more than
+6. **Suggest a scheduled housekeeping check** — one line, suggest only. Repo-wide housekeeping
+   (the instructions audit, the full `meta-lint` run, `.todo` triage — whichever of those plugins
+   the project enables) is not pushed into every chat, so tell the user they can run it on a
+   schedule instead: a recurring task (Claude Code's `/schedule`, or the desktop app's scheduled
+   tasks), roughly monthly, with a prompt such as `/instructions:audit`. The user creates it,
+   never you.
+
+7. **Stop.** Do not register individual skills, do not create a cron/generator, do not add more than
    the one pointer. Setup is done.
 
 ## `.agent/README.md` template

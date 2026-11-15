@@ -4,6 +4,10 @@ Versions of the `git-guard@optimiziramsi` plugin. History before the split into 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.3 — 2026-11-15
+
+- Shared hook library refreshed (worktree-chat root detection for other plugins); no behavior change here.
+
 ## 0.1.2 — 2026-11-13
 
 - README and a code comment name the renamed `git` plugin (was `commit`).

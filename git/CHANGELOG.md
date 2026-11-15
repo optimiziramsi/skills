@@ -4,6 +4,10 @@ Versions of the `git@optimiziramsi` plugin (named `commit` up to 0.1.1). History
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.2.3 — 2026-11-15
+
+- `commit-nudge` checks the chat's own tree: in a desktop-app worktree chat that is the worktree, not the main checkout the project dir points at.
+
 ## 0.2.2 — 2026-11-14
 
 - `commit-format` now reads the message of a combined short-flag cluster (`git commit -am "…"`, `-sm`, `-vm`, …). Before, such a commit skipped the `.agent/commit.json` pattern check. An argument-taking flag before the `m` (`-Cmain`) still isn't read as a message.

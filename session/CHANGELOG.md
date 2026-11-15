@@ -4,6 +4,11 @@ Versions of the `session@optimiziramsi` plugin. History before the split into on
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.3.1 — 2026-11-15
+
+- In a desktop-app worktree chat the project dir is the main checkout and only the cwd is the worktree. The session-start state line now reports the worktree's branch and uncommitted count there, and the Stop notes stay silent as they were meant to in a worktree.
+- The Stop note shows the `.todo` count only when it changed since it was last noted for this repo (first sighting included), as `… (was N)` — no longer once in every new chat.
+
 ## 0.3.0 — 2026-11-13
 
 - `/session-summary` renamed to `/session:summary`, so typing the plugin name in the `/` menu no longer also matches a skill with the same start.

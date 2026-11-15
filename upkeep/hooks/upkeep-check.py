@@ -34,7 +34,10 @@ def main():
     if data.get("stop_hook_active"):
         return
     project = up.hookio.project_dir(data)
-    if up.hookio.linked_worktree(project) and not up.hookio.flag("NUDGES_IN_WORKTREE"):
+    # `project` stays the project dir (plugin installs are recorded against it); whether this
+    # chat sits in a worktree is asked of the session's own root
+    if (up.hookio.linked_worktree(up.hookio.session_root(data))
+            and not up.hookio.flag("NUDGES_IN_WORKTREE")):
         return
     # one check per session: report() consumes "new" as it reads, so a second look in the same
     # session would only repeat part of the first
