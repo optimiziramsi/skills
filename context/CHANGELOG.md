@@ -2,7 +2,7 @@
 
 Versions of the `context@optimiziramsi` plugin.
 
-## 0.2.1 — unreleased
+## 0.2.1 — 2026-11-15
 
 - Shared hook library refreshed (worktree-chat root detection for other plugins); no behavior change here.
 

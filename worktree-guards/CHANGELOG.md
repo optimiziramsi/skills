@@ -4,7 +4,7 @@ Versions of the `worktree-guards@optimiziramsi` plugin. History before the split
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.1.4 — unreleased
+## 0.1.4 — 2026-11-15
 
 - The session-start worktree nudge now fires in a desktop-app worktree chat, where the project dir is the main checkout and only the cwd is the worktree.
 

@@ -2,7 +2,7 @@
 
 Versions of the `code-first@optimiziramsi` plugin.
 
-## 0.2.2 — unreleased
+## 0.2.2 — 2026-11-15
 
 - The stale idea-branch note is now silent in a desktop-app worktree chat too (its project dir is the main checkout, only the cwd is the worktree).
 

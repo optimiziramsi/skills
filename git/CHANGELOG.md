@@ -4,7 +4,7 @@ Versions of the `git@optimiziramsi` plugin (named `commit` up to 0.1.1). History
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.3 — unreleased
+## 0.2.3 — 2026-11-15
 
 - `commit-nudge` checks the chat's own tree: in a desktop-app worktree chat that is the worktree, not the main checkout the project dir points at.
 

@@ -4,7 +4,7 @@ Versions of the `setup@optimiziramsi` plugin. History before the split into one 
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.2.2 — unreleased
+## 0.2.2 — 2026-11-15
 
 - `/scaffold` ends by suggesting — never creating — a scheduled housekeeping check (the instructions audit, the full meta-lint run, `.todo` triage) the user can set up themselves.
 

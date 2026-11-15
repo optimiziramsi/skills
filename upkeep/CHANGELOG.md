@@ -2,7 +2,7 @@
 
 Versions of the `upkeep@optimiziramsi` plugin.
 
-## 0.3.1 — unreleased
+## 0.3.1 — 2026-11-15
 
 - The update note is now silent in a desktop-app worktree chat too (its project dir is the main checkout, only the cwd is the worktree).
 
