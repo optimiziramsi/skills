@@ -97,6 +97,8 @@ try:
 
     # ── a linked worktree is for one topic: no notes ───────────────────────
     with scratch_repo() as r:
+        check("a worktree chat whose project dir is the main checkout is silent",
+              stop({"CLAUDE_PROJECT_DIR": r.main}, session_id="w0", cwd=r.wt)[1:] == ({}, ""))
         check("the main checkout is noted", "alpha@mk" in stop(
             {"CLAUDE_PROJECT_DIR": r.main}, session_id="w1")[1].get("systemMessage", ""))
         check("a linked worktree is silent",

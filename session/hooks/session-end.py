@@ -70,7 +70,7 @@ def main():
     data = hookio.payload()
     if data.get("stop_hook_active"):
         return
-    project = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    project = hookio.session_root(data)
     if hookio.git(project, "rev-parse", "--is-inside-work-tree") != "true":
         return
     if hookio.linked_worktree(project) and not hookio.flag("NUDGES_IN_WORKTREE"):

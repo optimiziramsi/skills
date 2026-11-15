@@ -31,6 +31,8 @@ with scratch_repo(files={".agent/meta-lint.json": CONFIG, "CLAUDE.md": "x" * 200
     check("stop_hook_active is never noted", run(r.main, "n2", stop_hook_active=True)[1] == "")
     check("kill-switch disarms", run(r.main, "n3", env={"META_LINT_OFF": "1"})[1] == "")
     check("a linked worktree is silent", run(r.wt, "n4")[:2] == (0, ""))
+    check("…also when the project dir is the main checkout and only the cwd is the worktree",
+          run(r.main, "n7", cwd=r.wt)[:2] == (0, ""))
     check("NUDGES_IN_WORKTREE=1 restores the note there",
           NOTE in json.loads(run(r.wt, "n4", env={"NUDGES_IN_WORKTREE": "1"})[1])["systemMessage"])
     check("--fast keeps working by hand", run(r.main, "n5", mode="--fast")[1].startswith(

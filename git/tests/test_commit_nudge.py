@@ -92,6 +92,22 @@ try:
     clean(sib)
     check("a clean sibling is silent", run(extra="../sib")[0] == 0)
     check("an unreadable sibling dir is ignored", run(extra="../nope")[0] == 0)
+
+    # the desktop app's worktree chat: the project dir is the MAIN checkout, the cwd the worktree
+    wt = os.path.join(tmp, "wt")
+    git(main, "worktree", "add", "-q", wt, "-b", "wtbranch")
+
+    def in_worktree():
+        session[0] += 1
+        return invoke(NUDGE, {"session_id": f"cn-{os.getpid()}-{session[0]}", "cwd": wt,
+                              "transcript_path": transcripts["wrote"]},
+                      env={"TMPDIR": tmp, "CLAUDE_PROJECT_DIR": main})[0]
+
+    dirty(main)
+    check("a worktree chat is not nagged about the main checkout's changes", in_worktree() == 0)
+    clean(main)
+    pathlib.Path(wt, "new.txt").write_text("new")
+    check("…but is nagged about its own worktree's", in_worktree() == 2)
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

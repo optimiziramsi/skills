@@ -88,6 +88,8 @@ try:
     with scratch_repo(files={"CLAUDE.md": "x" * 7000}) as r:
         check("the main checkout is noted", "CLAUDE.md 7000c" in note(r.main))
         check("a linked worktree is silent", run(r.wt)[1:] == ("", ""))
+        check("…also when the project dir is the main checkout and only the cwd is the worktree",
+              run(r.main, cwd=r.wt)[1:] == ("", ""))
         check("NUDGES_IN_WORKTREE=1 restores the note there",
               "CLAUDE.md 7000c" in note(r.wt, env={"NUDGES_IN_WORKTREE": "1"}))
 

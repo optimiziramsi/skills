@@ -4,6 +4,10 @@ Versions of the `todo@optimiziramsi` plugin. History before the split into one p
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
+## 0.1.3 — unreleased
+
+- Shared hook library refreshed (worktree-chat root detection for other plugins); no behavior change here.
+
 ## 0.1.2 — 2026-11-13
 
 - `triage-todo`: points at the renamed `planning:new` skill.

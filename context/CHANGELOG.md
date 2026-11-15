@@ -2,6 +2,10 @@
 
 Versions of the `context@optimiziramsi` plugin.
 
+## 0.2.1 — unreleased
+
+- Shared hook library refreshed (worktree-chat root detection for other plugins); no behavior change here.
+
 ## 0.2.0 — 2026-11-12
 
 - Three tiers by position in `CONTEXT_NUDGE_AT`: a hint that is shown to the user only (the model

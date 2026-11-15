@@ -1011,7 +1011,7 @@ def stop_mode(payload: dict | None = None, root: str | None = None) -> int:
     if payload.get("stop_hook_active") is True:
         return 0  # already inside a Stop-hook continuation — don't loop
     if root is None:
-        root = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+        root = session_root(payload)
     if not os.path.isfile(os.path.join(root, CONFIG_REL)):
         return 0  # project hasn't opted into meta-lint — nothing to enforce
     try:
@@ -1070,6 +1070,22 @@ def in_linked_worktree(root: str) -> bool:
     return os.path.realpath(gitdir) != os.path.realpath(common)
 
 
+def session_root(payload: dict) -> str:
+    """The checkout the session works in: the linked worktree under the payload's `cwd` when there
+    is one (a desktop-app worktree chat keeps $CLAUDE_PROJECT_DIR on the MAIN checkout), else
+    $CLAUDE_PROJECT_DIR, else the process cwd."""
+    cwd = payload.get("cwd") if isinstance(payload, dict) else None
+    if cwd and in_linked_worktree(cwd):
+        try:
+            top = subprocess.run(["git", "-C", cwd, "rev-parse", "--show-toplevel"],
+                                 capture_output=True, text=True, timeout=5).stdout.strip()
+        except Exception:
+            top = ""
+        if top:
+            return top
+    return os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+
+
 def end_note(payload: dict, root: str) -> str:
     """The note text, or "" when there is nothing to show: no config, clean, a Stop-hook
     continuation, a linked worktree (a worktree is for one topic; NUDGES_IN_WORKTREE=1 opts in),
@@ -1116,7 +1132,7 @@ def end_note_mode(payload: dict | None = None, root: str | None = None) -> int:
             payload = {}
     if not isinstance(payload, dict):
         payload = {}
-    text = end_note(payload, root or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    text = end_note(payload, root or session_root(payload))
     if text:
         print(json.dumps({"systemMessage": text}))
     return 0

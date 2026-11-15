@@ -84,6 +84,11 @@ with scratch_repo(files={".agent/handoff.md": "next up\n"}) as r:
     check("a linked worktree is silent", stop(r.wt, "w1")[2] == "")
     got = note(r.wt, "w1", {"NUDGES_IN_WORKTREE": "1"})
     check("NUDGES_IN_WORKTREE=1 restores the note there", "handoff.md last updated" in got, got)
+    # the desktop app's worktree chat: the project dir is the MAIN checkout, the cwd the worktree
+    check("a worktree chat whose project dir is the main checkout is silent too",
+          stop(r.main, "w2", cwd=r.wt)[2] == "")
+    check("…with the cwd drifted into a subdirectory of the worktree as well",
+          stop(r.main, "w3", cwd=os.path.join(r.wt, ".agent"))[2] == "")
 
 wired = json.load(open(hook("hooks/hooks.json")))["hooks"]
 check("the notes are wired at Stop, not at SessionStart",

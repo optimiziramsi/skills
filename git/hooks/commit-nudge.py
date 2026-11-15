@@ -40,7 +40,8 @@ def main():
     if data.get("stop_hook_active"):
         return                                       # never re-block a continuation we caused
     project = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
-    status = hookio.git(project, "status", "--porcelain") or ""
+    # this chat's own tree — in a worktree chat that is the worktree, not the project dir
+    status = hookio.git(hookio.session_root(data), "status", "--porcelain") or ""
     siblings = dirty_siblings(project)
     if not status and not siblings:
         return
