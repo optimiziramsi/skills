@@ -12,7 +12,7 @@ from selftest import Check, hook, invoke, scratch_repo  # noqa: E402
 
 check = Check()
 END = hook("hooks/session-end.py")
-for var in ("SESSION_START_OFF", "NUDGES_IN_WORKTREE"):
+for var in ("SESSION_START_OFF", "NUDGES_IN_WORKTREE", "CLAUDE_CONFIG_DIR"):
     os.environ.pop(var, None)
 
 with scratch_repo(files={".agent/handoff.md": "next up\n"}) as r:
@@ -23,7 +23,8 @@ with scratch_repo(files={".agent/handoff.md": "next up\n"}) as r:
         """(exit code, parsed stdout JSON or {}, raw stdout, stderr) for one Stop."""
         code, out, err = invoke(
             END, {"hook_event_name": "Stop", "session_id": session, **payload},
-            env={"TMPDIR": r.tmp, "CLAUDE_PROJECT_DIR": project, **(env or {})})
+            env={"TMPDIR": r.tmp, "CLAUDE_PROJECT_DIR": project,
+                 "CLAUDE_PLUGIN_DATA": os.path.join(r.tmp, "data"), **(env or {})})
         return code, (json.loads(out) if out.strip() else {}), out, err
 
     def note(project, session, env=None, **payload):
@@ -51,8 +52,19 @@ with scratch_repo(files={".agent/handoff.md": "next up\n"}) as r:
           got == "[session] .todo has 2 item line(s).", got)
     pathlib.Path(r.main, ".todo").write_text("- one\n- two\n- three\n")
     got = note(r.main, "s1")
-    check("a changed fact is noted again, alone",
-          got == "[session] .todo has 3 item line(s).", got)
+    check("a changed count is noted again, alone, with the old one",
+          got == "[session] .todo has 3 item line(s) (was 2).", got)
+    check("an unchanged count is not news to a new session", ".todo" not in note(r.main, "t1"))
+    pathlib.Path(r.main, ".todo").write_text("- one\n")
+    got = note(r.main, "t2")
+    check("…a changed one is, in whichever session sees it first",
+          "[session] .todo has 1 item line(s) (was 3)." in got.splitlines(), got)
+    pathlib.Path(r.main, ".todo").write_text("# all done\n")
+    check("an emptied .todo is silent", ".todo" not in note(r.main, "t3"))
+    pathlib.Path(r.main, ".todo").write_text("- one\n- two\n- three\n")
+    got = note(r.main, "t4")
+    check("…and a refill after that is noted afresh",
+          "[session] .todo has 3 item line(s)." in got.splitlines(), got)
 
     pathlib.Path(r.main, ".agent", "handoff.md").write_text("rewritten\n")
     check("an uncommitted handoff edit is not a new fact", stop(r.main, "s1")[2] == "")

@@ -34,9 +34,11 @@ Write the handoff at session close; boot the next session from it.
   purpose:
     Stop — a note for the **user** (a `systemMessage`: not model context, never blocks the stop)
     with the handoff age, the `.todo` item count, and the /instructions:audit age when it is over
-    30 days. Each fact is shown once per session and again only when it changes; every line is
-    conditional on its file existing, so it is safe in any repo. Silent in a linked git worktree
-    (see Settings).
+    30 days. The handoff and audit facts are shown once per session and again only when they
+    change; the `.todo` count only when it changed since it was last noted for this repo (kept
+    in the plugin's data dir, so a count that sits still is not repeated to every new chat).
+    Every line is conditional on its file existing, so it is safe in any repo. Silent in a linked
+    git worktree (see Settings).
 
 Assumes the **`.agent/` house layout** (`.agent/handoff.md`, `.agent/lessons/`, `.agent/reviews/`,
 `.docs/`).
