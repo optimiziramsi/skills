@@ -20,13 +20,35 @@ weight. The agent cannot clear or compact a session — that is always the user'
    skip the handoff: say in one line that the topic is closed and `/clear` is safe. Stop.
 2. **Close what's open.** Uncommitted work: commit it per the project's commit rules (the `commit`
    skill where enabled), or name it in the handoff as uncommitted — never leave it unmentioned.
-3. **Write the handoff.** Use the `handoff` skill when it is enabled (the `session` plugin) — it
-   owns the format and the 4k cap. Otherwise write `.agent/handoff.md` yourself: current state
+3. **Write the handoff.** Work under a skill that keeps its own handoff goes there, not to
+   `.agent/handoff.md` — a worktree topic's is the Handoff section of its `.agent/plan/<slug>.md`.
+   Otherwise use the `handoff` skill when it is enabled (the `session` plugin) — it owns the format
+   and the 4k cap — or write `.agent/handoff.md` yourself: current state
    (branch, last commit, what is done), decisions a cold session can't re-derive, the exact next
    step, and open questions. Facts, not narrative; no secrets or personal data.
-4. **Hand over.** Tell the user, in two lines: the handoff is written (path), then run `/clear`
-   and say `continue` (or `/continue` where the `session` plugin is enabled) in the fresh
-   session. Offer `/compact` instead only if they'd rather keep this thread.
+4. **Hand over.** Tell the user in one line that the handoff is written (path), then to run
+   `/clear` and paste the resume prompt below. **Always give the resume prompt as a fenced code
+   block** — the exact text to paste into the fresh session, copied as-is, never described in
+   prose. Offer `/compact` instead only if they'd rather keep this thread.
+
+## The resume prompt
+
+```
+/continue <topic> — read the handoff in <path>
+```
+
+A worktree topic, for example:
+
+```
+/parallel-work:worktree continue login-form — read the Handoff section in .agent/plan/261114_075116_login-form.md
+```
+
+- The command is `/continue` where the `session` plugin is enabled, else `continue` — or the
+  skill the work runs under, by its full `/plugin:skill` name.
+- The path is the handoff file actually written in step 3 (and its section, when it is one).
+- It stands on its own: the fresh session knows nothing of this chat. Any constraint the user set
+  goes in as full words, not shorthand only this chat understands.
+- Put the same block in the handoff, so the next repack reuses it.
 
 ## Rules
 
