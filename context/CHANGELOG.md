@@ -2,6 +2,14 @@
 
 Versions of the `context@optimiziramsi` plugin.
 
+## 0.2.2 — 2026-11-16
+
+- `/repack` always hands over the resume prompt as a fenced code block to copy-paste into the
+  fresh session (command + handoff path, constraints in full words), and puts the same block in
+  the handoff.
+- Work under a skill that keeps its own handoff (a worktree topic's plan) gets it written there,
+  not to `.agent/handoff.md`.
+
 ## 0.2.1 — 2026-11-15
 
 - Shared hook library refreshed (worktree-chat root detection for other plugins); no behavior change here.

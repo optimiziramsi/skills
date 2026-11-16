@@ -21,8 +21,9 @@ so a fresh session (`/clear` → `/continue`) picks the work up with none of the
   kind: skill + command
   purpose:
     Closes what's open, writes the handoff (through the [`session`](../session) plugin's
-    `handoff` skill when enabled, else `.agent/handoff.md` directly), then hands you `/clear` →
-    `/continue`. A topic that's already done skips the handoff and just offers `/clear`.
+    `handoff` skill when enabled, else `.agent/handoff.md` directly), then hands you `/clear` and
+    the resume prompt as a code block to copy-paste. A topic that's already done skips the handoff
+    and just offers `/clear`.
 
 ## The three tiers
 
