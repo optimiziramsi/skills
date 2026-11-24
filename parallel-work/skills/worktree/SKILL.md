@@ -7,7 +7,8 @@ description: >-
   "you're working in a worktree", "parallel work" / "you are worker N", "worktree mode", "continue
   this in a fresh session" / "pause this for a fresh session" (→ Pause + resume), "resume the
   worktree topic for <id>" (→ Pause + resume), "close it and start X here" / "next topic on this
-  worktree" (→ Recycle) — or when a SessionStart hook flags the cwd as a worktree and hands this
+  worktree" (→ Recycle), "prep for review" / "review done" / "next round" (→ Review rounds), "prep
+  for mr" / "merge" (→ Prep for MR) — or when a SessionStart hook flags the cwd as a worktree and hands this
   chat a topic, even one phrased as an ordinary dev task ("start the app", "fix X"). The worker
   drives ONE topic chunk-by-chunk (smallest reviewable slice → review → land) on its own worktree
   and lands to the integration branch only on explicit OK; there is NO captain — the human
@@ -49,8 +50,8 @@ before landing anything**. Substitute both everywhere below.
 
 You report to a senior peer who **already sees your tool calls.** Execute every gate, stage, and the
 land loop **silently** — no "running the gate", no per-command status, no recap of what a command
-just printed. The **required beats** (report path + branch + slug · ping-for-review · merge-ask ·
-land report) are the *only* times you speak, and each is a few terse lines. If you're about to type
+just printed. The **required beats** (report path + branch + slug · ping-for-review · round-end open
+list · merge-ask · land report) are the *only* times you speak, and each is a few terse lines. If you're about to type
 a sentence between two tool calls, delete it.
 
 ## First response — before any work
@@ -93,7 +94,47 @@ merge into `<integration>` — the claim row, each work slice, the closing row �
 6. **Report** what landed.
 
 Steps 2 and 4 are **required beats**. What you must *not* push — the next slice and the close — is
-in § Signal, don't push.
+in § Signal, don't push. When the human says **"prep for review"**, steps 2–3 run as § Review
+rounds and step 4 as § Prep for MR.
+
+## Review rounds — "prep for review"
+
+The human's review runs in **rounds**, each on **one review commit** that holds everything on the
+branch — every slice, topic, plan and board edit since the fork from `<integration>` — so the branch
+has a single source of truth to read. All triggers are the human's.
+
+1. **"prep for review" → squash into the review commit.** Commit any WIP, then `git branch -f
+   backup/<branch>` (safety net; deleted at land), count N with `git rev-list --count
+   <integration>..HEAD`, then `git reset --soft HEAD~<N>` with N typed as a number (the git-guard
+   hook refuses a `$N` target), and commit `<slug> ┃ review round <R> — <topic>` (round 1 first, +1
+   per round) with a body listing what it covers. No rebase here — that is § Prep for MR's job.
+   `git show --stat HEAD` must show only this branch's work. Ping: *"round ‹R› ready —
+   ‹branch›@‹sha›"*.
+2. **Comments arrive, over many messages.** Fix each as **new commits on top of the review commit**
+   (`<slug> ┃ ` prefix). Inside a round **never** squash, amend, rebase or reset — the review commit
+   and every fix commit stay as they are, so the human can tell what changed since they read it.
+   Reply in one line per message (what's done, what's parked) — the human is mostly not reading
+   while they review. Don't ask mid-round: a question, a choice of fix, or a decision you took on
+   your own goes to the plan's open-questions section (committed on top), so it survives a context
+   refresh.
+3. **"review done" / "prepare for next round" / "that's it, no more comments" → the round ends.**
+   Present the open list: questions on their comments, fixes that need their choice, decisions you
+   took and why. Apply their answers as commits on top; repeat until nothing is open.
+4. **Nothing open → next round.** Run step 1 again: a fresh squash of the review commit plus every
+   fix commit into the round ‹R+1› commit, and ping. The human reviews it afresh.
+
+Rounds repeat until the human has no more comments; they leave the review with **"prep for MR"**
+or **"merge"** (§ Prep for MR).
+
+## Prep for MR — "prep for mr" / "merge"
+
+**"prep for mr"** makes the branch ready to merge: run § Landing steps 1–5 (backup, rebase onto
+local `<integration>`, re-verify, obsolete-check, squash into one **prefix-free** commit with the
+final message), then show the land report and **ask** *"merge to `<integration>`?"* — the merge-ask
+of gate step 4. The branch is also ready for the human to push and open an MR from their own client;
+you never push to a remote. **"merge"** is the OK: run § Landing step 6 (on a non-fast-forward
+rejection, back to step 2 as usual). A "merge" that arrives without a prep for MR runs the whole
+loop.
 
 ## Commit messages — `<slug> ┃` on the branch, clean on the integration branch
 
@@ -207,8 +248,8 @@ re-rebase and retry?" — that's the loop's job.
 
 The loop, in your worktree on your branch:
 
-1. **backup** (first iteration only) — `git branch backup/<branch>` (delete on success; rebase
-   safety net).
+1. **backup** (first iteration only) — `git branch -f backup/<branch>` (delete on success; rebase
+   safety net; `-f` replaces a review round's backup).
 2. **rebase** — `git rebase <integration>` onto **local `<integration>`** (board commits live on
    local `<integration>`, often unpushed; rebasing on `origin` would miss them). If it conflicts in
    `.agent/worktrees.md`, **resolve from the file, never from memory**: keep the `<integration>`
@@ -462,6 +503,8 @@ decision — waiting on the human). No `reserved` state — without a captain yo
 - **Commit as you go.** The human's view shows only committed work — commit progress often; it's
   squashed clean at land.
 - **Branch commits prefixed `<slug> ┃ `; the integration branch stays clean** (§ Commit messages).
+- **Inside a review round, only new commits on top** — no squash, amend, rebase or reset until the
+  human ends the round (§ Review rounds).
 - **Claim first (auto), `worktrees.md` alone.** Reserve + land the board row before any plan or code
   (skip only on explicit waiver).
 - **Close removes the Active row + leaves a cleanup record; Pause keeps the row + leaves a cleanup
