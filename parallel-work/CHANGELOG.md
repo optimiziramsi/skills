@@ -4,7 +4,7 @@ Versions of the `parallel-work@optimiziramsi` plugin (named `worktree` up to 0.2
 (the single `optimiziramsi-skills` plugin, ≤ 0.0.13) is in the
 [marketplace CHANGELOG](https://github.com/optimiziramsi/skills/blob/main/CHANGELOG.md).
 
-## 0.3.2 — unreleased
+## 0.3.2 — 2026-11-24
 
 - worktree: review rounds. "prep for review" squashes everything on the branch into one review commit; review comments are fixed as new commits on top, never squashed, amended, rebased or reset inside a round; "review done" / "next round" ends the round with the open questions and decisions; once nothing is open, a fresh squash starts the next round.
 - worktree: "prep for mr" rebases, re-verifies and squashes into the final prefix-free commit, then asks to merge; "merge" lands it. The land loop's backup branch is created with `-f`, so it replaces a review round's backup.
