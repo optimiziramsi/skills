@@ -16,7 +16,9 @@ together with [`worktree-guards`](../worktree-guards), which keeps the edits ins
     The **parallel-work protocol**: drive one topic on its own worktree as small reviewed
     slices, landing to the integration branch only on the human's explicit OK. No captain — the
     human coordinates; `.agent/worktrees.md` is the board. Covers reserve → plan+example →
-    execute → close, plus pause/resume, recycle, and the self-serializing land loop.
+    execute → close, plus review rounds ("prep for review": one squashed review commit, fixes as
+    commits on top, open questions at round end), prep for MR, pause/resume, recycle, and the
+    self-serializing land loop.
 
 - name: `relay`
   kind: skill + command
