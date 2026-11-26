@@ -26,10 +26,10 @@ weight. The agent cannot clear or compact a session — that is always the user'
    and the 4k cap — or write `.agent/handoff.md` yourself: current state
    (branch, last commit, what is done), decisions a cold session can't re-derive, the exact next
    step, and open questions. Facts, not narrative; no secrets or personal data.
-4. **Hand over.** Tell the user in one line that the handoff is written (path), then to run
-   `/clear` and paste the resume prompt below. **Always give the resume prompt as a fenced code
-   block** — the exact text to paste into the fresh session, copied as-is, never described in
-   prose. Offer `/compact` instead only if they'd rather keep this thread.
+4. **Hand over.** Two things, nothing else: one line naming the handoff path (run `/clear`, then
+   paste), and the resume prompt below as a fenced code block — the exact text to paste, never
+   described in prose. No recap of the handoff's content. Offer `/compact` instead only if they'd
+   rather keep this thread.
 
 ## The resume prompt
 
@@ -46,8 +46,10 @@ A worktree topic, for example:
 - The command is `/continue` where the `session` plugin is enabled, else `continue` — or the
   skill the work runs under, by its full `/plugin:skill` name.
 - The path is the handoff file actually written in step 3 (and its section, when it is one).
-- It stands on its own: the fresh session knows nothing of this chat. Any constraint the user set
-  goes in as full words, not shorthand only this chat understands.
+- One line: command + pointer, no prose. Next step, constraints and decisions live in the file —
+  never repeat them in the prompt.
+- Only when there is no file to point to does the prompt carry the work itself: the next step and
+  any constraint the user set, in full words (the fresh session knows nothing of this chat).
 - Put the same block in the handoff, so the next repack reuses it.
 
 ## Rules

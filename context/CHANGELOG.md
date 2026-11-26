@@ -2,6 +2,12 @@
 
 Versions of the `context@optimiziramsi` plugin.
 
+## 0.2.3 — 2026-11-26
+
+- `/repack` hands over just the handoff path and a one-line resume prompt (command + pointer to the
+  handoff file), no recap; the prompt spells out the next step and constraints only when there is
+  no file to point to.
+
 ## 0.2.2 — 2026-11-16
 
 - `/repack` always hands over the resume prompt as a fenced code block to copy-paste into the
